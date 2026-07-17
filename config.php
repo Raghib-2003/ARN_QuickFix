@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Database configuration
 $DB_HOST = "localhost";
-$DB_NAME = "sonic_db";   // change only if your DB name is different
+$DB_NAME = "arn_quickfix";   // change only if your DB name is different
 $DB_USER = "root";
 $DB_PASS = "";           // XAMPP default (empty)
 
