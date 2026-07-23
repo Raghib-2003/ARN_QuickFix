@@ -74,8 +74,8 @@ $error = "";
     <div class="container">
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
             <a href="index.php" class="navbar-brand d-flex align-items-center">
-                <img src="img/sonic-logo.jpeg" alt="Sonic Elevator Ltd" class="navbar-logo">
-                <h1 class="m-0 text-primary">Sonic Elevator Ltd.</h1>
+                <img src="img/logo.svg.svg" alt="ARN QuickFix Ltd" class="navbar-logo">
+                <h1 class="m-0 text-primary">ARN QuickFix</h1>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -117,11 +117,11 @@ $error = "";
         <div class="row justify-content-start">
             <div class="col-lg-8 text-center text-lg-start">
                 <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
-                    Welcome To Sonic Elevator Ltd
+                    Welcome To ARN QuickFix Ltd
                 </h5>
 
                 <h3 class="display-1 mb-md-4" style="color: #00C2CB;">
-                    Smart Elevators For Smarter World
+                    Total Asset Control for a Smarter World.
                 </h3>
 
                 <div class="pt-2">
@@ -151,14 +151,11 @@ $error = "";
                     <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
                         About Us
                     </h5>
-<h1 class="display-4">Taking Buildings and People to the Next Level</h1>
+<h1 class="display-4">Taking Comfort, Power, and Mobility to the Next Level.</h1>
 </div>
 
 <p>
-    We are a trusted elevator solutions company dedicated to delivering safe, reliable,
-    and innovative vertical transportation systems. With a strong focus on quality and
-    performance, we design, install, modernize, and maintain elevators that move people
-    efficiently and comfortably every day.
+    "We are a trusted facility infrastructure solutions company dedicated to delivering safe, reliable, and innovative building systems. With a strong focus on quality and performance, we install, modernize, and maintain Elevators, Air Conditioners, and Power Generators that keep buildings running efficiently and comfortably every day."
 </p>
 
 <div class="row g-3 pt-3">
@@ -215,10 +212,9 @@ $error = "";
     <div class="container">
         <div class="text-center mx-auto mb-5" style="max-width: 600px;">
             <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">Services</h5>
-            <h1 class="display-4">Elevator Services That Keep You Moving</h1>
+            <h1 class="display-4">Multi-Asset Infrastructure Services That Keep You Connected</h1>
             <p class="mb-0">
-                From installations to emergency repairs, we deliver safe, smooth,
-                and reliable vertical mobility for every building.
+                From preventative diagnostics to rapid field operations, we deliver safe, reliable, and innovative care for your building's critical infrastructure: Elevators, Air Conditioning systems, and Power Generators.
             </p>
         </div>
 
@@ -230,10 +226,9 @@ $error = "";
                     <div class="service-icon mb-4">
                         <i class="fa fa-2x fa-building text-white"></i>
                     </div>
-                    <h4 class="mb-3">New Elevator Installation</h4>
+                    <h4 class="mb-3">Integrated Infrastructure Installation</h4>
                     <p class="m-0">
-                        Complete lift installation for residential and commercial projects—planned,
-                        precise, and on-time.
+                        Complete deployment of advanced Elevators, AC networks, and backup Power Generators for residential and commercial frameworks—planned, precise, and on-time.
                     </p>
                     <a class="btn btn-lg btn-primary rounded-pill mt-3"
                        href="index.php?service=New Installation">
@@ -349,13 +344,13 @@ $error = "";
                     <h5 class="d-inline-block text-white text-uppercase border-bottom border-5">
                         Service Request
                     </h5>
-                    <h1 class="display-4 text-white">Need Elevator Service or Support?</h1>
+                    <h1 class="display-4 text-white">Need Service or Support?</h1>
                 </div>
 
                 <p class="text-white mb-5">
                     Whether it’s a new installation, preventive maintenance, modernization, or an emergency breakdown,
                     our expert team is ready to assist you. We ensure fast response, safety compliance, and reliable
-                    performance for residential and commercial elevators.
+                    performance for residential and commercial infrastructure.
                 </p>
 
                 <a class="btn btn-dark rounded-pill py-3 px-5 me-3" href="contact.php">
@@ -454,8 +449,7 @@ $error = "";
             </h5>
             <h1 class="display-4">Flexible AMC Packages with Custom Quotes</h1>
             <p class="mb-0">
-                Every building is different. Get a customized elevator maintenance and service plan based on usage,
-                building type, and number of lifts.
+                Every facility is different. Get a targeted infrastructure service strategy optimized around your usage demands, property type, and critical asset count.
             </p>
         </div>
 
@@ -463,19 +457,23 @@ $error = "";
              style="padding: 0 45px 45px 45px;">
 
       <!-- BASIC CARE -->
-  <div class="bg-light rounded text-center">
+  <!-- BASIC MAINTENANCE -->
+<div class="bg-light rounded text-center">
     <div class="position-relative">
-        <img class="img-fluid rounded-top" src="img/price-1.jfif" alt="Basic AMC">
+        <img class="img-fluid rounded-top" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSuYYh8Id2xZMUayzoUMfMx1aEmedy_g_yQ3HiZ9GOuUQ&s=10" alt="Basic AMC">
         <div class="position-absolute w-100 h-70 top-50 start-50 translate-middle rounded-top
                     d-flex flex-column align-items-center justify-content-center"
              style="background: rgba(29, 42, 77, .8);">
         </div>
     </div>
     <div class="text-center py-5 px-3">
-        <p>Scheduled Preventive Maintenance</p>
-        <p>Basic Cleaning & Lubrication</p>
-        <p>Minor Adjustments & Checks</p>
-        <p>Service Visit Reports</p>
+        <ul>
+        <h2>Elevator Systems Care</h2>
+        <h5><li>Regular Pit & Shaft Lubrication</h5></li>
+        <h5><li>Door Sensor & Cable Integrity Checks</h5></li>
+        <h5><li>Leveling Adjustments & Ride Comfort Tuning</h5></li>
+        <h5><li>Compliance & Safety Inspection Certification</h5></li>
+</ul>
         <a href="contact.php" class="btn btn-primary rounded-pill py-3 px-5 my-2">
             Request Quote
         </a>
@@ -485,17 +483,19 @@ $error = "";
 <!-- STANDARD AMC -->
 <div class="bg-light rounded text-center">
     <div class="position-relative">
-        <img class="img-fluid rounded-top" src="img/price-2.jfif" alt="Standard AMC">
+        <img class="img-fluid rounded-top" src="https://thumbs.dreamstime.com/b/outdoor-air-conditioning-units-mounted-building-facade-wall-multiple-external-split-system-conditioner-installed-exterior-hvac-454247591.jpg" alt="Standard AMC">
         <div class="position-absolute w-100 h-70 top-50 start-50 translate-middle rounded-top
                     d-flex flex-column align-items-center justify-content-center"
              style="background: rgba(29, 42, 77, .8);">
         </div>
     </div>
     <div class="text-center py-5 px-3">
-        <p>Priority Breakdown Support</p>
-        <p>Door & Control System Checks</p>
-        <p>Performance Optimization</p>
-        <p>Quarterly Safety Inspections</p>
+        <ul>
+        <h2>Air Conditioning Optimization</h5>
+        <h5><li>Routine Thermoconductive Diagnostics</h5></li>
+        <h5><li>Refrigerant Gas Refills & Leak Detection</h5></li>
+        <h5><li>Deep Filter & Evaporator Coil Anti-Bacterial Wash</h5></li>
+        <h5><li>Electrical Node & Thermostat Sync Inspections</h5></li>
         <a href="contact.php" class="btn btn-primary rounded-pill py-3 px-5 my-2">
             Get Quote
         </a>
@@ -505,39 +505,24 @@ $error = "";
 <!-- PREMIUM PLUS -->
 <div class="bg-light rounded text-center">
     <div class="position-relative">
-        <img class="img-fluid rounded-top" src="img/price-3.jfif" alt="Premium Plus AMC">
+        <img class="img-fluid rounded-top" src="https://s.alicdn.com/@sc04/kf/H2126d0a281fe44cbbf3985736baa74dcY/20kw-25kva-Silent-Soundproof-Diesel-Generator-Sets-Diesel-Engine-NPC-Power-Digital-Panel-15kw-20kw-25kw-30kw-Generator-Set.jpg" alt="Premium Plus AMC">
         <div class="position-absolute w-100 h-70 top-50 start-50 translate-middle rounded-top
                     d-flex flex-column align-items-center justify-content-center"
              style="background: rgba(29, 42, 77, .8);">
         </div>
     </div>
     <div class="text-center py-5 px-3">
-        <p>Fast Response Time</p>
-        <p>Advanced Safety Checks</p>
-        <p>Ride Comfort & Leveling Tuning</p>
-        <p>Monthly Performance Review</p>
+        <ul>
+        <h2>Emergency Generator Assurance</h2>
+        <h5><li>Run-Hour Battery Testing & Fuel Line Flush</h5></li>
+        <h5><li>Automatic Transfer Switch (ATS) Calibrations</h5></li>
+        <h5><li>Load-Bank Performance Testing under Full Stress</h5></li>
+        <h5><li>Exhaust System Emissions & Alternator Diagnostics</h5></li>
         <a href="contact.php" class="btn btn-primary rounded-pill py-3 px-5 my-2">
             Book Inspection
         </a>
     </div>
 </div>
-
-<!-- FULL COVERAGE -->
-<div class="bg-light rounded text-center">
-    <div class="position-relative">
-        <img class="img-fluid rounded-top" src="img/price-4.jfif" alt="Full Coverage AMC">
-        <div class="position-absolute w-100 h-70 top-50 start-50 translate-middle rounded-top
-                    d-flex flex-column align-items-center justify-content-center"
-             style="background: rgba(29, 42, 77, .8);">
-        </div>
-    </div>
-    <div class="text-center py-5 px-3">
-        <p>24/7 Emergency Breakdown Support</p>
-        <p>Comprehensive Safety & Compliance</p>
-        <p>Major Repairs Advisory*</p>
-        <p>Modernization Consultation</p>
-        <a href="contact.php" class="btn btn-primary rounded-pill py-3 px-5 my-2">
-            Talk to Us
         </a>
     </div>
 </div>
@@ -545,6 +530,7 @@ $error = "";
 </div>
 </div>
 </div>
+
 <!-- Pricing Plan End -->
 
 
@@ -673,61 +659,79 @@ $error = "";
 <!-- Team End -->
 
 
+<!-- START OF QUICK SERVICE FINDER DROPDOWNS -->
 <!-- Search Start -->
 <div class="container-fluid bg-primary my-5 py-5">
     <div class="container py-5">
         <div class="text-center mx-auto mb-5" style="max-width: 600px;">
-            <h5 class="d-inline-block text-white text-uppercase border-bottom border-5">
+            <h5 class="d-inline-block text-white text-uppercase border-bottom border-5 pb-2">
                 Quick Service Finder
             </h5>
             <h1 class="display-4 mb-4 text-white">
-                Find the Right Elevator Service
+                Find the Right Infrastructure Service
             </h1>
-            <h5 class="text-white fw-normal">
-                Select your service type and building category to receive
-                a custom quote and fast professional support.
+            <h5 class="text-white fw-normal" style="line-height: 1.6;">
+                Select your machinery category, service type, and facility classification to receive an immediate custom maintenance quote and fast professional support.
             </h5>
         </div>
 
-        <div class="mx-auto" style="width: 100%; max-width: 750px;">
-            <div class="input-group">
+        <!-- Expanded maximum row limits to 1100px so items have plenty of breathing room side-by-side -->
+        <div class="mx-auto" style="width: 100%; max-width: 1100px;">
+            <div class="row g-2 align-items-center justify-content-center">
 
-                <!-- Service Type -->
-                <select class="form-select border-primary w-25" style="height: 60px;">
-                    <option selected>Service Type</option>
-                    <option>New Installation</option>
-                    <option>Preventive Maintenance (AMC)</option>
-                    <option>Repair & Breakdown</option>
-                    <option>Modernization / Upgrade</option>
-                    <option>Safety Inspection</option>
-                </select>
+                <!-- 1. Machinery Category Select Option -->
+                <div class="col-xl col-lg-4 col-md-6 col-12">
+                    <select class="form-select border-0 px-3" style="height: 60px; border-radius: 8px;">
+                        <option selected disabled>Select Machinery</option>
+                        <option>Elevator Systems</option>
+                        <option>Air Conditioning (AC)</option>
+                        <option>Backup Power Generator</option>
+                    </select>
+                </div>
 
-                <!-- Building Type -->
-                <select class="form-select border-primary w-25" style="height: 60px;">
-                    <option selected>Building Type</option>
-                    <option>Residential</option>
-                    <option>Commercial</option>
-                    <option>Hospital</option>
-                    <option>Hotel</option>
-                    <option>Industrial</option>
-                </select>
+                <!-- 2. Service Scope Type Select Option -->
+                <div class="col-xl col-lg-4 col-md-6 col-12">
+                    <select class="form-select border-0 px-3" style="height: 60px; border-radius: 8px;">
+                        <option selected disabled>Service Type</option>
+                        <option>New Installation</option>
+                        <option>Preventive Maintenance (AMC)</option>
+                        <option>Repair & Breakdown</option>
+                        <option>Modernization / Upgrade</option>
+                        <option>Safety Inspection</option>
+                    </select>
+                </div>
 
-                <!-- Location -->
-                <input type="text"
-                       class="form-control border-primary w-25"
-                       placeholder="City / Area">
+                <!-- 3. Building Type Select Option -->
+                <div class="col-xl col-lg-4 col-md-6 col-12">
+                    <select class="form-select border-0 px-3" style="height: 60px; border-radius: 8px;">
+                        <option selected disabled>Building Type</option>
+                        <option>Residential</option>
+                        <option>Commercial</option>
+                        <option>Hospital</option>
+                        <option>Hotel</option>
+                        <option>Industrial</option>
+                    </select>
+                </div>
 
-                <!-- CTA -->
-                <a href="contact.php"
-                   class="btn btn-dark border-0 w-25 d-flex align-items-center justify-content-center">
-                    Get Custom Quote
-                </a>
+                <!-- 4. Location Search Input Area -->
+                <div class="col-xl col-lg-6 col-md-6 col-12">
+                    <input type="text" class="form-control border-0 px-3" placeholder="City / Area" style="height: 60px; border-radius: 8px;">
+                </div>
 
-            </div>
+                <!-- 5. CTA Trigger Action Button -->
+                <div class="col-xl col-lg-6 col-md-12 col-12 d-grid">
+                    <a href="contact.php" class="btn btn-dark border-0 fw-bold d-flex align-items-center justify-content-center" style="height: 60px; border-radius: 8px;">
+                        Get Custom Quote
+                    </a>
+                </div>
+
+            </div> <!-- End of grid row -->
         </div>
     </div>
 </div>
-<!-- Search End -->
+
+<!-- END OF INTERACTIVE FINDER ROW -->
+
 
 
 <!-- Testimonial Start -->
@@ -738,7 +742,7 @@ $error = "";
                 Testimonials
             </h5>
             <h1 class="display-4">
-                Clients Say About Our Elevator Services
+                What do clients Say About Our Services
             </h1>
         </div>
 
@@ -761,9 +765,9 @@ $error = "";
                         </div>
 
                         <p class="fs-4 fw-normal">
-                            “Sonic Elevator provided excellent maintenance service.
-                            Their technicians were professional, punctual,
-                            and our elevator performance improved immediately.”
+                            "ARN QuickFix provided excellent engineering maintenance service. 
+                             Their technicians were highly professional, arrived exactly on time, 
+                             and the performance of our building's elevators, AC zones, and backup generators improved immediately."
                         </p>
 
                         <hr class="w-25 mx-auto">
@@ -789,8 +793,7 @@ $error = "";
                         </div>
 
                         <p class="fs-4 fw-normal">
-                            “We upgraded our elevator system with Sonic Elevator.
-                            The modernization was smooth, and ride comfort is much better now.”
+                            "Outstanding response time and multi-discipline engineering skill! ARN QuickFix handled our elevator servicing, AC, and generator safety audits all under a single, highly professional contract."
                         </p>
 
                         <hr class="w-25 mx-auto">
@@ -818,8 +821,7 @@ $error = "";
     </div>
 
     <p class="fs-4 fw-normal">
-        “Their 24/7 emergency response is outstanding. Our elevator breakdown
-        was resolved quickly with clear communication throughout.”
+        "Their 24/7 emergency response is outstanding. Our critical facility equipment breakdown was resolved quickly, restoring our elevators, cooling systems, and backup power networks with clear communication throughout."
     </p>
 
     <hr class="w-25 mx-auto">
@@ -841,38 +843,44 @@ $error = "";
 <!-- Blog Start -->
 <div class="container-fluid py-5" id="blog">
     <div class="container">
-        <div class="text-center mx-auto mb-5" style="max-width: 600px;">
-            <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
+        <div class="text-center mx-auto mb-5" style="max-width: 650px;">
+            <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5 pb-2">
                 Insights
             </h5>
-            <h1 class="display-4">
-                Latest Elevator Tips & Updates
+            <h1 class="display-4 mb-2">
+                Latest Infrastructure Tips & Updates
             </h1>
+            <!-- Added Your Warranty Notice Sub-Heading Here -->
+            <h5 class="text-danger fw-bold text-uppercase mt-3" style="letter-spacing: 1px;">
+                <i class="fa-solid fa-shield-halved me-2"></i>All the services that we provide are warranted for 7 days
+            </h5>
         </div>
 
         <div class="row g-5">
 
-            <!-- Blog 1 -->
+            <!-- Blog 1: Elevators -->
             <div class="col-xl-4 col-lg-6">
-                <div class="bg-light rounded overflow-hidden blog-card">
-                    <img class="img-fluid w-100"
-                         src="img/1.jpg.webp"
-                         alt="Elevator Maintenance Tips">
+                <div class="bg-light rounded overflow-hidden blog-card h-100 d-flex flex-column justify-content-between shadow-sm">
+                    <div>
+                        <img class="img-fluid w-100"
+                             src="img/1.jpg.webp"
+                             alt="Elevator Maintenance Tips"
+                             style="height: 240px; object-fit: cover;">
 
-                    <div class="p-4 blog-content">
-                        <span class="badge bg-primary mb-2">Maintenance</span>
-                        <a class="h5 d-block mb-3 text-dark text-decoration-none" href="#">
-                            5 Signs Your Elevator Needs Maintenance
-                        </a>
-                        <p class="m-0 text-muted">
-                            Learn the early warning signs that indicate your elevator
-                            requires professional inspection and servicing.
-                        </p>
+                        <div class="p-4 blog-content">
+                            <span class="badge bg-primary mb-2">Elevator Systems</span>
+                            <a class="h5 d-block mb-3 text-dark text-decoration-none fw-bold" href="#">
+                                5 Signs Your Elevator System Needs Maintenance
+                            </a>
+                            <p class="m-0 text-muted small" style="line-height: 1.6;">
+                                Learn the early physical warning signs like strange vibrations, leveling faults, or cable noises that indicate your elevator requires professional inspection and servicing.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center border-top p-4 blog-footer">
                         <small class="text-muted">
-                            <i class="fa fa-user me-1"></i> Sonic Elevator Team
+                            <i class="fa fa-user me-1"></i> ARN QuickFix Experts
                         </small>
                         <a href="#" class="btn btn-sm btn-outline-primary rounded-pill">
                             Read More
@@ -881,27 +889,29 @@ $error = "";
                 </div>
             </div>
 
-            <!-- Blog 2 -->
+            <!-- Blog 2: Air Conditioning (AC) -->
             <div class="col-xl-4 col-lg-6">
-                <div class="bg-light rounded overflow-hidden blog-card">
-                    <img class="img-fluid w-100"
-                         src="img/safety.webp"
-                         alt="Elevator Safety Checklist">
+                <div class="bg-light rounded overflow-hidden blog-card h-100 d-flex flex-column justify-content-between shadow-sm">
+                    <div>
+                        <img class="img-fluid w-100"
+                             src="https://t4.ftcdn.net/jpg/05/11/92/95/360_F_511929539_hkrzPKGI6pEA8TwUfrwrB0g73FyEaowM.jpg"
+                             alt="Commercial AC Safety Checklist"
+                             style="height: 240px; object-fit: cover;">
 
-                    <div class="p-4 blog-content">
-                        <span class="badge bg-primary mb-2">Safety</span>
-                        <a class="h5 d-block mb-3 text-dark text-decoration-none" href="#">
-                            Monthly Elevator Safety Checklist
-                        </a>
-                        <p class="m-0 text-muted">
-                            A simple safety checklist for building managers to ensure
-                            elevators remain compliant and safe.
-                        </p>
+                        <div class="p-4 blog-content">
+                            <span class="badge bg-info text-white mb-2">Climate Management</span>
+                            <a class="h5 d-block mb-3 text-dark text-decoration-none fw-bold" href="#">
+                                Optimizing Commercial AC for Energy Efficiency
+                            </a>
+                            <p class="m-0 text-muted small" style="line-height: 1.6;">
+                                Discover how routine thermodynamic cleanings, filter washes, and thermostat calibrations can drop your commercial building cooling bills while boosting overall airflow.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center border-top p-4 blog-footer">
                         <small class="text-muted">
-                            <i class="fa fa-user me-1"></i> Sonic Elevator Team
+                            <i class="fa fa-user me-1"></i> ARN QuickFix Experts
                         </small>
                         <a href="#" class="btn btn-sm btn-outline-primary rounded-pill">
                             Read More
@@ -910,27 +920,29 @@ $error = "";
                 </div>
             </div>
 
-            <!-- Blog 3 -->
+            <!-- Blog 3: Power Generators -->
             <div class="col-xl-4 col-lg-6">
-                <div class="bg-light rounded overflow-hidden blog-card">
-                    <img class="img-fluid w-100"
-                         src="img/sin.webp"
-                         alt="Elevator Modernization">
+                <div class="bg-light rounded overflow-hidden blog-card h-100 d-flex flex-column justify-content-between shadow-sm">
+                    <div>
+                        <img class="img-fluid w-100"
+                             src="https://www.sudhirpower.com/wp-content/uploads/2026/02/1.jpg"
+                             alt="Industrial Generator Maintenance"
+                             style="height: 240px; object-fit: cover;">
 
-                    <div class="p-4 blog-content">
-                        <span class="badge bg-primary mb-2">Modernization</span>
-                        <a class="h5 d-block mb-3 text-dark text-decoration-none" href="#">
-                            When to Modernize Your Elevator System
-                        </a>
-                        <p class="m-0 text-muted">
-                            Discover when it’s time to upgrade your elevator for better
-                            performance, efficiency, and ride comfort.
-                        </p>
+                        <div class="p-4 blog-content">
+                            <span class="badge bg-warning text-dark mb-2">Backup Power</span>
+                            <a class="h5 d-block mb-3 text-dark text-decoration-none fw-bold" href="#">
+                                Testing Your Generator Transfer Switch (ATS)
+                            </a>
+                            <p class="m-0 text-muted small" style="line-height: 1.6;">
+                                An emergency checklist for facilities to verify that their automatic backup generator kicks on immediately within seconds of a primary power utility breakdown.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center border-top p-4 blog-footer">
                         <small class="text-muted">
-                            <i class="fa fa-user me-1"></i> Sonic Elevator Team
+                            <i class="fa fa-user me-1"></i> ARN QuickFix Experts
                         </small>
                         <a href="#" class="btn btn-sm btn-outline-primary rounded-pill">
                             Read More
@@ -945,6 +957,7 @@ $error = "";
 <!-- Blog End -->
 
 
+
 <!-- Footer Start -->
 <div class="container-fluid bg-dark text-light mt-5 py-5">
     <div class="container py-5">
@@ -957,9 +970,7 @@ $error = "";
                     Get In Touch
                 </h4>
                 <p class="mb-4">
-                    Sonic Elevator Ltd. delivers safe, reliable, and innovative
-                    elevator solutions including installation, maintenance,
-                    modernization, and 24/7 emergency support.
+                    ARN QuickFix Ltd. delivers safe, reliable, and innovative building infrastructure solutions including professional installation, preventive maintenance, modernization, and 24/7 emergency support across our complete lineup of elevators, air conditioning networks, and backup power generators.
                 </p>
                 <p class="mb-2">
                     <i class="fa fa-map-marker-alt text-primary me-3"></i>
@@ -998,12 +1009,13 @@ $error = "";
         Our Services
     </h4>
     <div class="d-flex flex-column justify-content-start">
-        <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Elevator Installation</a>
-        <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Preventive Maintenance</a>
-        <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Modernization</a>
-        <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>AMC Contracts</a>
-        <a class="text-light" href="#"><i class="fa fa-angle-right me-2"></i>24/7 Emergency Support</a>
-    </div>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Elevator Maintenance</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Air Conditioning (AC) Servicing</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Backup Generator Support</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Preventive AMC Contracts</a>
+    <a class="text-light" href="#"><i class="fa fa-angle-right me-2"></i>24/7 Emergency Dispatch</a>
+</div>
+
 </div>
 
 <!-- Newsletter -->
@@ -1011,7 +1023,7 @@ $error = "";
     <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
         Newsletter
     </h4>
-    <p>Subscribe for elevator safety tips, maintenance reminders, and company updates.</p>
+    <p>Subscribe for multi-asset maintenance reminders safety tips, maintenance reminders, and company updates.</p>
     <form method="post" action="">
         <div class="input-group">
             <input type="email" name="email" class="form-control p-3 border-0" placeholder="Your Email Address">
@@ -1038,7 +1050,7 @@ $error = "";
         <div class="row g-5">
             <div class="col-md-6 text-center text-md-start">
                 <p class="mb-md-0">
-                    &copy; <span class="text-primary">Sonic Elevator Ltd.</span> All Rights Reserved.
+                    &copy; <span class="text-primary">ARN QuickFix Ltd.</span> All Rights Reserved.
                 </p>
             </div>
             <div class="col-md-6 text-center text-md-end">
