@@ -4,9 +4,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Database configuration
-$DB_HOST = "localhost";
-$DB_NAME = "arn_quickfix";   // change only if your DB name is different
+// Database configuration (FORCED LOCAL NUMERICAL DIRECT GATEWAY IP FOR MAX SPEED)
+$DB_HOST = "localhost";  // Changed from "localhost" to eliminate Windows DNS lookup loops
+$DB_NAME = "arn_quickfix"; // Database name
 $DB_USER = "root";
 $DB_PASS = "";           // XAMPP default (empty)
 
@@ -22,9 +22,6 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $DB_USER, $DB_PASS, $options);
-
-
-
 } catch (PDOException $e) {
     // ❌ Error message
     die("❌ Database connection failed: " . $e->getMessage());

@@ -8,7 +8,7 @@ $error = "";
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>ARN QuickFIx</title>
+    <title>Home | ARN QuickFix Ltd.</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="Free HTML Templates" name="keywords">
     <meta content="Free HTML Templates" name="description">
@@ -75,7 +75,7 @@ $error = "";
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
             <a href="index.php" class="navbar-brand d-flex align-items-center">
                 <img src="img/logo.svg.svg" alt="ARN QuickFix Ltd" class="navbar-logo">
-                <h1 class="m-0 text-primary">ARN QuickFix</h1>
+                <h1 class="m-0 text-primary">ARN QuickFix Ltd.</h1>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -112,28 +112,57 @@ $error = "";
 
 
 <!-- Hero Start -->
-<div class="container-fluid bg-primary py-5 mb-5 hero-header">
-    <div class="container py-5">
-        <div class="row justify-content-start">
-            <div class="col-lg-8 text-center text-lg-start">
-                <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
-                    Welcome To ARN QuickFix Ltd
-                </h5>
+<!-- Hero Slideshow Banner Start -->
+<div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="5000">
+    
+    <!-- Carousel Images -->
+    <div class="carousel-inner">
+        
+        <!-- Slide 1: Elevators -->
+        <div class="carousel-item active">
+            <div class="w-100 vh-100" style="background: linear-gradient(rgba(29, 42, 77, .7), rgba(29, 42, 77, .7)), url('img/4.jpeg') center center no-repeat; background-size: cover;"></div>
+        </div>
 
-                <h3 class="display-1 mb-md-4" style="color: #00C2CB;">
-                    Total Asset Control for a Smarter World.
-                </h3>
+        <!-- Slide 2: Air Conditioners -->
+        <div class="carousel-item">
+            <div class="w-100 vh-100" style="background: linear-gradient(rgba(29, 42, 77, .7), rgba(29, 42, 77, .7)), url('https://mdairheatingandcooling.com/wp-content/uploads/2025/02/air-conditioner-is-not-cooling.jpg') center no-repeat; background-size: cover;"></div>
+        </div>
 
-                <div class="pt-2">
-                    <a href="login.php" class="btn btn-light rounded-pill py-md-3 px-md-5 mx-2">Log In</a>
-                    <a href="signup.php" class="btn btn-outline-light rounded-pill py-md-3 px-md-5 mx-2">Sign Up</a>
-                </div>
+        <!-- Slide 3: Power Generators -->
+        <div class="carousel-item">
+            <div class="w-100 vh-100" style="background: linear-gradient(rgba(29, 42, 77, .7), rgba(29, 42, 77, .7)), url('https://rrmachinery.sg/wp-content/uploads/2026/06/Industrial-generator-maintenance-in-action.webp') center center no-repeat; background-size: cover;"></div>
+        </div>
+
+    </div>
+
+    <!-- Floating Text Content Overlay (Stays fixed on top while images fade behind it) -->
+    <div class="position-absolute top-50 start-0 translate-middle-y w-100" style="z-index: 10;">
+        <div class="container text-start">
+            <h5 class="text-primary text-uppercase fw-bold mb-3" style="letter-spacing: 3px;">Welcome to ARN QuickFix Ltd.</h5>
+            <h1 class="display-1 text-white fw-bold mb-4" style="max-width: 800px; line-height: 1.2;">
+                Total Asset Control for a<br><span class="text-primary">Smarter World.</span>
+            </h1>
+            <div class="d-flex gap-3 mt-4">
+                <a href="login.php" class="btn btn-light rounded-pill px-5 py-3 fw-bold shadow-sm">Log In</a>
+                <a href="signup.php" class="btn btn-outline-light rounded-pill px-5 py-3 fw-bold">Sign Up</a>
             </div>
         </div>
     </div>
-</div>
-<!-- Hero End -->
 
+    <!-- Optional Slider Controls (Arrows) -->
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+
+</div>
+<!-- Hero Slideshow Banner End -->
+
+<!-- Hero End -->
 
 <!-- About Start -->
 <div class="container-fluid py-5">
@@ -142,7 +171,7 @@ $error = "";
             <div class="col-lg-5 mb-5 mb-lg-0" style="min-height: 500px;">
                 <div class="position-relative h-100">
                     <img class="position-absolute w-100 h-100 rounded"
-                         src="img/about.jpg" style="object-fit: cover;">
+                         src="https://media.istockphoto.com/id/1295790589/photo/shot-of-a-engineer-using-a-digital-tablet-on-a-construction-site.jpg?s=612x612&w=0&k=20&c=WcJYHldWqeCMOgdZTyMUABJaaYS2rkyQ2fgSyoD2eqU=" style="object-fit: cover;">
                 </div>
             </div>
 
@@ -534,129 +563,102 @@ $error = "";
 <!-- Pricing Plan End -->
 
 
-<!-- Team Start -->
-<div class="container-fluid py-5">
+<!-- Our Team Section Start -->
+<div class="container-fluid py-5" id="team">
     <div class="container">
-        <div class="text-center mx-auto mb-5" style="max-width: 550px;">
-            <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
-                Our Team
-            </h5>
-            <h1 class="display-4">Skilled Elevator Professionals</h1>
-            <p class="mb-0">
-                Our certified engineers and technicians ensure safety, reliability,
-                and smooth performance for every elevator we service.
-            </p>
+        
+        <!-- Global Team Header -->
+        <div class="text-center mx-auto mb-5" style="max-width: 600px;">
+            <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5 pb-2">Our Team</h5>
+            <h1 class="display-4 fw-bold">Skilled Infrastructure Specialists</h1>
+            <p class="text-muted small mt-2">Our certified engineers and technicians ensure complete safety, operational reliability, and peak performance for all critical building systems.</p>
         </div>
 
-        <div class="owl-carousel team-carousel position-relative">
+        <!-- Unified 3-Column Grid Row Layout (Fits perfectly side-by-side on desktop) -->
+        <div class="row g-4 justify-content-center">
 
-            <!-- TEAM MEMBER 1 -->
-            <div class="team-item">
-                <div class="row g-0 bg-light rounded overflow-hidden">
-                    <div class="col-12 col-sm-5 h-100">
-                        <img class="img-fluid h-100"
-                             src="img/Tom-Cruise-Red-Carpet.webp"
-                             style="object-fit: cover;" alt="Senior Lift Engineer">
+            <!-- Member 1: Overall Facility Support -->
+            <div class="col-xl-4 col-lg-6 col-md-12">
+                <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
+                    <div class="col-sm-6 col-12">
+                        <img class="img-fluid h-100 w-100" src="img/team-1.jpg" alt="Service Supervisor" style="object-fit: cover; min-height: 280px;">
                     </div>
-                    <div class="col-12 col-sm-7 h-100 d-flex flex-column">
-                        <div class="mt-auto p-4">
-                            <h3>Senior Lift Engineer</h3>
-                            <h6 class="fw-normal fst-italic text-primary mb-4">
-                                Installation & Modernization
-                            </h6>
-                            <p class="m-0">
-                                Specialized in new elevator installations, upgrades,
-                                and control system optimization.
-                            </p>
-                        </div>
-                        <div class="d-flex mt-auto border-top p-4">
-                            <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#">
-                                <i class="fab fa-linkedin-in"></i>
-                            </a>
-                            <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#">
-                                <i class="fab fa-twitter"></i>
-                            </a>
+                    <div class="col-sm-6 col-12">
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark">Service Supervisor</h5>
+                                <small class="text-primary text-uppercase mb-3 d-block fw-semibold" style="letter-spacing: 0.5px;">Maintenance & AMC</small>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">
+                                    Oversees systemic preventive maintenance, diagnostic compliance loops, and reporting metrics across your entire asset footprint.
+                                </p>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-linkedin-in text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-facebook-f text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-twitter text-white small"></i></a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TEAM MEMBER 2 -->
-            <div class="team-item">
-                <div class="row g-0 bg-light rounded overflow-hidden">
-                    <div class="col-12 col-sm-5 h-100">
-                        <img class="img-fluid h-100"
-                             src="img/Sharukhan.jpg"
-                             style="object-fit: cover;" alt="Service Supervisor">
+            <!-- Member 2: Mobility & Backup Power Systems -->
+            <div class="col-xl-4 col-lg-6 col-md-12">
+                <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
+                    <div class="col-sm-6 col-12">
+                        <img class="img-fluid h-100 w-100" src="img/team-2.jpg" alt="Systems Response Engineer" style="object-fit: cover; min-height: 280px;">
                     </div>
-                    <div class="col-12 col-sm-7 h-100 d-flex flex-column">
-                        <div class="mt-auto p-4">
-                            <h3>Service Supervisor</h3>
-                            <h6 class="fw-normal fst-italic text-primary mb-4">
-                                Maintenance & AMC
-                            </h6>
-                            <p class="m-0">
-                                Oversees preventive maintenance, inspections,
-                                and ensures compliance with safety standards.
-                            </p>
-                        </div>
-                        <div class="d-flex mt-auto border-top p-4">
-                            <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#">
-                                <i class="fab fa-linkedin-in"></i>
-                            </a>
-                            <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#">
-                                <i class="fab fa-facebook-f"></i>
-                            </a>
-                            <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#">
-                                <i class="fab fa-twitter"></i>
-                            </a>
+                    <div class="col-sm-6 col-12">
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark">Systems Engineer</h5>
+                                <small class="text-primary text-uppercase mb-3 d-block fw-semibold" style="letter-spacing: 0.5px;">24/7 Rapid Response</small>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">
+                                    Expert in critical fault overrides, switch grid calibration, and rapid emergency field execution for elevators and generator grids.
+                                </p>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-linkedin-in text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-facebook-f text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-twitter text-white small"></i></a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-      <!-- TEAM MEMBER 3 -->
- <div class="team-item">
-    <div class="row g-0 bg-light rounded overflow-hidden">
-        <div class="col-12 col-sm-5 h-100">
-            <img class="img-fluid h-100"
-                 src="img/Sakib.jpg"
-                 style="object-fit: cover;"
-                 alt="Emergency Response Technician">
-        </div>
-        <div class="col-12 col-sm-7 h-100 d-flex flex-column">
-            <div class="mt-auto p-4">
-                <h3>Emergency Response Technician</h3>
-                <h6 class="fw-normal fst-italic text-primary mb-4">
-                    24/7 Breakdown Support
-                </h6>
-                <p class="m-0">
-                    Expert in fault diagnosis, emergency rescue operations,
-                    and rapid elevator restoration.
-                </p>
+            <!-- Member 3: Climate & Ventilation Specialist -->
+            <div class="col-xl-4 col-lg-6 col-md-12">
+                <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
+                    <div class="col-sm-6 col-12">
+                        <!-- Points to a third image asset inside your img/ folder -->
+                        <img class="img-fluid h-100 w-100" src="img/team-3.jpg" alt="HVAC Specialist" style="object-fit: cover; min-height: 280px;">
+                    </div>
+                    <div class="col-sm-6 col-12">
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark">HVAC Specialist</h5>
+                                <small class="text-primary text-uppercase mb-3 d-block fw-semibold" style="letter-spacing: 0.5px;">Climate Optimization</small>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">
+                                    Specializes in thermodynamic testing, zone coil sanitization, and runtime calibration for heavy commercial air conditioning units.
+                                </p>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-linkedin-in text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-facebook-f text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-twitter text-white small"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="d-flex mt-auto border-top p-4">
-                <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#">
-                    <i class="fab fa-linkedin-in"></i>
-                </a>
-                <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#">
-                    <i class="fab fa-facebook-f"></i>
-                </a>
-                <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#">
-                    <i class="fab fa-twitter"></i>
-                </a>
-            </div>
-        </div>
+
+        </div> <!-- End of .row Grid -->
     </div>
 </div>
+<!-- Our Team Section End -->
 
-</div>
-</div>
-</div>
-<!-- Team End -->
+
 
 
 <!-- START OF QUICK SERVICE FINDER DROPDOWNS -->
@@ -851,9 +853,9 @@ $error = "";
                 Latest Infrastructure Tips & Updates
             </h1>
             <!-- Added Your Warranty Notice Sub-Heading Here -->
-            <h5 class="text-danger fw-bold text-uppercase mt-3" style="letter-spacing: 1px;">
+            <h2 class="text-danger fw-bold text-uppercase mt-3" style="letter-spacing: 2px;">
                 <i class="fa-solid fa-shield-halved me-2"></i>All the services that we provide are warranted for 7 days
-            </h5>
+            </h2>
         </div>
 
         <div class="row g-5">
@@ -978,7 +980,7 @@ $error = "";
                 </p>
                 <p class="mb-2">
                     <i class="fa fa-envelope text-primary me-3"></i>
-                    info@sonicelevator.com
+                    info@arnquickfix.com
                 </p>
                 <p class="mb-0">
                     <i class="fa fa-phone-alt text-primary me-3"></i>
@@ -1081,6 +1083,5 @@ $error = "";
 
 <!-- Template Javascript -->
 <script src="js/main.js"></script>
-
 </body>
 </html>

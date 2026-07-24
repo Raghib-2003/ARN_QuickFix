@@ -5,7 +5,7 @@ $error = "";
 
 <head>
     <meta charset="utf-8">
-    <title>snic</title>
+    <title>About | ARN QuickFix Ltd.</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="Free HTML Templates" name="keywords">
     <meta content="Free HTML Templates" name="description">
@@ -83,7 +83,7 @@ $error = "";
                              alt="Sonic Elevator Ltd"
                                  class="navbar-logo">
                                  
-                                 <h1 class="m-0  text-primary">Sonic Elevator Ltd.</h1>
+                                 <h1 class="m-0  text-primary">ARN QuickFix Ltd.</h1>
                      </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
                     <span class="navbar-toggler-icon"></span>
@@ -114,206 +114,229 @@ $error = "";
     <!-- Navbar End -->
 
 
-    <!-- About Start -->
- <div class="container-fluid py-5">
-  <div class="container">
-    <div class="row gx-5">
-      <div class="col-lg-5 mb-5 mb-lg-0" style="min-height: 500px;">
-        <div class="position-relative h-100">
-          <img class="position-absolute w-100 h-100 rounded" src="img/about.jpg" style="object-fit: cover;">
-        </div>
-      </div>
-
-      <div class="col-lg-7">
-        <div class="mb-4">
-          <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">About Us</h5>
-          <h1 class="display-4">Taking Buildings and People to the Next Level</h1>
-        </div>
-
-        <p>
-          We are a trusted elevator solutions company dedicated to delivering safe, reliable, and innovative vertical transportation systems. With a strong focus on quality and performance, we design, install, modernize, and maintain elevators that move people efficiently and comfortably every day.
-        </p>
-
-        <div class="row g-3 pt-3">
-          <!-- Expert Team -->
-          <div class="col-sm-3 col-6">
-            <div class="bg-light text-center rounded-circle py-4">
-              <i class="fa fa-3x fa-tools text-primary mb-3"></i>
-              <h6 class="mb-0">Expert<small class="d-block text-primary">Technicians</small></h6>
+<!-- About Start -->
+<div class="container-fluid py-5">
+    <div class="container">
+        <div class="row gx-5">
+            <div class="col-lg-5 mb-5 mb-lg-0" style="min-height: 500px;">
+                <div class="position-relative h-100">
+                    <img class="position-absolute w-100 h-100 rounded"
+                         src="https://media.istockphoto.com/id/1295790589/photo/shot-of-a-engineer-using-a-digital-tablet-on-a-construction-site.jpg?s=612x612&w=0&k=20&c=WcJYHldWqeCMOgdZTyMUABJaaYS2rkyQ2fgSyoD2eqU=" style="object-fit: cover;">
+                </div>
             </div>
-          </div>
 
-          <!-- Emergency Support -->
-          <div class="col-sm-3 col-6">
-            <div class="bg-light text-center rounded-circle py-4">
-              <i class="fa fa-3x fa-phone-alt text-primary mb-3"></i>
-              <h6 class="mb-0">24/7<small class="d-block text-primary">Support</small></h6>
-            </div>
-          </div>
-
-          <!-- Safety -->
-          <div class="col-sm-3 col-6">
-            <div class="bg-light text-center rounded-circle py-4">
-              <i class="fa fa-3x fa-shield-alt text-primary mb-3"></i>
-              <h6 class="mb-0">Safety<small class="d-block text-primary">First</small></h6>
-            </div>
-          </div>
-
-          <!-- Maintenance -->
-          <div class="col-sm-3 col-6">
-            <div class="bg-light text-center rounded-circle py-4">
-              <i class="fa fa-3x fa-cogs text-primary mb-3"></i>
-              <h6 class="mb-0">Preventive<small class="d-block text-primary">Maintenance</small></h6>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
+            <div class="col-lg-7">
+                <div class="mb-4">
+                    <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
+                        About Us
+                    </h5>
+<h1 class="display-4">Taking Comfort, Power, and Mobility to the Next Level.</h1>
 </div>
-    <!-- About End -->
+
+<p>
+    "We are a trusted facility infrastructure solutions company dedicated to delivering safe, reliable, and innovative building systems. With a strong focus on quality and performance, we install, modernize, and maintain Elevators, Air Conditioners, and Power Generators that keep buildings running efficiently and comfortably every day."
+</p>
+
+<div class="row g-3 pt-3">
+    <!-- Expert Team -->
+    <div class="col-sm-3 col-6">
+        <div class="bg-light text-center rounded-circle py-4">
+            <i class="fa fa-3x fa-tools text-primary mb-3"></i>
+            <h6 class="mb-0">Expert
+                <small class="d-block text-primary">Technicians</small>
+            </h6>
+        </div>
+    </div>
+
+    <!-- Emergency Support -->
+    <div class="col-sm-3 col-6">
+        <div class="bg-light text-center rounded-circle py-4">
+            <i class="fa fa-3x fa-phone-alt text-primary mb-3"></i>
+            <h6 class="mb-0">24/7
+                <small class="d-block text-primary">Support</small>
+            </h6>
+        </div>
+    </div>
+
+    <!-- Safety -->
+    <div class="col-sm-3 col-6">
+        <div class="bg-light text-center rounded-circle py-4">
+            <i class="fa fa-3x fa-shield-alt text-primary mb-3"></i>
+            <h6 class="mb-0">Safety
+                <small class="d-block text-primary">First</small>
+            </h6>
+        </div>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="col-sm-3 col-6">
+        <div class="bg-light text-center rounded-circle py-4">
+            <i class="fa fa-3x fa-cogs text-primary mb-3"></i>
+            <h6 class="mb-0">Preventive
+                <small class="d-block text-primary">Maintenance</small>
+            </h6>
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+<!-- About End -->
 
 
-   <div class="container-fluid bg-primary my-5 py-5">
+
+<!-- Service Request Banner Start -->
+<div class="container-fluid bg-primary my-5 py-5" id="service-request">
   <div class="container py-5">
-    <div class="row gx-5">
+    <div class="row gx-5 align-items-center">
       
-      <!-- LEFT CONTENT -->
+      <!-- LEFT COLUMN: Content -->
       <div class="col-lg-6 mb-5 mb-lg-0">
         <div class="mb-4">
-          <h5 class="d-inline-block text-white text-uppercase border-bottom border-5">Service Request</h5>
-          <h1 class="display-4 text-white">Need Elevator Service or Support?</h1>
+          <h5 class="d-inline-block text-white text-uppercase border-bottom border-5 pb-2" style="letter-spacing: 1px;">
+            Service Request
+          </h5>
+          <h1 class="display-4 text-white fw-bold mt-2">
+            Need Expert Machinery Service or Support?
+          </h1>
         </div>
 
-        <p class="text-white mb-5">
-          Whether it’s a new installation, preventive maintenance, modernization, or an emergency breakdown,
-          our expert team is ready to assist you. We ensure fast response, safety compliance, and reliable performance
-          for residential and commercial elevators.
+        <p class="text-white mb-5" style="line-height: 1.7; opacity: 0.95;">
+          Whether it’s a strategic new installation, rigorous preventive maintenance (AMC), advanced system modernization, or a critical emergency breakdown override, our cross-certified technical field crew is ready to assist you. We guarantee immediate response times, total safety compliance checks, and bulletproof runtime performance for your residential or commercial <strong>Elevators, Air Conditioning zones, and backup Power Generators</strong>.
         </p>
 
-        <a class="btn btn-dark rounded-pill py-3 px-5 me-3" href="contact.html">
+        <a class="btn btn-dark rounded-pill py-3 px-5 me-3 fw-bold shadow-sm" href="contact.php">
           Request Service
         </a>
-        <a class="btn btn-outline-dark rounded-pill py-3 px-5" href="service.html">
+        <a class="btn btn-outline-light rounded-pill py-3 px-5 fw-bold" href="service.php">
           View Our Services
         </a>
       </div>
+      
+      <!-- RIGHT COLUMN: Image -->
+      <div class="col-lg-6">
+        <div class="position-relative bg-white rounded overflow-hidden shadow-sm w-100" style="min-height: 480px;">
+          <img 
+            src="https://unsplash.com" 
+            alt="ARN QuickFix Infrastructure Engineering Support"
+            class="img-fluid w-100 h-100 position-absolute top-0 start-0"
+            style="object-fit: cover;"
+          >
+          <div class="position-absolute w-100 h-100 top-0 start-0" style="background: rgba(29, 42, 77, 0.15);"></div>
+        </div>
+      </div>
 
-      <!-- RIGHT FORM -->
- <div class="col-lg-6">
-  <div class="position-relative bg-white rounded overflow-hidden h-100">
+    </div> <!-- End Main Grid Row -->
+  </div>
+</div>
+<!-- Service Request Banner End -->
 
-    <!-- Image -->
-    <img 
-      src="img/chair.jpg" 
-      alt="Elevator Service"
-      class="img-fluid w-100 h-100"
-      style="object-fit: cover;"
-    >
 
-    <!-- Overlay -->
-    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column
-                align-items-center justify-content-center text-center px-4"
-         style="background: rgba(29, 42, 77, 0.65);">
 
-      <h2 class="text-white mb-3">Reliable Elevator Service</h2>
-      <p class="text-white mb-4">
-        Professional maintenance, fast repairs, and 24/7 emergency support
-        for residential and commercial buildings.
-      </p>
-
+   
      
     </div>
 
   </div>
 </div>
-    <!-- Team Start -->
- <div class="container-fluid py-5">
-  <div class="container">
-    <div class="text-center mx-auto mb-5" style="max-width: 550px;">
-      <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">Our Team</h5>
-      <h1 class="display-4">Skilled Elevator Professionals</h1>
-      <p class="mb-0">
-        Our certified engineers and technicians ensure safety, reliability, and smooth performance for every elevator we service.
-      </p>
+   <!-- Our Team Section Start -->
+<div class="container-fluid py-5" id="team">
+    <div class="container">
+        
+        <!-- Global Team Header -->
+        <div class="text-center mx-auto mb-5" style="max-width: 600px;">
+            <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5 pb-2">Our Team</h5>
+            <h1 class="display-4 fw-bold">Skilled Infrastructure Specialists</h1>
+            <p class="text-muted small mt-2">Our certified engineers and technicians ensure complete safety, operational reliability, and peak performance for all critical building systems.</p>
+        </div>
+
+        <!-- Unified 3-Column Grid Row Layout (Fits perfectly side-by-side on desktop) -->
+        <div class="row g-4 justify-content-center">
+
+            <!-- Member 1: Overall Facility Support -->
+            <div class="col-xl-4 col-lg-6 col-md-12">
+                <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
+                    <div class="col-sm-6 col-12">
+                        <img class="img-fluid h-100 w-100" src="img/team-1.jpg" alt="Service Supervisor" style="object-fit: cover; min-height: 280px;">
+                    </div>
+                    <div class="col-sm-6 col-12">
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark">Service Supervisor</h5>
+                                <small class="text-primary text-uppercase mb-3 d-block fw-semibold" style="letter-spacing: 0.5px;">Maintenance & AMC</small>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">
+                                    Oversees systemic preventive maintenance, diagnostic compliance loops, and reporting metrics across your entire asset footprint.
+                                </p>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-linkedin-in text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-facebook-f text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-twitter text-white small"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member 2: Mobility & Backup Power Systems -->
+            <div class="col-xl-4 col-lg-6 col-md-12">
+                <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
+                    <div class="col-sm-6 col-12">
+                        <img class="img-fluid h-100 w-100" src="img/team-2.jpg" alt="Systems Response Engineer" style="object-fit: cover; min-height: 280px;">
+                    </div>
+                    <div class="col-sm-6 col-12">
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark">Systems Engineer</h5>
+                                <small class="text-primary text-uppercase mb-3 d-block fw-semibold" style="letter-spacing: 0.5px;">24/7 Rapid Response</small>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">
+                                    Expert in critical fault overrides, switch grid calibration, and rapid emergency field execution for elevators and generator grids.
+                                </p>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-linkedin-in text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-facebook-f text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-twitter text-white small"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member 3: Climate & Ventilation Specialist -->
+            <div class="col-xl-4 col-lg-6 col-md-12">
+                <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
+                    <div class="col-sm-6 col-12">
+                        <!-- Points to a third image asset inside your img/ folder -->
+                        <img class="img-fluid h-100 w-100" src="img/team-3.jpg" alt="HVAC Specialist" style="object-fit: cover; min-height: 280px;">
+                    </div>
+                    <div class="col-sm-6 col-12">
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark">HVAC Specialist</h5>
+                                <small class="text-primary text-uppercase mb-3 d-block fw-semibold" style="letter-spacing: 0.5px;">Climate Optimization</small>
+                                <p class="text-muted small mb-0" style="line-height: 1.5;">
+                                    Specializes in thermodynamic testing, zone coil sanitization, and runtime calibration for heavy commercial air conditioning units.
+                                </p>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-linkedin-in text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-facebook-f text-white small"></i></a>
+                                <a class="btn btn-square btn-primary rounded-circle" href="#" style="width: 32px; height: 32px; display: grid; place-items: center;"><i class="fab fa-twitter text-white small"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- End of .row Grid -->
     </div>
-
-    <div class="owl-carousel team-carousel position-relative">
-
-      <!-- TEAM MEMBER 1 -->
-      <div class="team-item">
-        <div class="row g-0 bg-light rounded overflow-hidden">
-          <div class="col-12 col-sm-5 h-100">
-            <img class="img-fluid h-100" src="img/Tom-Cruise-Red-Carpet.webp" style="object-fit: cover;">
-          </div>
-          <div class="col-12 col-sm-7 h-100 d-flex flex-column">
-            <div class="mt-auto p-4">
-              <h3>Senior Lift Engineer</h3>
-              <h6 class="fw-normal fst-italic text-primary mb-4">Installation & Modernization</h6>
-              <p class="m-0">
-                Specialized in new elevator installations, upgrades, and control system optimization.
-              </p>
-            </div>
-            <div class="d-flex mt-auto border-top p-4">
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#"><i class="fab fa-linkedin-in"></i></a>
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#"><i class="fab fa-facebook-f"></i></a>
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#"><i class="fab fa-twitter"></i></a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TEAM MEMBER 2 -->
-      <div class="team-item">
-        <div class="row g-0 bg-light rounded overflow-hidden">
-          <div class="col-12 col-sm-5 h-100">
-            <img class="img-fluid h-100" src="img/Sharukhan.jpg" style="object-fit: cover;">
-          </div>
-          <div class="col-12 col-sm-7 h-100 d-flex flex-column">
-            <div class="mt-auto p-4">
-              <h3>Service Supervisor</h3>
-              <h6 class="fw-normal fst-italic text-primary mb-4">Maintenance & AMC</h6>
-              <p class="m-0">
-                Oversees preventive maintenance, inspections, and ensures compliance with safety standards.
-              </p>
-            </div>
-            <div class="d-flex mt-auto border-top p-4">
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#"><i class="fab fa-linkedin-in"></i></a>
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#"><i class="fab fa-facebook-f"></i></a>
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#"><i class="fab fa-twitter"></i></a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TEAM MEMBER 3 -->
-      <div class="team-item">
-        <div class="row g-0 bg-light rounded overflow-hidden">
-          <div class="col-12 col-sm-5 h-100">
-            <img class="img-fluid h-100" src="img/Shakib" style="object-fit: cover;">
-          </div>
-          <div class="col-12 col-sm-7 h-100 d-flex flex-column">
-            <div class="mt-auto p-4">
-              <h3>Emergency Response Technician</h3>
-              <h6 class="fw-normal fst-italic text-primary mb-4">24/7 Breakdown Support</h6>
-              <p class="m-0">
-                Expert in fault diagnosis, emergency rescue operations, and rapid elevator restoration.
-              </p>
-            </div>
-            <div class="d-flex mt-auto border-top p-4">
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#"><i class="fab fa-linkedin-in"></i></a>
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-3" href="#"><i class="fab fa-facebook-f"></i></a>
-              <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#"><i class="fab fa-twitter"></i></a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
 </div>
-    <!-- Team End -->
+<!-- Our Team Section End -->
+
+
 
 
     <!-- Footer Start -->
@@ -327,8 +350,7 @@ $error = "";
           Get In Touch
         </h4>
         <p class="mb-4">
-          Sonic Elevator Ltd. delivers safe, reliable, and innovative elevator solutions including installation,
-          maintenance, modernization, and 24/7 emergency support.
+          ARN QuickFix Ltd. delivers safe, reliable, and innovative building infrastructure solutions including professional installation, preventive maintenance, modernization, and 24/7 emergency support across our complete lineup of elevators, air conditioning networks, and backup power generators.
         </p>
         <p class="mb-2">
           <i class="fa fa-map-marker-alt text-primary me-3"></i>
@@ -336,7 +358,7 @@ $error = "";
         </p>
         <p class="mb-2">
           <i class="fa fa-envelope text-primary me-3"></i>
-          info@sonicelevator.com
+          info@arnquickfix.com
         </p>
         <p class="mb-0">
           <i class="fa fa-phone-alt text-primary me-3"></i>
@@ -365,12 +387,12 @@ $error = "";
           Our Services
         </h4>
         <div class="d-flex flex-column justify-content-start">
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Elevator Installation</a>
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Preventive Maintenance</a>
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Modernization</a>
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>AMC Contracts</a>
-          <a class="text-light" href="#"><i class="fa fa-angle-right me-2"></i>24/7 Emergency Support</a>
-        </div>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Elevator Maintenance</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Air Conditioning (AC) Servicing</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Backup Generator Support</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Preventive AMC Contracts</a>
+    <a class="text-light" href="#"><i class="fa fa-angle-right me-2"></i>24/7 Emergency Dispatch</a>
+</div>
       </div>
 
       <!-- Newsletter -->
@@ -378,7 +400,7 @@ $error = "";
         <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
           Newsletter
         </h4>
-        <p>Subscribe for elevator safety tips, maintenance reminders, and company updates.</p>
+        <p>Subscribe for multi-asset maintenance reminders safety tips, maintenance reminders, and company updates.</p>
         <form>
           <div class="input-group">
             <input type="email" class="form-control p-3 border-0" placeholder="Your Email Address">
@@ -405,7 +427,7 @@ $error = "";
     <div class="row g-5">
       <div class="col-md-6 text-center text-md-start">
         <p class="mb-md-0">
-          &copy; <span class="text-primary">Sonic Elevator Ltd.</span> All Rights Reserved.
+          &copy; <span class="text-primary">ARN QuickFix Ltd.</span> All Rights Reserved.
         </p>
       </div>
       <div class="col-md-6 text-center text-md-end">
