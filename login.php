@@ -216,7 +216,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     .footer-text {
-      font-size: 14px;
+      font-size: 16px;
       color: var(--text-muted);
       margin-top: 30px;
     }
@@ -243,7 +243,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   <!-- Branding Header -->
   <div class="mb-4">
-    <h2 class="brand-title">ARN QuickFix</h2>
+    <h2 class="brand-title">ARN QuickFix Ltd.</h2>
     <p class="subtitle">Log in to your account</p>
   </div>
 
@@ -269,7 +269,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="form-group">
       <label>Password</label>
       <div class="input-wrapper">
-        <input type="password" name="password" id="passwordField" placeholder="Create your password" required>
+        <input type="password" name="password" id="passwordField" placeholder="Enter your password" required>
         <button type="button" class="toggle-password-btn" id="passwordToggleBtn">
           <!-- Inline Eye SVG icon component -->
           <svg id="eyeSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -285,8 +285,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           <option value="" selected disabled>Select Role</option>
           <option value="client">Client</option>
           <option value="technician">Technician</option>
-          <option value="manager">Management</option>
-          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
         </select>
         <!-- Custom Inline Dropdown Chevron SVG icon -->
         <svg class="select-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>

@@ -1,186 +1,386 @@
 <?php
-require_once "config.php";
+// 1. Establish Database Connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "arn_quickfix";
 
-$error = "";
+$conn = new mysqli($servername, $username, $password, $dbname);
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
-    $role  = trim($_POST["role"] ?? "");
-    $name  = trim($_POST["name"] ?? "");
-    $email = trim($_POST["email"] ?? "");
-    $pass  = $_POST["password"] ?? "";
+// 2. Wait for Form Submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    
+    // Collect and sanitize user input
+    $role = $_POST['role'];
+    // Checks for the lowercase string sent from your updated HTML form
+    $specialization = (isset($_POST['specialization']) && $role === 'technician') ? $_POST['specialization'] : '';
 
-    if ($role === "" || $name === "" || $email === "" || $pass === "") {
-        $error = "All fields are required.";
+    $first_name = $_POST['first_name'];
+    $second_name = $_POST['second_name'];
+    $fullName = $first_name . " " . $second_name; 
+    $email = $_POST['email'];
+    $pass = $_POST['password'];
+    $confirm_pass = $_POST['confirm_password'];
+    
+    // Check if passwords match
+    if ($pass !== $confirm_pass) {
+        echo "<script>alert('Passwords do not match!'); window.history.back();</script>";
+        exit();
+    }
+
+    // NEW: Check if email already exists in the database
+    $checkEmail = $conn->prepare("SELECT email FROM users WHERE email = ?");
+    $checkEmail->bind_param("s", $email);
+    $checkEmail->execute();
+    $checkEmail->store_result();
+    
+    if ($checkEmail->num_rows > 0) {
+        echo "<script>alert('This email address is already registered!'); window.history.back();</script>";
+        $checkEmail->close();
+        $conn->close();
+        exit();
+    }
+    $checkEmail->close();
+    
+    // Securely hash the password
+    $hashed_password = password_hash($pass, PASSWORD_DEFAULT);
+    
+    // 3. Prepare SQL query
+    $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, role, specialization) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $fullName, $email, $hashed_password, $role, $specialization);
+    
+    if ($stmt->execute()) {
+        $stmt->close();
+        $conn->close();
+        
+        // 4. Successful signup redirects to login page cleanly
+        header("Location: login.php");
+        exit();
     } else {
-
-        $allowed_roles = ["client", "technician", "manager", "admin"];
-        if (!in_array($role, $allowed_roles)) {
-            $error = "Invalid role selected.";
-        } else {
-
-            // Check if email already exists
-            $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-            $check->execute([$email]);
-
-            if ($check->fetch()) {
-                $error = "Email already exists. Please login.";
-            } else {
-
-                $hash = password_hash($pass, PASSWORD_DEFAULT);
-
-                $stmt = $pdo->prepare(
-                    "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)"
-                );
-
-                if ($stmt->execute([$name, $email, $hash, $role])) {
-                    header("Location: login.php?signup=success");
-                    exit;
-                } else {
-                    $error = "Signup failed. Try again.";
-                }
-            }
-        }
+        echo "Error: " . $stmt->error;
     }
 }
 ?>
 
-<!doctype html>
+
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Sign Up | Sonic Elevator Ltd.</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | ARN QuickFix Ltd.</title>
+  
   <style>
-    :root{
-      --brand:#00C2CB;
-      --soft:#f5fbfc;
+    :root {
+      --primary-color: #00C2CB;
+      --text-dark: #333333;
+      --text-muted: #888888;
+      --border-color: #cbd5e1;
+      --bg-card: #ffffff;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    body{
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      background:linear-gradient(135deg,#f8fcff,var(--soft));
+
+    body {
+      background-color: #f1f5f9;
+      font-family: var(--font-stack);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 20px;
+      box-sizing: border-box;
     }
-    .card{
-      border:0;
-      border-radius:16px;
-      box-shadow:0 15px 40px rgba(0,0,0,.1);
+
+    .signup-container {
+      background: var(--bg-card);
+      width: 100%;
+      max-width: 500px;
+      padding: 50px 40px 40px 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      box-sizing: border-box;
+      text-align: center;
+      position: relative;
     }
-    .brand-icon{
-      width:55px;height:55px;
-      border-radius:14px;
-      background:rgba(0,194,203,.15);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:var(--brand);
-      font-size:24px;
+
+    .back-btn {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dark);
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: transform 0.2s ease;
     }
-    .form-control,.form-select{
-      border-radius:12px;
-      padding:12px;
+
+    .back-btn:hover {
+      transform: translateX(-3px);
     }
-    .btn-brand{
-      background:var(--brand);
-      border-color:var(--brand);
-      border-radius:999px;
-      font-weight:600;
+
+    .brand-title {
+      color: #00C2CB;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 5px 0;
     }
-    .btn-brand:hover{
-      background:#00aab1;
-      border-color:#00aab1;
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 18px;
+      margin: 0 0 30px 0;
+    }
+
+    .signup-form {
+      text-align: left;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    /* Animation class to smoothly show the field */
+    .form-group.conditional-field {
+      display: none;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .form-group.conditional-field.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .input-wrapper, .select-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input, .select-wrapper select {
+      width: 100%;
+      padding: 14px 45px 14px 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+      color: var(--text-dark);
+      background-color: #fff;
+    }
+
+    .select-wrapper select {
+      padding: 14px 20px;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .select-wrapper::after {
+      content: "▼";
+      font-size: 10px;
+      color: var(--text-muted);
+      position: absolute;
+      right: 20px;
+      pointer-events: none;
+    }
+
+    .input-wrapper input::placeholder {
+      color: #94a3b8;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 16px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.2s ease;
+    }
+
+    .submit-btn:hover {
+      opacity: 0.9;
+    }
+
+    .footer-text {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-top: 25px;
+    }
+
+    .footer-text a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-text a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
-
 <body>
-<div class="container">
-  <div class="row justify-content-center">
-    <div class="col-lg-5 col-md-7">
 
-      <div class="card p-4 p-lg-5">
+  <div class="signup-container">
+    <a href="login.php" class="back-btn" aria-label="Go back to login">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </a>
 
-        <!-- Header -->
-        <div class="text-center mb-4">
-          <div class="brand-icon mx-auto mb-3">
-            <i class="fa-solid fa-elevator"></i>
-          </div>
-          <h4>Create Account</h4>
-          <p class="text-muted mb-0">Sonic Elevator Ltd.</p>
+    <h1 class="brand-title">ARN QuickFix Ltd.</h1>
+    <p class="subtitle">Create Account</p>
+
+   <!-- Update your form tag to look exactly like this -->
+<form class="signup-form" action="signup.php" method="POST">
+
+      <div class="form-group">
+        <label for="role">Register As</label>
+        <div class="select-wrapper">
+          <!-- Added id="role" and onchange function to watch selections -->
+          <select id="role" name="role" onchange="checkRole()" required>
+            <option value="" disabled selected hidden>Select role</option>
+            <option value="client">Client</option>
+            <option value="technician">Technician</option>
+            <option value="manager">Manager</option>
+          </select>
         </div>
-
-        <!-- Error Message -->
-        <?php if (!empty($error)): ?>
-          <div class="alert alert-danger">
-            <?php echo htmlspecialchars($error); ?>
-          </div>
-        <?php endif; ?>
-
-        <!-- Signup Form -->
-        <form method="POST" action="signup.php">
-
-          <!-- Role -->
-          <div class="mb-3">
-            <label class="form-label">Register As</label>
-            <select class="form-select" name="role" required>
-              <option value="" selected disabled>Select role</option>
-              <option value="client">Client / Building Owner</option>
-              <option value="technician">Technician</option>
-              <option value="manager">Management</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          <!-- Name -->
-          <div class="mb-3">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" name="name" placeholder="Your name" required>
-          </div>
-
-          <!-- Email -->
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" name="email" placeholder="you@example.com" required>
-          </div>
-
-          <!-- Password -->
-          <div class="mb-4">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-control" name="password" placeholder="Create password" required>
-          </div>
-
-          <!-- Submit -->
-          <button type="submit" class="btn btn-brand w-100 py-2">
-            Sign Up <i class="fa-solid fa-user-plus ms-2"></i>
-          </button>
-
-        </form>
-
-        <!-- Footer -->
-        <div class="text-center mt-4">
-          <small>Already have an account?
-            <a href="login.php" class="text-decoration-none">Login</a>
-          </small>
-        </div>
-
       </div>
 
-      <div class="text-center text-muted small mt-3">
-        ©️ Sonic Elevator Ltd.
+      <!-- New Conditional Specialization Dropdown Field -->
+      <div class="form-group conditional-field" id="specialization-group">
+        <label for="specialization">Select Specialized Field</label>
+        <div class="select-wrapper">
+          <select id="specialization"  name="specialization">
+            <option value="" disabled selected hidden>Select Specialization</option>
+            <option value="Elevators">Elevator</option>
+            <option value="Air Conditioner">AC</option>
+            <option value="Generators">Generator</option>
+          </select>
+        </div>
       </div>
 
-    </div>
+      <div class="form-group">
+        <label for="first-name">First Name</label>
+        <div class="input-wrapper">
+         <input type="text" id="first-name" name="first_name" placeholder="Your first name" required>
+
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="second-name">Second Name</label>
+        <div class="input-wrapper">
+          <input type="text" id="second-name" name="second_name" placeholder="Your second name" required>
+
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <div class="input-wrapper">
+          <input type="email" id="email" name="email" placeholder="you@example.com" required>
+
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <input type="password" id="password" name="password" placeholder="Create password" required>
+
+          <button type="button" class="toggle-password" onclick="togglePass('password')">👁</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm-password">Confirm Password</label>
+        <div class="input-wrapper">
+          <input type="password" id="confirm-password" name="confirm_password" placeholder="Confirm password" required>
+
+          <button type="button" class="toggle-password" onclick="togglePass('confirm-password')">👁</button>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">Sign Up</button>
+    </form>
+
+    <p class="footer-text">
+      Already have an account? <a href="login.php">Login</a>
+    </p>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Toggles password visibility
+    function togglePass(id) {
+      const input = document.getElementById(id);
+      if (input.type === "password") {
+        input.type = "text";
+      } else {
+        input.type = "password";
+      }
+    }
+
+    // Controls showing/hiding the Specialization field dynamically
+    function checkRole() {
+      const roleSelect = document.getElementById('role');
+      const specGroup = document.getElementById('specialization-group');
+      const specSelect = document.getElementById('specialization');
+
+      if (roleSelect.value === 'technician') {
+        specGroup.classList.add('show');
+        specSelect.setAttribute('required', 'required'); // Requires field if technician
+      } else {
+        specGroup.classList.remove('show');
+        specSelect.removeAttribute('required'); // Removes requirement if other roles
+        specSelect.value = ""; // Resets field value
+      }
+    }
+  </script>
+
 </body>
 </html>
