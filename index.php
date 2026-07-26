@@ -171,7 +171,7 @@ $error = "";
             <div class="col-lg-5 mb-5 mb-lg-0" style="min-height: 500px;">
                 <div class="position-relative h-100">
                     <img class="position-absolute w-100 h-100 rounded"
-                         src="https://media.istockphoto.com/id/1295790589/photo/shot-of-a-engineer-using-a-digital-tablet-on-a-construction-site.jpg?s=612x612&w=0&k=20&c=WcJYHldWqeCMOgdZTyMUABJaaYS2rkyQ2fgSyoD2eqU=" style="object-fit: cover;">
+                         src="img/logo.svg.svg">
                 </div>
             </div>
 
@@ -581,7 +581,7 @@ $error = "";
             <div class="col-xl-4 col-lg-6 col-md-12">
                 <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
                     <div class="col-sm-6 col-12">
-                        <img class="img-fluid h-100 w-100" src="img/team-1.jpg" alt="Service Supervisor" style="object-fit: cover; min-height: 280px;">
+                        <img class="img-fluid h-100 w-100" src="https://scontent.fzyl2-2.fna.fbcdn.net/v/t51.82787-15/755287657_18435808459127641_4555953538167530721_n.jpg?stp=dst-jpg_tt6&cstp=mx2629x3505&ctp=s2629x3505&_nc_cat=102&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeE7P3LadTXgiiU1goIK1CCl4G_HVNcuW2Hgb8dU1y5bYU--4rgFD49hxhhD8H-RMxxF3k0AlL8O0BuX2deEHwcS&_nc_ohc=zWCVslpehakQ7kNvwG8MQbf&_nc_oc=Adp00paeHlXcPuQ4IKrk0oVvbH5FgyFChAd6oQLoBaNyqCyt6DpnlLAXKk3fuosspYk&_nc_zt=23&_nc_ht=scontent.fzyl2-2.fna&_nc_gid=t4I2s_2FU-lcAqQQj_pU-Q&_nc_ss=7b2a8&oh=00_AQCfHHKpuqom_j4d_XP_3QqRas3_ruSKFpRuZm36cXmvkg&oe=6A6BF884" alt="Service Supervisor" style="object-fit: cover; min-height: 280px;">
                     </div>
                     <div class="col-sm-6 col-12">
                         <div class="p-4 d-flex flex-column justify-content-between h-100">
@@ -606,7 +606,7 @@ $error = "";
             <div class="col-xl-4 col-lg-6 col-md-12">
                 <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
                     <div class="col-sm-6 col-12">
-                        <img class="img-fluid h-100 w-100" src="img/team-2.jpg" alt="Systems Response Engineer" style="object-fit: cover; min-height: 280px;">
+                        <img class="img-fluid h-100 w-100" src="https://scontent.fzyl2-2.fna.fbcdn.net/v/t39.30808-6/487506244_1166902381745706_2617668645700602812_n.jpg?stp=dst-jpg_tt6&cstp=mx1200x1200&ctp=s1200x1200&_nc_cat=105&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=a5f93a&_nc_eui2=AeFS_oBtlF3c_Rt0JEnea-dgH2h5G21BFAEfaHkbbUEUARCCamlKo8TDoJth3FkdCk5lhnCTTy7SCTH40wsGbXZP&_nc_ohc=4z_VXcdG6mMQ7kNvwEYk2P0&_nc_oc=Adq0QUJOLpxAQQKcXLfSbNVwx2ee5APFvt9hk1attHcI4uMYQTUf_bjTpf_Z4D9tLs8&_nc_zt=23&_nc_ht=scontent.fzyl2-2.fna&_nc_gid=E9kHEBwv-Fqz3U0YhgLXlw&_nc_ss=7b2a8&oh=00_AQCsslnKIO1jr54xr3iuI3_gPvmP4Ziegs52ogAHITjtHA&oe=6A6BF9D6" alt="Systems Response Engineer" style="object-fit: cover; min-height: 280px;">
                     </div>
                     <div class="col-sm-6 col-12">
                         <div class="p-4 d-flex flex-column justify-content-between h-100">
@@ -632,7 +632,7 @@ $error = "";
                 <div class="row g-0 bg-light rounded overflow-hidden shadow-sm h-100 border">
                     <div class="col-sm-6 col-12">
                         <!-- Points to a third image asset inside your img/ folder -->
-                        <img class="img-fluid h-100 w-100" src="img/team-3.jpg" alt="HVAC Specialist" style="object-fit: cover; min-height: 280px;">
+                        <img class="img-fluid h-100 w-100" src="https://scontent.fzyl2-2.fna.fbcdn.net/v/t1.6435-9/68334670_136689004243273_2749030818948055040_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1536&ctp=s2048x1536&_nc_cat=104&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=a5f93a&_nc_eui2=AeEguT64HmCAlNEb6gczsO-AOnUSNbfsrBo6dRI1t-ysGmBNXsXbxnaz92TXOcywYAjai9ALAilarhn3shsB-IJ2&_nc_ohc=q088sCx2xcsQ7kNvwG-14Xg&_nc_oc=AdqyfwP-T86iHVYdLXAu5ZUkGVRGd-uqr-COjhTOteoNAuaFK0NlM6Ze9pU93Sp9D3s&_nc_zt=23&_nc_ht=scontent.fzyl2-2.fna&_nc_gid=85w2QUDjkOcYu52v0hfiog&_nc_ss=7b2a8&oh=00_AQCmoQikL0zd_ziznZzMdanQmS5zhVJfj9MhgxzWpnCiNA&oe=6A8D9870" alt="HVAC Specialist" style="object-fit: cover; min-height: 280px;">
                     </div>
                     <div class="col-sm-6 col-12">
                         <div class="p-4 d-flex flex-column justify-content-between h-100">

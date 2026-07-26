@@ -5,7 +5,7 @@ $error = "";
 
 <head>
     <meta charset="utf-8">
-    <title>MEDINOVA - Hospital Website Template</title>
+    <title>Contact | ARN QuickFix Ltd</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="Free HTML Templates" name="keywords">
     <meta content="Free HTML Templates" name="description">
@@ -79,11 +79,11 @@ $error = "";
         <div class="container">
             <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
                      <a href="index.php" class="navbar-brand d-flex align-items-center">
-                          <img src="img/sonic-logo.jpeg"
+                          <img src="img/logo.svg.svg"
                              alt="Sonic Elevator Ltd"
                                  class="navbar-logo">
                                  
-                                 <h1 class="m-0  text-primary">Sonic Elevator Ltd.</h1>
+                                 <h1 class="m-0  text-primary">ARN QuickFix Ltd.</h1>
                      </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
                     <span class="navbar-toggler-icon"></span>
@@ -120,7 +120,7 @@ $error = "";
 
     <div class="text-center mx-auto mb-5" style="max-width: 650px;">
       <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">Need Help?</h5>
-      <h1 class="display-4">Contact Sonic Elevator Ltd.</h1>
+      <h1 class="display-4">Contact ARN QuickFix Ltd.</h1>
       <p class="mb-0">
         Request installation, AMC maintenance, modernization, or emergency breakdown support — we respond fast.
       </p>
@@ -161,7 +161,7 @@ $error = "";
             <i class="fa fa-2x fa-envelope text-white"></i>
           </div>
           <h5 class="mb-1">Email Us</h5>
-          <h6 class="mb-0">info@sonicelevator.com</h6>
+          <h6 class="mb-0">info@arnquickfix.com</h6>
           <small class="text-muted">We reply within 24 hours</small>
         </div>
       </div>
@@ -231,13 +231,22 @@ $error = "";
                 </select>
               </div>
 
+              <div class="col-12 col-sm-6">
+                <select class="form-select bg-light border-0" style="height: 55px;">
+                  <option selected>Asset Type</option>
+                  <option>Elevator</option>
+                  <option>Air Conditioner</option>
+                  <option>Generator</option>
+                </select>
+              </div>
+
               <div class="col-12">
                 <input type="text" class="form-control bg-light border-0" placeholder="Building Address / Location" style="height: 55px;">
               </div>
 
               <div class="col-12">
                 <textarea class="form-control bg-light border-0" rows="5"
-                  placeholder="Describe your issue or requirement (e.g., breakdown, noise, slow door, modernization, etc.)"></textarea>
+                  placeholder="Describe your issue or requirement"></textarea>
               </div>
 
               <div class="col-12">
@@ -265,107 +274,110 @@ $error = "";
 
 
     <!-- Footer Start -->
- <div class="container-fluid bg-dark text-light mt-5 py-5">
-  <div class="container py-5">
-    <div class="row g-5">
+<div class="container-fluid bg-dark text-light mt-5 py-5">
+    <div class="container py-5">
+        <div class="row g-5">
 
-      <!-- Company Info -->
-      <div class="col-lg-3 col-md-6">
-        <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
-          Get In Touch
-        </h4>
-        <p class="mb-4">
-          Sonic Elevator Ltd. delivers safe, reliable, and innovative elevator solutions including installation,
-          maintenance, modernization, and 24/7 emergency support.
-        </p>
-        <p class="mb-2">
-          <i class="fa fa-map-marker-alt text-primary me-3"></i>
-          Dhaka, Bangladesh
-        </p>
-        <p class="mb-2">
-          <i class="fa fa-envelope text-primary me-3"></i>
-          info@sonicelevator.com
-        </p>
-        <p class="mb-0">
-          <i class="fa fa-phone-alt text-primary me-3"></i>
-          +880 1303100396
-        </p>
-      </div>
+            <!-- Company Info -->
+            <div class="col-lg-3 col-md-6">
+                <h4 class="d-inline-block text-primary text-uppercase
+                           border-bottom border-5 border-secondary mb-4">
+                    Get In Touch
+                </h4>
+                <p class="mb-4">
+                    ARN QuickFix Ltd. delivers safe, reliable, and innovative building infrastructure solutions including professional installation, preventive maintenance, modernization, and 24/7 emergency support across our complete lineup of elevators, air conditioning networks, and backup power generators.
+                </p>
+                <p class="mb-2">
+                    <i class="fa fa-map-marker-alt text-primary me-3"></i>
+                    Dhaka, Bangladesh
+                </p>
+                <p class="mb-2">
+                    <i class="fa fa-envelope text-primary me-3"></i>
+                    info@arnquickfix.com
+                </p>
+                <p class="mb-0">
+                    <i class="fa fa-phone-alt text-primary me-3"></i>
+                    +880 1303100396
+                </p>
+            </div>
+
 
       <!-- Quick Links -->
-      <div class="col-lg-3 col-md-6">
-        <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
-          Quick Links
-        </h4>
-        <div class="d-flex flex-column justify-content-start">
-          <a class="text-light mb-2" href="index.html"><i class="fa fa-angle-right me-2"></i>Home</a>
-          <a class="text-light mb-2" href="about.html"><i class="fa fa-angle-right me-2"></i>About Us</a>
-          <a class="text-light mb-2" href="service.html"><i class="fa fa-angle-right me-2"></i>Our Services</a>
-          <a class="text-light mb-2" href="pricing.html"><i class="fa fa-angle-right me-2"></i>Maintenance Plans</a>
-          <a class="text-light mb-2" href="blog.html"><i class="fa fa-angle-right me-2"></i>Insights & Blog</a>
-          <a class="text-light" href="contact.html"><i class="fa fa-angle-right me-2"></i>Contact Us</a>
-        </div>
-      </div>
-
-      <!-- Services -->
-      <div class="col-lg-3 col-md-6">
-        <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
-          Our Services
-        </h4>
-        <div class="d-flex flex-column justify-content-start">
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Elevator Installation</a>
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Preventive Maintenance</a>
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Modernization</a>
-          <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>AMC Contracts</a>
-          <a class="text-light" href="#"><i class="fa fa-angle-right me-2"></i>24/7 Emergency Support</a>
-        </div>
-      </div>
-
-      <!-- Newsletter -->
-      <div class="col-lg-3 col-md-6">
-        <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
-          Newsletter
-        </h4>
-        <p>Subscribe for elevator safety tips, maintenance reminders, and company updates.</p>
-        <form>
-          <div class="input-group">
-            <input type="email" class="form-control p-3 border-0" placeholder="Your Email Address">
-            <button class="btn btn-primary">Subscribe</button>
-          </div>
-        </form>
-
-        <h6 class="text-primary text-uppercase mt-4 mb-3">Follow Us</h6>
-        <div class="d-flex">
-          <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-2" href="#"><i class="fab fa-facebook-f"></i></a>
-          <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-2" href="#"><i class="fab fa-linkedin-in"></i></a>
-          <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-2" href="#"><i class="fab fa-twitter"></i></a>
-          <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#"><i class="fab fa-instagram"></i></a>
-        </div>
-      </div>
-
+<!-- Quick Links -->
+<div class="col-lg-3 col-md-6">
+    <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
+        Quick Links
+    </h4>
+    <div class="d-flex flex-column justify-content-start">
+        <a class="text-light mb-2" href="index.php"><i class="fa fa-angle-right me-2"></i>Home</a>
+        <a class="text-light mb-2" href="about.php"><i class="fa fa-angle-right me-2"></i>About Us</a>
+        <a class="text-light mb-2" href="service.php"><i class="fa fa-angle-right me-2"></i>Our Services</a>
+        <a class="text-light mb-2" href="pricing.php"><i class="fa fa-angle-right me-2"></i>Maintenance Plans</a>
+        <a class="text-light mb-2" href="blog.php"><i class="fa fa-angle-right me-2"></i>Insights & Blog</a>
+        <a class="text-light" href="contact.php"><i class="fa fa-angle-right me-2"></i>Contact Us</a>
     </div>
-  </div>
+</div>
+
+<!-- Services -->
+<div class="col-lg-3 col-md-6">
+    <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
+        Our Services
+    </h4>
+    <div class="d-flex flex-column justify-content-start">
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Elevator Maintenance</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Air Conditioning (AC) Servicing</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Backup Generator Support</a>
+    <a class="text-light mb-2" href="#"><i class="fa fa-angle-right me-2"></i>Preventive AMC Contracts</a>
+    <a class="text-light" href="#"><i class="fa fa-angle-right me-2"></i>24/7 Emergency Dispatch</a>
+</div>
+
+</div>
+
+<!-- Newsletter -->
+<div class="col-lg-3 col-md-6">
+    <h4 class="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
+        Newsletter
+    </h4>
+    <p>Subscribe for multi-asset maintenance reminders safety tips, maintenance reminders, and company updates.</p>
+    <form method="post" action="">
+        <div class="input-group">
+            <input type="email" name="email" class="form-control p-3 border-0" placeholder="Your Email Address">
+            <button class="btn btn-primary" type="submit">Subscribe</button>
+        </div>
+    </form>
+
+    <h6 class="text-primary text-uppercase mt-4 mb-3">Follow Us</h6>
+    <div class="d-flex">
+        <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-2" href="#"><i class="fab fa-facebook-f"></i></a>
+        <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-2" href="#"><i class="fab fa-linkedin-in"></i></a>
+        <a class="btn btn-lg btn-primary btn-lg-square rounded-circle me-2" href="#"><i class="fab fa-twitter"></i></a>
+        <a class="btn btn-lg btn-primary btn-lg-square rounded-circle" href="#"><i class="fab fa-instagram"></i></a>
+    </div>
+</div>
+
+</div>
+</div>
 </div>
 
 <!-- Footer Bottom -->
 <div class="container-fluid bg-dark text-light border-top border-secondary py-4">
-  <div class="container">
-    <div class="row g-5">
-      <div class="col-md-6 text-center text-md-start">
-        <p class="mb-md-0">
-          &copy; <span class="text-primary">Sonic Elevator Ltd.</span> All Rights Reserved.
-        </p>
-      </div>
-      <div class="col-md-6 text-center text-md-end">
-        <p class="mb-0">
-          Designed & Developed for Vertical Mobility Excellence
-        </p>
-      </div>
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-md-6 text-center text-md-start">
+                <p class="mb-md-0">
+                    &copy; <span class="text-primary">ARN QuickFix Ltd.</span> All Rights Reserved.
+                </p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <p class="mb-0">
+                    Designed & Developed for Vertical Mobility Excellence
+                </p>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
-    <!-- Footer End -->
 
+<!-- Footer End -->
 
     <!-- Back to Top -->
     <a href="#!" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
