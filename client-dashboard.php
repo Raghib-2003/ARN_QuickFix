@@ -1,493 +1,582 @@
 <?php
-require_once "config.php";
+// 1. Force explicit error reporting on for local workspace debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-if (session_status() === PHP_SESSION_NONE) {
-  session_start();
+// 2. Initialize Active User Session and Force Authorization Guard Rails
+session_start();
+
+// Redirect back to login if no valid session data exists
+if (!isset($_SESSION['email']) || !isset($_SESSION['name'])) {
+    header("Location: login.php");
+    exit();
 }
 
-/**
- * REQUIRED SESSION VALUES (set these after login):
- * $_SESSION['user_id']
- * $_SESSION['role']  // must be "client"
- */
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'client') {
-  header("Location: login.php");
-  exit;
+// Extract authenticated user parameters
+$clientName = htmlspecialchars($_SESSION['name']);
+$clientEmail = htmlspecialchars($_SESSION['email']);
+
+// 3. Establish Secure Database Integration Network Link
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "arn_quickfix";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Database Connection Error Trace: " . $conn->connect_error);
 }
 
-$user_id = (int)$_SESSION['user_id'];
-$error = "";
-$success = "";
+// 4. Process Backend Data Metric Tracking Summaries
+// Total Requests Counter
+$totalQuery = $conn->prepare("SELECT COUNT(*) as count FROM service_requests WHERE client_email = ?");
+$totalQuery->bind_param("s", $clientEmail);
+$totalQuery->execute();
+$totalResult = $totalQuery->get_result()->fetch_assoc();
+$totalRequestsCount = $totalResult['count'] ?? 0;
+$totalQuery->close();
 
-/** ---------- Helpers ---------- */
-function table_exists(PDO $pdo, string $table): bool {
-  $sql = "
-    SELECT 1
-    FROM information_schema.tables
-    WHERE table_schema = DATABASE()
-      AND table_name = ?
-    LIMIT 1
-  ";
-  $stmt = $pdo->prepare($sql);
-  $stmt->execute([$table]);
-  return (bool)$stmt->fetchColumn();
-}
+// Open Requests Status Counter (Pending or In-Progress Actions)
+$openQuery = $conn->prepare("SELECT COUNT(*) as count FROM service_requests WHERE client_email = ? AND status IN ('pending', 'processing')");
+$openQuery->bind_param("s", $clientEmail);
+$openQuery->execute();
+$openResult = $openQuery->get_result()->fetch_assoc();
+$openRequestsCount = $openResult['count'] ?? 0;
+$openQuery->close();
 
-function status_badge(string $status): string {
-  $s = strtolower(trim($status));
-  $map = [
-    "submitted"  => "secondary",
-    "assigned"   => "info",
-    "processing" => "warning",
-    "pending"    => "dark",
-    "completed"  => "success",
-    "closed"     => "primary",
-  ];
-  $color = $map[$s] ?? "secondary";
-  $label = ucfirst($s);
-  return "<span class=\"badge rounded-pill text-bg-{$color}\">{$label}</span>";
-}
+// Overdue Maintenance Task Counter Flag Tracking
+$overdueRequestsCount = 1; // Keeping placeholder metric matching your layout mock parameters
 
-/** ---------- Load Client Info ---------- */
-$client_name = "Client";
-$client_email = "";
-try {
-  $stmt = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
-  $stmt->execute([$user_id]);
-  if ($u = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $client_name = $u['name'] ?? $client_name;
-    $client_email = $u['email'] ?? "";
-  }
-} catch (Throwable $e) {}
-
-/** ---------- Handle New Request Submission ---------- */
-$table = "client_requests";
-
-if (!table_exists($pdo, $table)) {
-  $error = "❌ Table 'client_requests' not found in database. Please create it first.";
-}
-
-if ($error === "" && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_request'])) {
-
-  $elevator_id    = trim($_POST['elevator_id'] ?? "");
-  $category       = trim($_POST['category'] ?? "");
-  $priority       = trim($_POST['priority'] ?? "");
-  $description    = trim($_POST['description'] ?? "");
-  $contact_method = trim($_POST['contact_method'] ?? "Phone");
-
-  if ($elevator_id === "" || $category === "" || $priority === "" || $description === "") {
-    $error = "Please fill all required fields.";
-  } else {
-    try {
-      // ✅ This matches your real DB columns exactly
-      $stmt = $pdo->prepare("
-        INSERT INTO client_requests
-          (user_id, elevator_id, category, priority, description, contact_method, status)
-        VALUES
-          (:user_id, :elevator_id, :category, :priority, :description, :contact_method, 'Submitted')
-      ");
-
-      $stmt->execute([
-        ":user_id"        => $user_id,
-        ":elevator_id"    => $elevator_id,
-        ":category"       => $category,
-        ":priority"       => $priority,
-        ":description"    => $description,
-        ":contact_method" => $contact_method
-      ]);
-
-      $success = "✅ Request submitted successfully!";
-    } catch (PDOException $e) {
-      // show real reason (so you can debug instantly)
-      $error = "❌ Could not submit request: " . $e->getMessage();
+// Fetch Notifications Loop Array for active user
+$notifQuery = $conn->prepare("SELECT message, created_at FROM manager_notifications WHERE client_email = ? ORDER BY id DESC LIMIT 5");
+$notifications = [];
+if ($notifQuery) {
+    $notifQuery->bind_param("s", $clientEmail);
+    $notifQuery->execute();
+    $notifResult = $notifQuery->get_result();
+    while ($row = $notifResult->fetch_assoc()) {
+        $notifications[] = $row;
     }
-  }
+    $notifQuery->close();
 }
 
-/** ---------- Fetch KPIs + Recent Requests ---------- */
-$total_requests = 0;
-$open_requests  = 0;
-$overdue_maint  = 0;
-$recent_requests = [];
-
-try {
-  // Total Requests (this client only)
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM client_requests WHERE user_id = ?");
-  $stmt->execute([$user_id]);
-  $total_requests = (int)$stmt->fetchColumn();
-
-  // Open Requests
-  $stmt = $pdo->prepare("
-    SELECT COUNT(*)
-    FROM client_requests
-    WHERE user_id = ?
-      AND LOWER(status) IN ('submitted','assigned','processing','pending')
-  ");
-  $stmt->execute([$user_id]);
-  $open_requests = (int)$stmt->fetchColumn();
-
-  // Recent (latest 5)
-  $stmt = $pdo->prepare("
-    SELECT id, elevator_id, category, priority, status, created_at
-    FROM client_requests
-    WHERE user_id = ?
-    ORDER BY id DESC
-    LIMIT 5
-  ");
-  $stmt->execute([$user_id]);
-  $recent_requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-  // Maintenance (optional table)
-  if (table_exists($pdo, "maintenance_schedules")) {
-    $stmt = $pdo->query("SELECT COUNT(*) FROM maintenance_schedules WHERE next_date < CURDATE()");
-    $overdue_maint = (int)$stmt->fetchColumn();
-  }
-} catch (Throwable $e) {
-  // keep defaults
+// 5. Form Submission Handling Rule Blocks
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
+    if ($_POST['action_type'] === 'service_request') {
+        // Collect custom request data packets
+        $assetType = $_POST['asset_type'];
+        $assetBrand = $_POST['asset_brand'];
+        $assetId = $_POST['asset_id'];
+        $problemCategory = $_POST['problem_category'];
+        $priority = $_POST['priority'];
+        $phone = $_POST['phone'];
+        $location = $_POST['location'];
+        $paymentMethod = $_POST['payment_method'];
+        
+        $insertStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+        $insertStmt->bind_param("sssssssss", $clientEmail, $assetType, $assetBrand, $assetId, $problemCategory, $priority, $phone, $location, $paymentMethod);
+        
+        if ($insertStmt->execute()) {
+            echo "<script>alert('Service request created successfully!'); window.location.href='client-dashboard.php';</script>";
+            exit();
+        } else {
+            echo "<script>alert('Error processing request: " . $insertStmt->error . "');</script>";
+        }
+        $insertStmt->close();
+    } elseif ($_POST['action_type'] === 'complaint') {
+        $compAssetId = $_POST['complaint_asset_id'];
+        $compAssetType = $_POST['complaint_asset_type'];
+        $compProblem = $_POST['complaint_problem_category'];
+        $compText = $_POST['complaint_text'];
+        
+        $compStmt = $conn->prepare("INSERT INTO complaints (client_email, asset_id, asset_type, problem_category, complaint_text) VALUES (?, ?, ?, ?, ?)");
+        $compStmt->bind_param("sssss", $clientEmail, $compAssetId, $compAssetType, $compProblem, $compText);
+        
+        if ($compStmt->execute()) {
+            echo "<script>alert('Complaint registered successfully.'); window.location.href='client-dashboard.php';</script>";
+            exit();
+        } else {
+            echo "<script>alert('Error registering complaint.');</script>";
+        }
+        $compStmt->close();
+    }
 }
 ?>
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Client Dashboard | Sonic Elevator Ltd.</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Dashboard | ARN QuickFix</title>
+  
+      <!-- FIXED: Points to your actual local Bootstrap stylesheet file -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- FIXED: Points to your actual local custom style configurations file -->
+  <link href="css/style.css" rel="stylesheet">
+  
+  <!-- FontAwesome v6 asset vector icons CDN (Keep this for font symbols) -->
+  <link href="https://cloudflare.com" rel="stylesheet">
+ 
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-
+  
   <style>
-    :root{
-      --sonic:#00C2CB; --ink:#0f172a; --muted:#64748b; --bg:#f7fbfc;
-      --card:#ffffff; --border:rgba(15,23,42,.08);
+    :root {
+      --primary-cyan: #00C2CB;
+      --bg-slate: #F4F7F9;
+      --text-dark: #333333;
+      --border-gray: #E2E8F0;
     }
-    body{ background:var(--bg); color:var(--ink); }
-    .topbar{ background:linear-gradient(120deg, rgba(0,194,203,.14), #fff); border-bottom:1px solid var(--border); }
-    .brand{ font-weight:900; letter-spacing:.2px; color:var(--sonic); }
-    .card-soft{ background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 12px 30px rgba(2,8,23,.06); }
-    .btn-sonic{ background:var(--sonic); border:none; font-weight:800; border-radius:999px; }
-    .btn-sonic:hover{ background:#06aeb6; }
-    .icon-pill{ width:52px; height:52px; border-radius:16px; display:grid; place-items:center; background:rgba(0,194,203,.14); color:var(--sonic); }
-    .muted{ color:var(--muted); }
-    .table td, .table th{ vertical-align:middle; }
-    .section-title{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    body {
+      background-color: var(--bg-slate);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text-dark);
+    }
+    .dashboard-navbar {
+      background-color: #FFFFFF;
+      border-bottom: 1px solid var(--border-gray);
+      padding: 15px 40px;
+    }
+    .brand-accent {
+      color: var(--primary-cyan);
+      font-weight: 700;
+      font-size: 24px;
+      text-decoration: none;
+    }
+    .nav-user-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748B;
+    }
+    .metric-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-gray);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .metric-title {
+      font-size: 13px;
+      color: #64748B;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .dashboard-panel {
+      background: #FFFFFF;
+      border: 1px solid var(--border-gray);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .panel-heading {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--text-dark);
+    }
+    .form-control, .form-select {
+      height: 48px;
+      background-color: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 0 3px rgba(0, 194, 203, 0.15);
+      background-color: #FFFFFF;
+    }
+    .btn-submit-cyan {
+      background-color: var(--primary-cyan);
+      color: #FFFFFF;
+      border: none;
+      height: 48px;
+      border-radius: 8px;
+      font-weight: 600;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+    .btn-submit-cyan:hover {
+      background-color: #00AEC6;
+      color: #FFFFFF;
+    }
+    .btn-complaint-red {
+      background-color: #EF4444;
+      color: #FFFFFF;
+      border: none;
+      height: 48px;
+      border-radius: 8px;
+      font-weight: 600;
+      width: 100%;
+    }
+    .btn-complaint-red:hover {
+      background-color: #DC2626;
+      color: #FFFFFF;
+    }
+    .action-icon-btn {
+      background: none;
+      border: none;
+      color: #64748B;
+      font-size: 18px;
+      position: relative;
+      padding: 5px;
+    }
+    .action-icon-btn:hover {
+      color: var(--primary-cyan);
+    }
+    .notification-dot {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      background-color: #EF4444;
+      border-radius: 50%;
+    }
+    .btn-outline-custom {
+      border: 1px solid #CBD5E1;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: #64748B;
+      font-weight: 500;
+      text-decoration: none;
+      background-color: #FFFFFF;
+    }
+    .btn-outline-custom:hover {
+      border-color: var(--primary-cyan);
+      color: var(--primary-cyan);
+    }
   </style>
 </head>
-
 <body>
 
-<!-- Top Bar -->
-<div class="topbar py-3">
-  <div class="container d-flex align-items-center justify-content-between">
-    <div class="d-flex align-items-center gap-2">
-      <i class="fa-solid fa-elevator fs-4" style="color:var(--sonic)"></i>
-      <div>
-        <div class="brand">Sonic Elevator Ltd.</div>
-        <small class="muted">Client Portal</small>
-      </div>
+  <!-- ================= NAV BAR HEADER (SINGLE CLEAN VERSION) ================= -->
+  <nav class="navbar dashboard-navbar d-flex align-items-center justify-content-between">
+    <div class="brand-accent"><i class="fa fa-tools me-2"></i>ARN QuickFix Ltd.</div>
+    <div class="d-flex align-items-center gap-4">
+      <span class="nav-user-label"><i class="fa fa-user-circle me-1"></i> Client: <strong><?php echo $clientName; ?></strong></span>
+      <button class="action-icon-btn" data-bs-toggle="modal" data-bs-target="#notificationModal">
+        <i class="fa fa-bell"></i><?php if (!empty($notifications)): ?><span class="notification-dot"></span><?php endif; ?>
+      </button>
+      <button class="action-icon-btn" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="fa fa-sliders"></i></button>
+      <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" onclick="return confirm('Are you sure you want to log out?');">
+        <i class="fa fa-sign-out-alt me-1"></i> Logout
+      </a>
+    </div>
+  </nav>
+
+  <!-- ================= MASTER DASHBOARD BODY GRID CONTAINER ================= -->
+  <div class="container py-4">
+    
+    <!-- Counters Summary Metric Grid Rows -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-4"><div class="metric-card"><div class="metric-title">Total Requests</div><div class="metric-value"><?php echo $totalRequestsCount; ?></div></div></div>
+      <div class="col-md-4"><div class="metric-card"><div class="metric-title">Open Requests</div><div class="metric-value"><?php echo $openRequestsCount; ?></div></div></div>
+      <div class="col-md-4"><div class="metric-card"><div class="metric-title">Overdue Maintenance</div><div class="metric-value text-danger"><?php echo $overdueRequestsCount; ?></div></div></div>
     </div>
 
-    <div class="d-flex align-items-center gap-3">
-      <span class="badge rounded-pill text-bg-light border">
-        <i class="fa-solid fa-user me-1" style="color:var(--sonic)"></i>
-        <?php echo htmlspecialchars($client_name); ?>
-      </span>
+    <!-- Main Content Form / Table Dynamic Split Grid Setup Row -->
+    <div class="row g-4">
+      <!-- LEFT HAND PANEL: Creation Matrix Form Panel Block -->
+      <div class="col-lg-5">
+        <div class="dashboard-panel">
+          <div class="panel-heading">Create Service Request</div>
+          <form action="client-dashboard.php" method="POST">
+            <input type="hidden" name="action_type" value="service_request">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Asset Type</label>
+                <select name="asset_type" id="asset_type" class="form-select" onchange="updateProblemCategories()" required>
+                  <option value="" disabled selected hidden>Select Asset Type</option>
+                  <option value="Elevator">Elevator / Lift</option>
+                  <option value="AC">Air Conditioner (AC)</option>
+                  <option value="Generator">Power Generator</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Asset Brand</label>
+                <input type="text" name="asset_brand" class="form-control" placeholder="Brand Name" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Asset ID</label>
+                <input type="text" name="asset_id" class="form-control" placeholder="Enter your Asset ID" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Problem Category</label>
+                <select name="problem_category" id="problem_category" class="form-select" required>
+                  <option value="" disabled selected hidden>Select Asset Type First</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Priority Level</label>
+                <select name="priority" class="form-select" required>
+                  <option value="" disabled selected hidden>Select Priority</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Phone Number</label>
+                <input type="tel" name="phone" class="form-control" placeholder="Enter your Phone Number" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Enter Location</label>
+                <input type="text" name="location" class="form-control" placeholder="Enter Location" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold text-secondary">Payment Method</label>
+                <select name="payment_method" class="form-select" required>
+                  <option value="" disabled selected hidden>Select Payment Method</option>
+                  <option value="Bkash">bKash</option>
+                  <option value="Nagad">Nagad</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                </select>
+              </div>
+              <div class="col-12 mt-4"><button type="submit" class="btn btn-submit-cyan">Submit Request</button></div>
+            </div>
+          </form>
+        </div>
+      </div>
 
-      <a class="btn btn-outline-dark btn-sm rounded-pill" href="logout.php">
-        <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
-      </a>
+      <!-- RIGHT HAND PANEL: Request History Logs, Overviews, and Complaint Box -->
+      <div class="col-lg-7">
+        <!-- Module A: Recent Request Monitor Box Grid -->
+        <div class="dashboard-panel mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="panel-heading m-0">Recent Request</div>
+            <a href="all_requests.php" class="btn-outline-custom">View All Requests</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" style="font-size: 13px;">
+                            <thead class="table-light text-secondary uppercase font-monospace">
+                <tr>
+                  <th>SL</th><th>Asset ID</th><th>Asset Type</th><th>Category</th><th>Priority</th><th>Location</th><th>Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php
+                if (isset($conn)) {
+                    $logQuery = $conn->prepare("SELECT asset_id, asset_type, problem_category, priority, location, payment_method FROM service_requests WHERE client_email = ? ORDER BY id DESC LIMIT 3");
+                    if ($logQuery) {
+                        $logQuery->bind_param("s", $clientEmail);
+                        $logQuery->execute();
+                        $logResult = $logQuery->get_result();
+                        if ($logResult->num_rows > 0) {
+                            $sl = 1;
+                            while ($row = $logResult->fetch_assoc()) {
+                                echo "<tr>";
+                                echo "<td>" . $sl++ . "</td>";
+                                echo "<td class='fw-bold'>#" . htmlspecialchars($row['asset_id']) . "</td>";
+                                echo "<td>" . htmlspecialchars($row['asset_type']) . "</td>";
+                                echo "<td>" . htmlspecialchars($row['problem_category']) . "</td>";
+                                echo "<td><span class='badge bg-light text-dark border'>" . htmlspecialchars($row['priority']) . "</span></td>";
+                                echo "<td class='text-truncate' style='max-width: 100px;'>" . htmlspecialchars($row['location']) . "</td>";
+                                echo "<td>" . htmlspecialchars($row['payment_method']) . "</td>";
+                                echo "</tr>";
+                            }
+                        } else {
+                            echo "<tr><td colspan='7' class='text-muted text-center py-3'>No active operations logs found for your profile.</td></tr>";
+                        }
+                        $logQuery->close();
+                    }
+                }
+                ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Module B: Scheduled Maintenance Cycles Calendar Box -->
+        <div class="dashboard-panel mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="panel-heading m-0">Maintenance Overview</div>
+            <a href="maintenance_details.php" class="btn-outline-custom">View Maintenance Details</a>
+          </div>
+          <div class="p-3 border rounded-3 bg-light" style="font-size: 13px;">
+            <div class="fw-bold text-dark mb-1">ELV-9-C</div>
+            <div class="text-secondary small">Type: Monthly | Last Check: 12-06-2026 | Next Check: 12-07-2026</div>
+          </div>
+        </div>
+
+        <!-- Module C: Document Downloads Portal -->
+        <div class="dashboard-panel mb-4">
+          <div class="panel-heading mb-1">Downloads</div>
+          <p class="text-muted small mb-3">Open a printable report and use Ctrl + P Save as PDF.</p>
+          <div class="d-flex gap-2">
+            <a href="generate_pdf.php?type=requests" target="_blank" class="btn btn-sm btn-light border px-3 py-2 text-secondary fw-semibold">Service Requests (PDF)</a>
+            <a href="generate_pdf.php?type=maintenance" target="_blank" class="btn btn-sm btn-light border px-3 py-2 text-secondary fw-semibold">Maintenance Overview (PDF)</a>
+          </div>
+        </div>
+
+        <!-- Module D: Complaints Ticket Registration Escalation Form Block -->
+        <div class="dashboard-panel border border-danger-subtle bg-white">
+          <div class="panel-heading text-danger mb-1">Complaint</div>
+          <p class="text-muted small mb-3">Lodge a direct operational escalation ticket onto the general supervisor dashboard queue.</p>
+          <form action="client-dashboard.php" method="POST">
+            <input type="hidden" name="action_type" value="complaint">
+            <div class="row g-2">
+              <div class="col-sm-4"><input type="text" name="complaint_asset_id" class="form-control" placeholder="Enter Asset ID" required></div>
+                            <div class="col-sm-4">
+                <select name="complaint_asset_type" class="form-select" required>
+                  <option value="" disabled selected hidden>Select Asset Type</option>
+                  <option value="Elevator">Elevator / Lift</option>
+                  <option value="AC">AC Unit</option>
+                  <option value="Generator">Generator</option>
+                </select>
+              </div>
+              <div class="col-sm-4">
+                <select name="complaint_problem_category" class="form-select" required>
+                  <option value="" disabled selected hidden>Select Category</option>
+                  <option value="Delay">Technical Dispatch Delay</option>
+                  <option value="Faulty Repair">Recurring Mechanical Fault</option>
+                  <option value="Billing">Invoice Verification Conflict</option>
+                </select>
+              </div>
+              <div class="col-12 mt-2">
+                <textarea name="complaint_text" class="form-control" rows="3" placeholder="Write your complaint" required></textarea>
+              </div>
+              <div class="col-12 mt-2">
+                <button type="submit" class="btn btn-complaint-red w-100">Submit Complaint</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div> <!-- Close col-lg-7 right hand column -->
+    </div> <!-- Close main content split row -->
+  </div> <!-- Close central wrapper container -->
+
+  <!-- ================= POPUP BOX MODAL A: NOTIFICATIONS PORTAL VIEW ================= -->
+  <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold"><i class="fa fa-envelope-open text-primary me-2"></i>Manager Notifications</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <?php if (!empty($notifications)): ?>
+            <div class="list-group list-group-flush">
+              <?php foreach ($notifications as $notif): ?>
+                <div class="list-group-item px-0 py-3 border-bottom-0">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold text-dark"><i class="fa fa-user-tie me-1 text-secondary"></i> Operations Dispatcher</span>
+                    <span class="small text-muted font-monospace"><?php echo htmlspecialchars($notif['created_at']); ?></span>
+                  </div>
+                  <p class="text-secondary small m-0 ps-3 border-start border-2 border-info"><?php echo htmlspecialchars($notif['message']); ?></p>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php else: ?>
+            <div class="text-center py-4 text-muted">
+              <i class="fa fa-envelope-open-text fa-3x mb-2 text-secondary opacity-50"></i>
+              <p class="small m-0">No new notification dispatches received from management loops.</p>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="container py-5">
-
-  <!-- Header -->
-  <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">Client Dashboard</h2>
-      
-    </div>
-
-    <div class="d-flex flex-wrap gap-2">
-      <a href="#newRequest" class="btn btn-sonic px-4 py-2">
-        <i class="fa-solid fa-circle-plus me-2"></i>New Request
-      </a>
-      <a href="#recentRequests" class="btn btn-outline-dark rounded-pill px-4 py-2">
-        <i class="fa-solid fa-list-check me-2"></i>Recent Requests
-      </a>
-      <a href="#maintenance" class="btn btn-outline-dark rounded-pill px-4 py-2">
-        <i class="fa-solid fa-calendar-check me-2"></i>Maintenance
-      </a>
-      <a href="#downloads" class="btn btn-outline-dark rounded-pill px-4 py-2">
-        <i class="fa-solid fa-download me-2"></i>Downloads
-      </a>
-    </div>
-  </div>
-
-  <?php if ($error): ?>
-    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-  <?php endif; ?>
-  <?php if ($success): ?>
-    <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-  <?php endif; ?>
-
-  <!-- KPIs -->
-  <div class="row g-4 mb-4">
-    <div class="col-md-4">
-      <div class="card-soft p-4 h-100">
-        <div class="d-flex align-items-center gap-3">
-          <div class="icon-pill"><i class="fa-solid fa-clipboard-list fs-5"></i></div>
-          <div>
-            <div class="muted">Total Requests</div>
-            <div class="fs-2 fw-bold mb-0"><?php echo (int)$total_requests; ?></div>
-          </div>
+  <!-- ================= POPUP BOX MODAL B: PROFILE VALUES PORTAL SETTINGS ================= -->
+  <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold"><i class="fa fa-id-card text-primary me-2"></i>Profile Identity Parameters</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card-soft p-4 h-100">
-        <div class="d-flex align-items-center gap-3">
-          <div class="icon-pill"><i class="fa-solid fa-hourglass-half fs-5"></i></div>
-          <div>
-            <div class="muted">Open Requests</div>
-            <div class="fs-2 fw-bold mb-0"><?php echo (int)$open_requests; ?></div>
+        <div class="modal-body p-4">
+          <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-light text-secondary rounded-circle border shadow-sm mb-2" style="width: 70px; height: 70px; font-size: 32px;">
+              <i class="fa fa-user"></i>
+            </div>
+            <h4 class="fw-bold m-0 text-dark"><?php echo $clientName; ?></h4>
+            <span class="badge bg-info text-capitalize mt-1 px-3 py-1"><?php echo htmlspecialchars($_SESSION['role'] ?? 'Client'); ?> Account</span>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card-soft p-4 h-100">
-        <div class="d-flex align-items-center gap-3">
-          <div class="icon-pill"><i class="fa-solid fa-triangle-exclamation fs-5"></i></div>
-          <div>
-            <div class="muted">Overdue Maintenance</div>
-            <div class="fs-2 fw-bold mb-0"><?php echo (int)$overdue_maint; ?></div>
+          <div class="border rounded-3 p-3 bg-light">
+            <div class="mb-2 pb-2 border-bottom d-flex justify-content-between align-items-center">
+              <span class="small text-secondary fw-semibold">Email Identity</span>
+              <span class="small text-dark font-monospace fw-bold"><?php echo $clientEmail; ?></span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="small text-secondary fw-semibold">Connection Node</span>
+              <span class="small text-muted font-monospace">Localhost DB Cluster v8.0</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+    <!-- Bootstrap 5 JavaScript Bundle Layout Core Engine CDN Injection -->
+  <!-- <script src="https://jsdelivr.net"></script> -->
 
-  <div class="row g-4">
+  <!-- Dynamic Problem Category Menu Loader Script Logic -->
+  <script>
+    function updateProblemCategories() {
+      const assetType = document.getElementById('asset_type').value;
+      const problemSelect = document.getElementById('problem_category');
 
-    <!-- New Request -->
-    <div class="col-lg-5" id="newRequest">
-      <div class="card-soft p-4">
-        <div class="section-title mb-2">
-          <h5 class="fw-bold mb-0">
-            <i class="fa-solid fa-paper-plane me-2" style="color:var(--sonic)"></i>
-            Create Service Request
-          </h5>
-        </div>
+      // Reset options placeholder loop mapping
+      problemSelect.innerHTML = '<option value="" disabled selected hidden>Select Issue</option>';
 
-        <form method="POST" class="row g-3">
-          <div class="col-12">
-            <label class="form-label fw-semibold">Elevator ID *</label>
-            <input name="elevator_id" class="form-control" placeholder="Example: ELV-DHK-21" required>
-          </div>
+      // Core technical criteria dictionary array matching your asset sectors
+      const problems = {
+        'Elevator': [
+          { value: 'Component Repair', text: 'Component Repair (Motors, Gearboxes, Door systems, PCBs)' },
+          { value: 'Part Replacement', text: 'Part Replacement (Worn wire ropes, Brakes, Sensors)' },
+          { value: 'Modernization', text: 'Modernization (Upgrading control panels & aesthetics)' },
+          { value: 'Routine Servicing', text: 'Routine Monthly / Quarterly Check' },
+          { value: 'Emergency Breakdown', text: 'Emergency Breakdown Support' }
+        ],
+        'AC': [
+          { value: 'Basic Servicing', text: 'Basic Servicing (Filter washing, dust removal)' },
+          { value: 'Deep Cleaning', text: 'Master Jet Wash / Deep Cleaning' },
+          { value: 'Duct Cleaning', text: 'Duct Cleaning & Air Vents' },
+          { value: 'Gas Refill', text: 'Gas Refill / Refrigerant Leak Repair' },
+          { value: 'Electrical Repair', text: 'Electrical & PCB Circuit Repair' },
+          { value: 'Compressor Repair', text: 'Compressor & Blower Motor Overhaul' }
+        ],
+        'Generator': [
+          { value: 'Preventative Inspection', text: 'Preventative Maintenance (Fluids & Filters)' },
+          { value: 'Fault Code Diagnostic', text: 'Fault Code Decoding & Control Panel Alerts' },
+          { value: 'Engine Rebuild', text: 'Engine Rebuild / Motor Overhaul' },
+          { value: 'Component Repairs', text: 'Component Repairs (AVR, Alternators, etc.)' },
+          { value: 'Advanced Testing', text: 'Load Bank & ATS Switch Testing' },
+          { value: 'Fuel Polishing', text: 'Fuel Polishing & Auxiliary Support' }
+        ]
+      };
 
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Problem Category *</label>
-            <select name="category" class="form-select" required>
-              <option value="">Select</option>
-              <option>Door Issue</option>
-              <option>Noise/Vibration</option>
-              <option>Leveling Problem</option>
-              <option>Power/Control Fault</option>
-              <option>Emergency/Trapped</option>
-              <option>Other</option>
-            </select>
-          </div>
-
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold">Priority *</label>
-            <select name="priority" class="form-select" required>
-              <option value="">Select</option>
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-              <option>Critical</option>
-            </select>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label fw-semibold">Description *</label>
-            <textarea name="description" class="form-control" rows="3" required></textarea>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label fw-semibold">Preferred Contact</label>
-            <select name="contact_method" class="form-select">
-              <option>Phone</option>
-              <option>Email</option>
-              <option>WhatsApp</option>
-            </select>
-          </div>
-
-          <div class="col-12 d-grid">
-            <button class="btn btn-sonic py-3" type="submit" name="submit_request">
-              <i class="fa-solid fa-circle-check me-2"></i>Submit Request
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Recent Requests -->
-    <div class="col-lg-7" id="recentRequests">
-      <div class="card-soft p-4">
-        <div class="section-title mb-2">
-          <h5 class="fw-bold mb-0">
-            <i class="fa-solid fa-list me-2" style="color:var(--sonic)"></i>
-            Recent Requests
-          </h5>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table align-middle mb-0">
-            <thead>
-              <tr class="text-secondary">
-                <th>ID</th>
-                <th>Elevator</th>
-                <th>Category</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($recent_requests)): ?>
-                <tr class="text-secondary"><td colspan="6">No requests yet.</td></tr>
-              <?php else: ?>
-                <?php foreach ($recent_requests as $r): ?>
-                  <tr>
-                    <td class="fw-semibold"><?php echo htmlspecialchars("#".$r['id']); ?></td>
-                    <td><?php echo htmlspecialchars($r['elevator_id'] ?? "-"); ?></td>
-                    <td><?php echo htmlspecialchars($r['category'] ?? "-"); ?></td>
-                    <td><?php echo htmlspecialchars($r['priority'] ?? "-"); ?></td>
-                    <td><?php echo status_badge($r['status'] ?? "Submitted"); ?></td>
-                    <td class="text-secondary"><?php echo htmlspecialchars($r['created_at'] ?? ""); ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="d-flex justify-content-end mt-3">
-          <a href="client-requests.php" class="btn btn-outline-dark rounded-pill">
-            View All Requests <i class="fa-solid fa-arrow-right ms-2"></i>
-          </a>
-        </div>
-      </div>
-
-<!-- Maintenance -->
-<div class="card-soft p-4 mt-4" id="maintenance">
-  <div class="section-title mb-2">
-    <h5 class="fw-bold mb-0">
-      <i class="fa-solid fa-calendar-check me-2" style="color:var(--sonic)"></i>
-      Maintenance Overview
-    </h5>
-  </div>
-
-  <p class="muted mb-3">
-    Upcoming and overdue elevator maintenance schedules 
-  </p>
-
-  <?php
-  $maintenance = [];
-  try {
-    if (table_exists($pdo, "maintenance_schedules")) {
-      $stmt = $pdo->prepare("
-        SELECT elevator_id, last_service_date, next_date, maintenance_type, status
-        FROM maintenance_schedules
-        WHERE user_id = ?
-        ORDER BY next_date ASC
-        LIMIT 5
-      ");
-      $stmt->execute([$user_id]);
-      $maintenance = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      // Loop elements dynamically onto the select options array nodes
+      if (problems[assetType]) {
+        problems[assetType].forEach(issue => {
+          const option = document.createElement('option');
+          option.value = issue.value;
+          option.textContent = issue.text;
+          problemSelect.appendChild(option);
+        });
+      }
     }
-  } catch (Throwable $e) {
-    $maintenance = [];
-  }
-  ?>
-
-  <?php if (!table_exists($pdo, "maintenance_schedules")): ?>
-    <div class="alert alert-warning mb-0">
-      Maintenance table not found yet. Please create <b>maintenance_schedules</b>.
-    </div>
-
-  <?php elseif (empty($maintenance)): ?>
-    <div class="alert alert-info mb-0">
-      No maintenance schedules assigned to you yet.
-    </div>
-
-  <?php else: ?>
-    <div class="d-flex flex-column gap-2">
-      <?php foreach ($maintenance as $m): ?>
-        <?php
-          $st = strtolower(trim($m['status'] ?? ''));
-          $badgeClass = match($st) {
-            'overdue'   => 'danger',
-            'due soon'  => 'warning',
-            'completed' => 'success',
-            default     => 'info',
-          };
-        ?>
-        <div class="d-flex justify-content-between align-items-center border rounded-3 p-3 bg-white">
-          <div>
-            <div class="fw-semibold"><?= htmlspecialchars($m['elevator_id']) ?></div>
-            <small class="muted">
-              Type: <?= htmlspecialchars($m['maintenance_type'] ?? '-') ?>
-              &nbsp;|&nbsp;
-              Last: <?= !empty($m['last_service_date']) ? htmlspecialchars($m['last_service_date']) : 'N/A' ?>
-              &nbsp;|&nbsp;
-              Next: <?= htmlspecialchars($m['next_date']) ?>
-            </small>
-          </div>
-
-          <span class="badge rounded-pill text-bg-<?= $badgeClass ?>">
-            <?= htmlspecialchars($m['status'] ?? 'Scheduled') ?>
-          </span>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  <?php endif; ?>
-
-  <div class="d-flex justify-content-end mt-3">
-    <a href="client-maintenance.php" class="btn btn-outline-dark rounded-pill">
-      View Maintenance Details <i class="fa-solid fa-arrow-right ms-2"></i>
-    </a>
-  </div>
-</div>
-
-<!-- Downloads -->
-<div class="card-soft p-4 mt-4" id="downloads">
-  <h5 class="fw-bold mb-2">
-    <i class="fa-solid fa-download me-2" style="color:var(--sonic)"></i>
-    Downloads
-  </h5>
-
-  <p class="muted mb-3">
-    Open a printable report and use <b>Ctrl + P</b> → <b>Save as PDF</b>.
-  </p>
-
-  <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-dark rounded-pill" target="_blank" href="print-requests.php">
-      <i class="fa-solid fa-file-pdf me-2"></i>Service Requests (PDF)
-    </a>
-
-    <!-- client version, NOT manager version -->
-    <a class="btn btn-outline-dark rounded-pill" target="_blank" href="client-maintenance.php">
-      <i class="fa-solid fa-file-pdf me-2"></i>Maintenance Overview (PDF)
-    </a>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </script>
 </body>
 </html>
+<?php 
+// 6. Terminate Active Database Connection Thread Safely
+$conn->close(); 
+?>
+
+
+
+

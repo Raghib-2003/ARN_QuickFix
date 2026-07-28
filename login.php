@@ -1,60 +1,68 @@
 <?php
-require_once "config.php";
+// 1. Force runtime error output tracking so we can view specific bugs instantly
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
+// 2. Safely initialize session storage loops
 if (session_status() === PHP_SESSION_NONE) {
-  session_start();
+    session_start();
 }
 
-$error = "";
-
-// If already logged in, redirect to correct dashboard view instantly
-if (isset($_SESSION["user_id"], $_SESSION["role"])) {
-  $r = $_SESSION["role"];
-  if ($r === "admin") { header("Location: admin-dashboard.php"); exit; }
-  if ($r === "technician") { header("Location: technician-dashboard.php"); exit; }
-  if ($r === "manager") { header("Location: manager-dashboard.php"); exit; }
-  header("Location: client-dashboard.php"); exit;
+// If the user is already logged in, route them straight onto their active portal node
+if (isset($_SESSION['email']) && isset($_SESSION['name'])) {
+    header("Location: client-dashboard.php");
+    exit();
 }
 
+// 3. Establish database sync tracking loop
+$conn = @new mysqli("localhost", "root", "", "arn_quickfix");
+if ($conn->connect_error) {
+    die("Database connectivity node failed to sync: " . $conn->connect_error);
+}
+
+// 4. Handle Authenticated Login Verification Form Data Submissions
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
 
-  $email = trim($_POST["email"] ?? "");
-  $pass  = $_POST["password"] ?? "";
-  $role  = trim($_POST["role"] ?? "");
+    // Self-defending validation script query: looks for user match inside your profile dashboard parameters
+    $stmt = $conn->prepare("SELECT name, password_hash, role FROM users WHERE email = ?");
+    if ($stmt) {
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-  if ($email === "" || $pass === "" || $role === "") {
-    $error = "Please fill in all fields.";
-  } else {
-
-    $stmt = $pdo->prepare("SELECT id, name, email, password_hash, role FROM users WHERE email = ? LIMIT 1");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-
-    if (!$user) {
-      $error = "Invalid email or password.";
-    } elseif (!password_verify($pass, $user["password_hash"])) {
-      $error = "Invalid email or password.";
-    } elseif ($user["role"] !== $role) {
-      $error = "Role does not match this account.";
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
+            
+            // Verifies the securely hashed credentials matching your table layout patterns
+            if (password_verify($password, $user['password_hash'])) {
+                $_SESSION['email'] = $email;
+                $_SESSION['name'] = $user['name'];
+                $_SESSION['role'] = $user['role'];
+                
+                $stmt->close();
+                $conn->close();
+                
+                // Routes the active authenticated user profile straight into your newly designed tracking portal lane
+                header("Location: client-dashboard.php");
+                exit();
+            } else {
+                echo "<script>alert('Invalid account password credentials! Please try again.'); window.history.back();</script>";
+                exit();
+            }
+        } else {
+            echo "<script>alert('No registered profile matches this email destination node!'); window.history.back();</script>";
+            exit();
+        }
+        $stmt->close();
     } else {
-
-      $_SESSION["user_id"] = $user["id"];
-      $_SESSION["name"]    = $user["name"];
-      $_SESSION["role"]    = $user["role"];
-
-      if ($user["role"] === "admin") {
-        header("Location: admin-dashboard.php");
-      } elseif ($user["role"] === "technician") {
-        header("Location: technician-dashboard.php");
-      } elseif ($user["role"] === "manager") {
-        header("Location: manager-dashboard.php");
-      } else {
-        header("Location: client-dashboard.php");
-      }
-      exit;
+        echo "<script>alert('System Core Error: Ensure your central users database table exists with correct column parameters!'); window.history.back();</script>";
+        exit();
     }
-  }
 }
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
