@@ -114,121 +114,341 @@ $error = "";
     <!-- Navbar End -->
 
 <!-- Pricing Plan Start -->
-<div class="container-fluid py-5" id="pricing">
-  <div class="container">
-
+<div class="container-fluid bg-light py-5" id="machinery-finder">
+  <div class="container py-4">
+    
+    <!-- Section Header -->
     <div class="text-center mx-auto mb-5" style="max-width: 600px;">
-      <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">
-        Pricing Plans
-      </h5>
-      <h1 class="display-4">Our Service Packages</h1>
-      <p class="mb-0">
-        Transparent engineering packages and maintenance pricing across all machinery sectors.
-      </p>
+      <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">Services and Prices</h5>
+      <h1 class="display-5 fw-bold mt-2">Select Your Machinery Asset</h1>
+      <p class="text-muted">Click a category below to instantly view complete service catalogs, operational parameters, and technical support frameworks.</p>
     </div>
 
-    <div class="row g-4 justify-content-center">
-
-      <!-- Plan 1: Elevator Services -->
-      <div class="col-lg-4 col-md-6">
-        <div class="bg-light rounded text-center p-4 h-100 shadow-sm border">
-          <i class="fa fa-building fa-3x text-primary mb-3"></i>
-          <h4 class="mb-2">Elevator & Lift</h4>
-          <p class="text-muted">Installation & Modernization</p>
-
-          <h2 class="text-primary mb-3">
-            ৳ 9.5 – 22 Lakh
-          </h2>
-
-          <ul class="list-unstyled mb-4 lh-lg text-start ps-3">
-            <li>✔ Residential & Commercial</li>
-            <li>✔ Auto Door Systems</li>
-            <li>✔ Safety Sensor Calibration</li>
-            <li>✔ 1 Year Free Service Warranty</li>
-          </ul>
-
-          <a href="#contact" class="btn btn-primary rounded-pill px-4 py-2 w-100">
-            Get Quotation
-          </a>
+    <!-- Interactive Selection Row (Cards act as Tab Toggles) -->
+    <div class="row g-4 mb-5 justify-content-center">
+      
+      <!-- Elevator Card -->
+      <div class="col-md-4 col-sm-6">
+        <div id="card-elevator" class="card text-center p-4 shadow-sm border border-2 rounded-3 active-machinery-card" onclick="switchMachinery('elevator')" style="cursor: pointer; transition: all 0.2s ease-in-out;">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <i class="fa fa-building fa-3x mb-3 text-primary" id="icon-elevator"></i>
+            <h4 class="fw-bold text-primary m-0">Elevator / Lift</h4>
+          </div>
         </div>
       </div>
 
-      <!-- Plan 2: AC & HVAC Services (Highlighted/Primary Card) -->
-      <div class="col-lg-4 col-md-6">
-        <div class="bg-primary text-white rounded text-center p-4 h-100 shadow">
-          <i class="fa fa-snowflake fa-3x mb-3 text-white"></i>
-          <h4 class="mb-2 text-white">Air Conditioning</h4>
-          <p class="text-white-50">Inverter, VRF & HVAC Systems</p>
-
-          <h2 class="mb-3 text-white">
-            ৳ 45k – 3.5 Lakh
-          </h2>
-
-          <ul class="list-unstyled mb-4 lh-lg text-start ps-3">
-            <li>✔ Split, Cassette & VRF Setup</li>
-            <li>✔ Precise Gas Refilling</li>
-            <li>✔ Ducting & Ventilation Design</li>
-            <li>✔ Compressor Replacement</li>
-          </ul>
-
-          <a href="#contact" class="btn btn-light rounded-pill px-4 py-2 w-100 text-primary fw-bold">
-            Request Survey
-          </a>
+      <!-- AC Card -->
+      <div class="col-md-4 col-sm-6">
+        <div id="card-ac" class="card text-center p-4 shadow-sm border border-2 rounded-3" onclick="switchMachinery('ac')" style="cursor: pointer; transition: all 0.2s ease-in-out;">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <i class="fa fa-snowflake fa-3x mb-3 text-secondary" id="icon-ac"></i>
+            <h4 class="fw-bold text-dark m-0">Air Conditioner (AC)</h4>
+          </div>
         </div>
       </div>
 
-      <!-- Plan 3: Industrial Generators -->
-      <div class="col-lg-4 col-md-6">
-        <div class="bg-light rounded text-center p-4 h-100 shadow-sm border">
-          <i class="fa fa-bolt fa-3x text-primary mb-3"></i>
-          <h4 class="mb-2">Power Generators</h4>
-          <p class="text-muted">Diesel & Gas Substation Units</p>
-
-          <h2 class="text-primary mb-3">
-            ৳ 2.5 – 12 Lakh
-          </h2>
-
-          <ul class="list-unstyled mb-4 lh-lg text-start ps-3">
-            <li>✔ 10 kVA to 500+ kVA Units</li>
-            <li>✔ Automatic Transfer Switch (ATS)</li>
-            <li>✔ Soundproof Canopy Fitting</li>
-            <li>✔ Engine Overhauling</li>
-          </ul>
-
-          <a href="#contact" class="btn btn-primary rounded-pill px-4 py-2 w-100">
-            Get Generator Quote
-          </a>
-        </div>
-      </div>
-
-      <!-- Plan 4: Combined Corporate AMC (Optional Extra Center-Row Card) -->
-      <div class="col-lg-6 col-md-10 mt-4">
-        <div class="bg-dark text-white rounded p-4 shadow-sm border">
-          <div class="row align-items-center text-center text-md-start">
-            <div class="col-md-8">
-              <h4 class="text-info mb-1"><i class="fa fa-tools me-2"></i>Unified Corporate AMC</h4>
-              <p class="text-white-50 small mb-md-0">Annual Maintenance Contract for Elevators, ACs, and Generators combined.</p>
-            </div>
-            <div class="col-md-4 text-md-end text-center">
-              <h3 class="text-info mb-2">Custom Pricing</h3>
-              <a href="#contact" class="btn btn-outline-info btn-sm rounded-pill px-3">Contact Enterprise</a>
-            </div>
+      <!-- Generator Card -->
+      <div class="col-md-4 col-sm-6">
+        <div id="card-generator" class="card text-center p-4 shadow-sm border border-2 rounded-3" onclick="switchMachinery('generator')" style="cursor: pointer; transition: all 0.2s ease-in-out;">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <i class="fa fa-bolt fa-3x mb-3 text-secondary" id="icon-generator"></i>
+            <h4 class="fw-bold text-dark m-0">Power Generator</h4>
           </div>
         </div>
       </div>
 
     </div>
 
-    <div class="text-center mt-5">
-      <small class="text-muted">
-        * Estimates depend directly on machine capacity (tonnage/kVA/stops), brand parameters, site conditions, and specific engineering requests.
-      </small>
-    </div>
+    <!-- ================= DYNAMIC DATA TABLES BOX ================= -->
+    <div class="bg-white rounded-3 p-4 p-md-5 shadow-sm border">
+      
+      <!-- ================= ELEVATOR DATA TABLE ================= -->
+      <div id="table-elevator" class="machinery-table-content animate-fade">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+          <i class="fa fa-building fa-2x text-primary me-3"></i>
+          <h3 class="fw-bold m-0 text-dark">Elevator & Lift Engineering Services</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th scope="col" style="width: 30%;">Category</th>
+                <th scope="col" style="width: 45%;">Service Details</th>
+                <th scope="col" class="text-end" style="width: 25%;">Approx. Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold text-dark py-3">Installation & Setup</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Site Survey, Design & Commissioning</div>
+                  <div class="text-muted small">Assessing building structure, traffic flow needs, configuring passenger, cargo, capsule, or hospital lifts. Full safety test runs before final handover.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 9.50 – 22.00 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Maintenance & Care</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Routine Servicing & Scheduled AMC</div>
+                  <div class="text-muted small">Monthly or quarterly checklist inspections, year-round component lubrication. Access to 24/7 rapid response dispatch loops for trapped passengers or sudden halts.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 25,000 – 80,000 / Yr</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Repair & Upgrades</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Component Remodeling & Modernization</div>
+                  <div class="text-muted small">Fixing motors, gearboxes, door systems, and PCBs. Swapping worn wire ropes, brakes, or sensors. Complete aesthetic and control panel upgrades for optimal energy use.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 1.50 – 4.00 Lakh</td>
+              </tr>
+              <tr>
+                <tr>
+                <td class="fw-bold text-dark py-3">Testing & Safety</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Annual Safety Certification & Inspection</div>
+                  <div class="text-muted small">Load capacity testing, emergency brake verification, governor calibration, and fire-service compliance checks. Issuing official fitness certification.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 15,000 – 35,000 / Yr</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Emergency Support</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">24/7 Rapid Breakdown Response</div>
+                  <div class="text-muted small">On-demand emergency dispatch for sudden breakdowns, power trip faults, or mechanical lockouts. Includes structural troubleshooting and immediate passenger rescue.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 2,000 – 5,000 / Call</td>
+                <tr>
+                <td class="fw-bold text-dark py-3">Interior Styling</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Cabin Interior Modification & Aesthetics</div>
+                  <div class="text-muted small">Upgrading lift interiors with premium stainless steel panels, custom LED ceilings, mirror installations, and durable granite or PVC flooring options.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 80,000 – 2.50 Lakh</td>
+              </tr>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-  </div>
-</div>
-<!-- Pricing Plan End -->
+      <!-- ================= AC DATA TABLE ================= -->
+      <div id="table-ac" class="machinery-table-content animate-fade" style="display: none;">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+          <i class="fa fa-snowflake fa-2x text-primary me-3"></i>
+          <h3 class="fw-bold m-0 text-dark">Air Conditioning & HVAC Engineering</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th scope="col" style="width: 30%;">Category</th>
+                <th scope="col" style="width: 45%;">Service Details</th>
+                <th scope="col" class="text-end" style="width: 25%;">Approx. Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold text-dark py-3">Routine Maintenance</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Basic Servicing & Master Jet Wash</div>
+                  <div class="text-muted small">Filter washing, dust removal, and performance metrics check. High-pressure water jet deep cleaning of internal coils, components, and air distribution vents/ducts.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 1,500 – 15,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Installation & Shifting</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Unit Mounting & Relocation</div>
+                  <div class="text-muted small">Mounting indoor/outdoor units, setting up copper refrigeration wiring lines and structural drainage loops. Safe uninstallation and transport to new site locations.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 4,500 – 45,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Repair & Diagnostics</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Gas Refills, PCBs & Compressor Overhauls</div>
+                  <div class="text-muted small">Finding refrigerant leaks, pressure isolation tests, topping up gas (R-32, R-410A, R-22). Fixing circuit boards, sensors, blower motors, and failed capacitors.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 3,500 – 55,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Leak Detection & Seal</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Nitrogen Pressure Testing & Line Repair</div>
+                  <div class="text-muted small">High-pressure isolation testing to detect micro-punctures in internal copper loops or condenser coils. Aluminum/copper welding, line replacement, and complete system vacuuming.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 2,000 – 6,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Air Quality Systems</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Duct Cleaning & Anti-Bacterial Sanitization</div>
+                  <div class="text-muted small">Deep extraction of dust from central ducted systems, chemical disinfection to eliminate mold, and installation of specialized HEPA or UV air purification upgrades.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 8,000 – 25,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Smart IoT Integration</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Smart Thermostat & Wi-Fi Automation Setup</div>
+                  <div class="text-muted small">Upgrading traditional units with smart controller modules (e.g., Sensibo or Broadlink) and retrofitting smart thermostats. Configuring mobile app syncing, voice assistant controls, and personalized automated scheduling.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 3,500 – 8,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Eco Energy Tuning</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Inverter Optimization & Energy Audit</div>
+                  <div class="text-muted small">A comprehensive evaluation of the inverter compressor’s power draw using data loggers. Tuning electronic expansion valves and sensor calibration to minimize power fluctuations and lower monthly electricity bills.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 2,000 – 4,500</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
+      <!-- ================= GENERATOR DATA TABLE ================= -->
+      <div id="table-generator" class="machinery-table-content animate-fade" style="display: none;">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+          <i class="fa fa-bolt fa-2x text-primary me-3"></i>
+          <h3 class="fw-bold m-0 text-dark">Industrial & Backup Generator Substation Services</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th scope="col" style="width: 30%;">Category</th>
+                <th scope="col" style="width: 45%;">Service Details</th>
+                <th scope="col" class="text-end" style="width: 25%;">Approx. Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold text-dark py-3">Setup & Commissioning</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Site Assessment & Electrical Integration</div>
+                  <div class="text-muted small">Determining placement parameters, concrete pad mounting, connecting integration wiring loops, installing Automatic Transfer Switches (ATS), and real-world load testing.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 2.50 – 18.00 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Preventative Inspections</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fluid, Filter & Automation Management</div>
+                  <div class="text-muted small">Oil/coolant flushing, filter swapping (fuel, air, oil). Battery connectivity voltage testing and setting up automated schedules to run units regularly.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 15,000 – 45,000</td>
+              </tr>
+              <tr>
+                              <tr>
+                <td class="fw-bold text-dark py-3">Diagnostics & Repairs</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fault Decoding, Motor Rebuilds & 24/7 Calls</div>
+                  <div class="text-muted small">Using specialized tools to decode control panel alert flags, executing engine rebuild top/complete overhauls, replacing Automatic Voltage Regulators (AVR), and around-the-clock technician call-outs for power critical sites.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 25,000 – 1.50 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Advanced Testing</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Load Bank Testing & Compliance Loops</div>
+                  <div class="text-muted small">Simulating full-capacity electrical demand to verify reliability, testing switch mechanics, environmental compliance certification, telemetry tracking integration, and temporary rentals.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 20,000 – 95,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Auxiliary Support</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fuel Polishing & Cooling Care</div>
+                  <div class="text-muted small">Removing water and contaminants from sitting diesel fuel tanks, servicing block heaters, radiator fans, telemetry remote health trackers, and exhaust pathways.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 10,000 – 35,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Grid Synchronization</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Multi-Generator Paralleling & Load Sharing</div>
+                  <div class="text-muted small">Configuring synchronization panels to link multiple generator units together. Balancing real-time load distribution dynamically across units and setting up automated peak-shaving routines.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 1.20 – 4.50 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Emergency Power</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">ATS Bypass Switch Upgrades & Safety Interlocking</div>
+                  <div class="text-muted small">Installing manual or automatic bypass isolation switches to allow ATS maintenance without dropping the building load. Setting up heavy-duty mechanical and electrical safety interlocks to prevent utility backfeeding.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 45,000 – 1.80 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Environmental Protection</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fuel Tank Bunding & Radiator Scale Flushing</div>
+                  <div class="text-muted small">Constructing secondary containment bunds around large diesel storage areas to catch leaks. Performing chemical descaling on massive industrial radiator cores to optimize cooling efficiency.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 18,000 – 65,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+           
+          <a href="#contact" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
+            Request Custom Quote <i class="fa fa-arrow-right ms-2 small"></i>
+          </a>
+        </div>
+      </div>
+
+    </div> <!-- Closes the white background .bg-white wrapper container -->
+  </div> <!-- Closes the inner .container padding-wrapper -->
+</div> <!-- Closes the main .container-fluid background wrapper layout -->
+
+<!-- Extra Custom CSS Styles for Cards and Smooth Toggling -->
+<style>
+  .active-machinery-card {
+    border-color: #00C2CB !important;
+    background-color: #ffffff !important;
+    transform: scale(1.03);
+  }
+  .animate-fade {
+    animation: fadeIn 0.4s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<!-- Lightweight Vanilla JavaScript Content Switcher Controller -->
+<script>
+function switchMachinery(type) {
+  const tables = document.querySelectorAll('.machinery-table-content');
+  tables.forEach(table => table.style.display = 'none');
+  
+  const cards = document.querySelectorAll('#machinery-finder .card');
+  cards.forEach(card => card.classList.remove('active-machinery-card'));
+  
+  const headers = document.querySelectorAll('#machinery-finder h4');
+  headers.forEach(h => { h.classList.remove('text-primary'); h.classList.add('text-dark'); });
+
+  const icons = document.querySelectorAll('#machinery-finder .fa');
+  icons.forEach(i => { i.classList.remove('text-primary'); i.classList.add('text-secondary'); });
+
+  document.getElementById('table-' + type).style.display = 'block';
+  
+  const targetCard = document.getElementById('card-' + type);
+  targetCard.classList.add('active-machinery-card');
+  
+  targetCard.querySelector('h4').classList.remove('text-dark');
+  targetCard.querySelector('h4').classList.add('text-primary');
+  
+  targetCard.querySelector('.fa').classList.remove('text-secondary');
+  targetCard.querySelector('.fa').classList.add('text-primary');
+}
+</script>
 
     <!-- Footer Start -->
 <div class="container-fluid bg-dark text-light mt-5 py-5">

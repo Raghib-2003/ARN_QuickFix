@@ -275,7 +275,7 @@ $error = "";
                     <h4 class="mb-3">Preventive Maintenance (AMC)</h4>
                     <p class="m-0">
                         Regular checks, tuning, and servicing to reduce breakdowns
-                        and extend elevator life.
+                        and extend machinery life.
                     </p>
                     <a class="btn btn-lg btn-primary rounded-pill mt-3"
                        href="index.php?service=Preventive Maintenance">
@@ -661,78 +661,235 @@ $error = "";
 
 
 
-<!-- START OF QUICK SERVICE FINDER DROPDOWNS -->
-<!-- Search Start -->
-<div class="container-fluid bg-primary my-5 py-5">
-    <div class="container py-5">
-        <div class="text-center mx-auto mb-5" style="max-width: 600px;">
-            <h5 class="d-inline-block text-white text-uppercase border-bottom border-5 pb-2">
-                Quick Service Finder
-            </h5>
-            <h1 class="display-4 mb-4 text-white">
-                Find the Right Infrastructure Service
-            </h1>
-            <h5 class="text-white fw-normal" style="line-height: 1.6;">
-                Select your machinery category, service type, and facility classification to receive an immediate custom maintenance quote and fast professional support.
-            </h5>
-        </div>
-
-        <!-- Expanded maximum row limits to 1100px so items have plenty of breathing room side-by-side -->
-        <div class="mx-auto" style="width: 100%; max-width: 1100px;">
-            <div class="row g-2 align-items-center justify-content-center">
-
-                <!-- 1. Machinery Category Select Option -->
-                <div class="col-xl col-lg-4 col-md-6 col-12">
-                    <select class="form-select border-0 px-3" style="height: 60px; border-radius: 8px;">
-                        <option selected disabled>Select Machinery</option>
-                        <option>Elevator Systems</option>
-                        <option>Air Conditioning (AC)</option>
-                        <option>Backup Power Generator</option>
-                    </select>
-                </div>
-
-                <!-- 2. Service Scope Type Select Option -->
-                <div class="col-xl col-lg-4 col-md-6 col-12">
-                    <select class="form-select border-0 px-3" style="height: 60px; border-radius: 8px;">
-                        <option selected disabled>Service Type</option>
-                        <option>New Installation</option>
-                        <option>Preventive Maintenance (AMC)</option>
-                        <option>Repair & Breakdown</option>
-                        <option>Modernization / Upgrade</option>
-                        <option>Safety Inspection</option>
-                    </select>
-                </div>
-
-                <!-- 3. Building Type Select Option -->
-                <div class="col-xl col-lg-4 col-md-6 col-12">
-                    <select class="form-select border-0 px-3" style="height: 60px; border-radius: 8px;">
-                        <option selected disabled>Building Type</option>
-                        <option>Residential</option>
-                        <option>Commercial</option>
-                        <option>Hospital</option>
-                        <option>Hotel</option>
-                        <option>Industrial</option>
-                    </select>
-                </div>
-
-                <!-- 4. Location Search Input Area -->
-                <div class="col-xl col-lg-6 col-md-6 col-12">
-                    <input type="text" class="form-control border-0 px-3" placeholder="City / Area" style="height: 60px; border-radius: 8px;">
-                </div>
-
-                <!-- 5. CTA Trigger Action Button -->
-                <div class="col-xl col-lg-6 col-md-12 col-12 d-grid">
-                    <a href="contact.php" class="btn btn-dark border-0 fw-bold d-flex align-items-center justify-content-center" style="height: 60px; border-radius: 8px;">
-                        Get Custom Quote
-                    </a>
-                </div>
-
-            </div> <!-- End of grid row -->
-        </div>
+<!-- Services and Pricing Start -->
+<div class="container-fluid bg-light py-5" id="machinery-finder">
+  <div class="container py-4">
+    
+    <!-- Section Header -->
+    <div class="text-center mx-auto mb-5" style="max-width: 600px;">
+      <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5">Services and Prices</h5>
+      <h1 class="display-5 fw-bold mt-2">Select Your Machinery Asset</h1>
+      <p class="text-muted">Click a category below to instantly view complete service catalogs, operational parameters, and technical support frameworks.</p>
     </div>
-</div>
 
-<!-- END OF INTERACTIVE FINDER ROW -->
+    <!-- Interactive Selection Row (Cards act as Tab Toggles) -->
+    <div class="row g-4 mb-5 justify-content-center">
+      
+      <!-- Elevator Card -->
+      <div class="col-md-4 col-sm-6">
+        <div id="card-elevator" class="card text-center p-4 shadow-sm border border-2 rounded-3 active-machinery-card" onclick="switchMachinery('elevator')" style="cursor: pointer; transition: all 0.2s ease-in-out;">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <i class="fa fa-building fa-3x mb-3 text-primary" id="icon-elevator"></i>
+            <h4 class="fw-bold text-primary m-0">Elevator / Lift</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- AC Card -->
+      <div class="col-md-4 col-sm-6">
+        <div id="card-ac" class="card text-center p-4 shadow-sm border border-2 rounded-3" onclick="switchMachinery('ac')" style="cursor: pointer; transition: all 0.2s ease-in-out;">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <i class="fa fa-snowflake fa-3x mb-3 text-secondary" id="icon-ac"></i>
+            <h4 class="fw-bold text-dark m-0">Air Conditioner (AC)</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generator Card -->
+      <div class="col-md-4 col-sm-6">
+        <div id="card-generator" class="card text-center p-4 shadow-sm border border-2 rounded-3" onclick="switchMachinery('generator')" style="cursor: pointer; transition: all 0.2s ease-in-out;">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <i class="fa fa-bolt fa-3x mb-3 text-secondary" id="icon-generator"></i>
+            <h4 class="fw-bold text-dark m-0">Power Generator</h4>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= DYNAMIC DATA TABLES BOX ================= -->
+    <div class="bg-white rounded-3 p-4 p-md-5 shadow-sm border">
+      
+      <!-- ================= ELEVATOR DATA TABLE ================= -->
+      <div id="table-elevator" class="machinery-table-content animate-fade">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+          <i class="fa fa-building fa-2x text-primary me-3"></i>
+          <h3 class="fw-bold m-0 text-dark">Elevator & Lift Engineering Services</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th scope="col" style="width: 30%;">Category</th>
+                <th scope="col" style="width: 45%;">Service Details</th>
+                <th scope="col" class="text-end" style="width: 25%;">Approx. Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold text-dark py-3">Installation & Setup</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Site Survey, Design & Commissioning</div>
+                  <div class="text-muted small">Assessing building structure, traffic flow needs, configuring passenger, cargo, capsule, or hospital lifts. Full safety test runs before final handover.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 9.50 – 22.00 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Maintenance & Care</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Routine Servicing & Scheduled AMC</div>
+                  <div class="text-muted small">Monthly or quarterly checklist inspections, year-round component lubrication. Access to 24/7 rapid response dispatch loops for trapped passengers or sudden halts.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 25,000 – 80,000 / Yr</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= AC DATA TABLE ================= -->
+      <div id="table-ac" class="machinery-table-content animate-fade" style="display: none;">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+          <i class="fa fa-snowflake fa-2x text-primary me-3"></i>
+          <h3 class="fw-bold m-0 text-dark">Air Conditioning & HVAC Engineering</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th scope="col" style="width: 30%;">Category</th>
+                <th scope="col" style="width: 45%;">Service Details</th>
+                <th scope="col" class="text-end" style="width: 25%;">Approx. Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold text-dark py-3">Routine Maintenance</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Basic Servicing & Master Jet Wash</div>
+                  <div class="text-muted small">Filter washing, dust removal, and performance metrics check. High-pressure water jet deep cleaning of internal coils, components, and air distribution vents/ducts.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 1,500 – 15,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Installation & Shifting</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Unit Mounting & Relocation</div>
+                  <div class="text-muted small">Mounting indoor/outdoor units, setting up copper refrigeration wiring lines and structural drainage loops. Safe uninstallation and transport to new site locations.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 4,500 – 45,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= GENERATOR DATA TABLE ================= -->
+      <div id="table-generator" class="machinery-table-content animate-fade" style="display: none;">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+          <i class="fa fa-bolt fa-2x text-primary me-3"></i>
+          <h3 class="fw-bold m-0 text-dark">Industrial & Backup Generator Substation Services</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+              <tr>
+                <th scope="col" style="width: 30%;">Category</th>
+                <th scope="col" style="width: 45%;">Service Details</th>
+                <th scope="col" class="text-end" style="width: 25%;">Approx. Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold text-dark py-3">Setup & Commissioning</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Site Assessment & Electrical Integration</div>
+                  <div class="text-muted small">Determining placement parameters, concrete pad mounting, connecting integration wiring loops, installing Automatic Transfer Switches (ATS), and real-world load testing.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 2.50 – 18.00 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Preventative Inspections</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fluid, Filter & Automation Management</div>
+                  <div class="text-muted small">Oil/coolant flushing, filter swapping (fuel, air, oil). Battery connectivity voltage testing and setting up automated schedules to run units regularly.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 15,000 – 45,000</td>
+              </tr>
+              <tr>
+                              
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+           <!-- Table Bottom Shared Layout with Show More Action Link -->
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center mt-4 pt-3 border-top gap-3">
+        <span class="small text-muted text-center text-sm-start">* Preview pricing only. Click "Show More" to view the complete operational service list.</span>
+        
+        <div class="d-flex gap-2 flex-column flex-sm-row w-100 w-sm-auto text-nowrap">
+          <!-- Show More Button linking straight to your dedicated pricing page -->
+          <a href="price.php" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">
+            Show More Services <i class="fa fa-plus ms-1 small"></i>
+          </a>
+          <a href="#contact" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
+            Request Custom Quote <i class="fa fa-arrow-right ms-2 small"></i>
+          </a>
+        </div>
+      </div>
+
+    </div> <!-- Closes the white background .bg-white wrapper container -->
+  </div> <!-- Closes the inner .container padding-wrapper -->
+</div> <!-- Closes the main .container-fluid background wrapper layout -->
+
+<!-- Extra Custom CSS Styles for Cards and Smooth Toggling -->
+<style>
+  .active-machinery-card {
+    border-color: #00C2CB !important;
+    background-color: #ffffff !important;
+    transform: scale(1.03);
+  }
+  .animate-fade {
+    animation: fadeIn 0.4s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<!-- Lightweight Vanilla JavaScript Content Switcher Controller -->
+<script>
+function switchMachinery(type) {
+  const tables = document.querySelectorAll('.machinery-table-content');
+  tables.forEach(table => table.style.display = 'none');
+  
+  const cards = document.querySelectorAll('#machinery-finder .card');
+  cards.forEach(card => card.classList.remove('active-machinery-card'));
+  
+  const headers = document.querySelectorAll('#machinery-finder h4');
+  headers.forEach(h => { h.classList.remove('text-primary'); h.classList.add('text-dark'); });
+
+  const icons = document.querySelectorAll('#machinery-finder .fa');
+  icons.forEach(i => { i.classList.remove('text-primary'); i.classList.add('text-secondary'); });
+
+  document.getElementById('table-' + type).style.display = 'block';
+  
+  const targetCard = document.getElementById('card-' + type);
+  targetCard.classList.add('active-machinery-card');
+  
+  targetCard.querySelector('h4').classList.remove('text-dark');
+  targetCard.querySelector('h4').classList.add('text-primary');
+  
+  targetCard.querySelector('.fa').classList.remove('text-secondary');
+  targetCard.querySelector('.fa').classList.add('text-primary');
+}
+</script>
+<!-- Services and pricing End -->
+
+
+                    
+
 
 
 
@@ -1085,3 +1242,27 @@ $error = "";
 <script src="js/main.js"></script>
 </body>
 </html>
+<tr>
+                <td class="fw-bold text-dark py-3">Diagnostics & Repairs</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fault Decoding, Motor Rebuilds & 24/7 Calls</div>
+                  <div class="text-muted small">Using specialized tools to decode control panel alert flags, executing engine rebuild top/complete overhauls, replacing Automatic Voltage Regulators (AVR), and around-the-clock technician call-outs for power critical sites.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 25,000 – 1.50 Lakh</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Advanced Testing</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Load Bank Testing & Compliance Loops</div>
+                  <div class="text-muted small">Simulating full-capacity electrical demand to verify reliability, testing switch mechanics, environmental compliance certification, telemetry tracking integration, and temporary rentals.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 20,000 – 95,000</td>
+              </tr>
+              <tr>
+                <td class="fw-bold text-dark py-3">Auxiliary Support</td>
+                <td class="py-3">
+                  <div class="fw-semibold text-dark mb-1">Fuel Polishing & Cooling Care</div>
+                  <div class="text-muted small">Removing water and contaminants from sitting diesel fuel tanks, servicing block heaters, radiator fans, telemetry remote health trackers, and exhaust pathways.</div>
+                </td>
+                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 10,000 – 35,000</td>
+              </tr>

@@ -151,7 +151,7 @@ $error = "";
                     <h4 class="mb-3">Preventive Maintenance (AMC)</h4>
                     <p class="m-0">
                         Regular checks, tuning, and servicing to reduce breakdowns
-                        and extend elevator life.
+                        and extend machinery life.
                     </p>
                     <a class="btn btn-lg btn-primary rounded-pill mt-3"
                        href="index.php?service=Preventive Maintenance">
