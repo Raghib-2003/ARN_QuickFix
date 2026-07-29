@@ -262,19 +262,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
 <body>
 
   <!-- ================= NAV BAR HEADER (SINGLE CLEAN VERSION) ================= -->
-  <nav class="navbar dashboard-navbar d-flex align-items-center justify-content-between">
-    <div class="brand-accent"><i class="fa fa-tools me-2"></i>ARN QuickFix Ltd.</div>
+  <!-- ================= MASTER DASHBOARD NAVIGATION BAR ================= -->
+  <nav class="navbar dashboard-navbar d-flex align-items-center justify-content-between py-3 px-4 bg-white border-bottom">
+    
+    <!-- Left Section: Brand Logo and Title -->
+    <div class="d-flex align-items-center gap-3">
+      <a href="index.php" class="brand-accent text-decoration-none" style="color: var(--primary-cyan); font-weight: 700; font-size: 24px;">
+      <!-- INSERTED BRAND LOGO MAP: Points cleanly to your local img directory structure folder -->
+      <img src="img/logo.svg.svg" alt="ARN QuickFix Logo" style="height: 80px; width: auto; object-fit: contain;">  
+      <i class="fa fa-tools me-2"></i>ARN QuickFix Ltd.
+      </a>
+      <span class="fs-4 fw-bold text-dark border-start ps-3" style="border-color: var(--border-gray) !important;">
+        Client Dashboard
+      </span>
+    </div>
+    
+    <!-- Right Section: Interactive Actions and Session Controls -->
     <div class="d-flex align-items-center gap-4">
-      <span class="nav-user-label"><i class="fa fa-user-circle me-1"></i> Client: <strong><?php echo $clientName; ?></strong></span>
-      <button class="action-icon-btn" data-bs-toggle="modal" data-bs-target="#notificationModal">
-        <i class="fa fa-bell"></i><?php if (!empty($notifications)): ?><span class="notification-dot"></span><?php endif; ?>
+      
+      <!-- Functional Active Session Username Label -->
+      <span class="nav-user-label text-secondary small fw-medium">
+        Client: <strong class="text-dark"><?php echo $clientName; ?></strong>
+      </span>
+      
+      <!-- Old-School Local FontAwesome Icon Layout Code -->
+<button class="btn btn-link p-1 position-relative text-dark" data-bs-toggle="modal" data-bs-target="#notificationModal" style="font-size: 22px; box-shadow: none; text-decoration: none;" title="View Notifications">
+  <i class="fa fa-envelope"></i> <!-- Swapped to a classic mail envelope symbol supported by older local setups -->
+  <?php if (!empty($notifications)): ?>
+    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 9px; height: 9px;"></span>
+  <?php endif; ?>
+</button>
+
+
+      <!-- Profile View Interface Controller Button -->
+      <button class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold small d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#profileModal" style="font-size: 13px;">
+        <i class="fa fa-user-circle fs-6"></i> Profile
       </button>
-      <button class="action-icon-btn" data-bs-toggle="modal" data-bs-target="#profileModal"><i class="fa fa-sliders"></i></button>
-      <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" onclick="return confirm('Are you sure you want to log out?');">
+
+      <!-- Fully Terminated Session Exit Script Link -->
+      <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" onclick="return confirm('Are you sure you want to log out?');" style="font-size: 13px;">
         <i class="fa fa-sign-out-alt me-1"></i> Logout
       </a>
+      
     </div>
   </nav>
+
+
 
   <!-- ================= MASTER DASHBOARD BODY GRID CONTAINER ================= -->
   <div class="container py-4">
@@ -308,10 +341,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
                 <label class="form-label small fw-bold text-secondary">Asset Brand</label>
                 <input type="text" name="asset_brand" class="form-control" placeholder="Brand Name" required>
               </div>
-              <div class="col-12">
-                <label class="form-label small fw-bold text-secondary">Asset ID</label>
-                <input type="text" name="asset_id" class="form-control" placeholder="Enter your Asset ID" required>
-              </div>
+             <div class="col-12">
+  <label class="form-label small fw-bold text-secondary">Asset ID</label>
+  <!-- ADDED: style="text-transform: uppercase;" to keep your database IDs looking clean and professional -->
+  <input type="text" name="asset_id" id="asset_id" class="form-control" style="text-transform: uppercase;" placeholder="Select Asset Type First" required>
+</div>
+
+
               <div class="col-12">
                 <label class="form-label small fw-bold text-secondary">Problem Category</label>
                 <select name="problem_category" id="problem_category" class="form-select" required>
@@ -360,16 +396,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
             <a href="all_requests.php" class="btn-outline-custom">View All Requests</a>
           </div>
           <div class="table-responsive">
-            <table class="table table-hover align-middle" style="font-size: 13px;">
-                            <thead class="table-light text-secondary uppercase font-monospace">
+                        <table class="table table-hover align-middle" style="font-size: 13.5px;">
+              <!-- Table Headers: Boosted to font-weight 700 with high-contrast text color -->
+              <thead class="table-light text-dark uppercase font-monospace">
                 <tr>
-                  <th>SL</th><th>Asset ID</th><th>Asset Type</th><th>Category</th><th>Priority</th><th>Location</th><th>Payment</th>
+                  <th scope="col" class="fw-bold py-3 text-secondary" style="font-weight: 700 !important;">SL</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Asset ID</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Asset Type</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Category</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Priority</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Location</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Payment</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Created</th>
                 </tr>
               </thead>
               <tbody>
                 <?php
                 if (isset($conn)) {
-                    $logQuery = $conn->prepare("SELECT asset_id, asset_type, problem_category, priority, location, payment_method FROM service_requests WHERE client_email = ? ORDER BY id DESC LIMIT 3");
+                    $logQuery = $conn->prepare("SELECT asset_id, asset_type, problem_category, priority, location, payment_method, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC LIMIT 3");
                     if ($logQuery) {
                         $logQuery->bind_param("s", $clientEmail);
                         $logQuery->execute();
@@ -378,17 +422,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
                             $sl = 1;
                             while ($row = $logResult->fetch_assoc()) {
                                 echo "<tr>";
-                                echo "<td>" . $sl++ . "</td>";
-                                echo "<td class='fw-bold'>#" . htmlspecialchars($row['asset_id']) . "</td>";
-                                echo "<td>" . htmlspecialchars($row['asset_type']) . "</td>";
-                                echo "<td>" . htmlspecialchars($row['problem_category']) . "</td>";
-                                echo "<td><span class='badge bg-light text-dark border'>" . htmlspecialchars($row['priority']) . "</span></td>";
-                                echo "<td class='text-truncate' style='max-width: 100px;'>" . htmlspecialchars($row['location']) . "</td>";
-                                echo "<td>" . htmlspecialchars($row['payment_method']) . "</td>";
+                                // Row contents boosted with 'fw-semibold' (font-weight: 600) or 'fw-bold' (font-weight: 700)
+                                echo "<td class='text-secondary fw-semibold'>" . $sl++ . "</td>";
+                                echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
+                                echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
+                                echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
+                                echo "<td><span class='badge bg-light text-dark border border-secondary fw-bold px-2.5 py-1.5'>" . htmlspecialchars($row['priority']) . "</span></td>";
+                                echo "<td class='text-truncate fw-semibold text-dark' style='max-width: 120px;'>" . htmlspecialchars($row['location']) . "</td>";
+                                echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['payment_method']) . "</td>";
+                                // Cleaned up creation date display visibility formatting layout row
+                                echo "<td class='text-dark fw-bold'>" . date('Y-m-d', strtotime($row['created_at'])) . "</td>";
                                 echo "</tr>";
                             }
                         } else {
-                            echo "<tr><td colspan='7' class='text-muted text-center py-3'>No active operations logs found for your profile.</td></tr>";
+                            echo "<tr><td colspan='8' class='text-dark fw-bold text-center py-4'>No active operations logs found for your profile.</td></tr>";
                         }
                         $logQuery->close();
                     }
@@ -524,13 +571,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
   <!-- <script src="https://jsdelivr.net"></script> -->
 
   <!-- Dynamic Problem Category Menu Loader Script Logic -->
-  <script>
+    <script>
     function updateProblemCategories() {
       const assetType = document.getElementById('asset_type').value;
       const problemSelect = document.getElementById('problem_category');
+      const assetIdInput = document.getElementById('asset_id');
 
-      // Reset options placeholder loop mapping
+      // 1. Reset problem options loop mapping
       problemSelect.innerHTML = '<option value="" disabled selected hidden>Select Issue</option>';
+
+      // 2. Dynamically swap input placeholders to guide client entry patterns
+      if (assetType === 'Elevator') {
+          assetIdInput.placeholder = "Enter ID (Must start with 'ELV', e.g., ELV-101)";
+      } else if (assetType === 'AC') {
+          assetIdInput.placeholder = "Enter ID (Must start with 'AC', e.g., AC-202)";
+      } else if (assetType === 'Generator') {
+          assetIdInput.placeholder = "Enter ID (Must start with 'GEN', e.g., GEN-303)";
+      } else {
+          assetIdInput.placeholder = "Select Asset Type First";
+      }
 
       // Core technical criteria dictionary array matching your asset sectors
       const problems = {
@@ -559,7 +618,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
         ]
       };
 
-      // Loop elements dynamically onto the select options array nodes
       if (problems[assetType]) {
         problems[assetType].forEach(issue => {
           const option = document.createElement('option');
@@ -569,7 +627,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
         });
       }
     }
+
+    // 3. FRONTEND INTERCEPT VALIDATION ATTACHMENT
+    // Intercepts the form on submission to evaluate string prefix characters
+    document.querySelector("form[action='client-dashboard.php']").addEventListener("submit", function(event) {
+        const assetType = document.getElementById('asset_type').value;
+        const assetId = document.getElementById('asset_id').value.trim().toUpperCase(); // Sanitizes entry string cases
+        
+        if (assetType === 'Elevator' && !assetId.startsWith('ELV')) {
+            alert("Validation Error: Elevator Asset IDs must strictly start with 'ELV' (e.g., ELV-101). Please adjust your input.");
+            event.preventDefault(); // Kills form transit thread
+            return false;
+        } 
+        else if (assetType === 'AC' && !assetId.startsWith('AC')) {
+            alert("Validation Error: Air Conditioner Asset IDs must strictly start with 'AC' (e.g., AC-202). Please adjust your input.");
+            event.preventDefault();
+            return false;
+        } 
+        else if (assetType === 'Generator' && !assetId.startsWith('GEN')) {
+            alert("Validation Error: Generator Asset IDs must strictly start with 'GEN' (e.g., GEN-303). Please adjust your input.");
+            event.preventDefault();
+            return false;
+        }
+    });
   </script>
+
 </body>
 </html>
 <?php 
