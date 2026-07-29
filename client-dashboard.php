@@ -63,45 +63,59 @@ if ($notifQuery) {
 
 // 5. Form Submission Handling Rule Blocks
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
-    if ($_POST['action_type'] === 'service_request') {
-        // Collect custom request data packets
+        if ($_POST['action_type'] === 'service_request') {
         $assetType = $_POST['asset_type'];
         $assetBrand = $_POST['asset_brand'];
-        $assetId = $_POST['asset_id'];
+        $assetId = trim(strtoupper($_POST['asset_id'])); // Forces uppercase tracking normalization
         $problemCategory = $_POST['problem_category'];
         $priority = $_POST['priority'];
-        $phone = $_POST['phone'];
+        $phone = trim($_POST['phone']);
         $location = $_POST['location'];
         $paymentMethod = $_POST['payment_method'];
         
-        $insertStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
-        $insertStmt->bind_param("sssssssss", $clientEmail, $assetType, $assetBrand, $assetId, $problemCategory, $priority, $phone, $location, $paymentMethod);
+        // RULE CHECK A: Verify if this specific Asset ID is already tracking in your database row loop
+        $checkAsset = $conn->prepare("SELECT id FROM service_requests WHERE asset_id = ?");
+        $checkAsset->bind_param("s", $assetId);
+        $checkAsset->execute();
+        $checkAssetResult = $checkAsset->get_result();
         
-        if ($insertStmt->execute()) {
-            echo "<script>alert('Service request created successfully!'); window.location.href='client-dashboard.php';</script>";
+        // RULE CHECK B: Verify if this specific Phone Number is already registered to a ticket
+        $checkPhone = $conn->prepare("SELECT id FROM service_requests WHERE phone = ?");
+        $checkPhone->bind_param("s", $phone);
+        $checkPhone->execute();
+        $checkPhoneResult = $checkPhone->get_result();
+        
+        if ($checkAssetResult->num_rows > 0) {
+            echo "<script>alert('Validation Error: This Asset ID is already registered under an active service request log! Please verify your reference number.'); window.history.back();</script>";
+            $checkAsset->close();
+            $checkPhone->close();
+            exit();
+        } 
+        elseif ($checkPhoneResult->num_rows > 0) {
+            echo "<script>alert('Validation Error: This Contact Phone Number is already linked to an open service ticket row! Please use an alternate contact number.'); window.history.back();</script>";
+            $checkAsset->close();
+            $checkPhone->close();
             exit();
         } else {
-            echo "<script>alert('Error processing request: " . $insertStmt->error . "');</script>";
+            // Close safety checking streams cleanly
+            $checkAsset->close();
+            $checkPhone->close();
+            
+            // Proceed to standard database entry execution safely
+            $insertStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+            $insertStmt->bind_param("sssssssss", $clientEmail, $assetType, $assetBrand, $assetId, $problemCategory, $priority, $phone, $location, $paymentMethod);
+            
+            if ($insertStmt->execute()) {
+                echo "<script>alert('Service request created successfully!'); window.location.href='client-dashboard.php';</script>";
+                exit();
+            } else {
+                echo "<script>alert('Error processing request: " . $insertStmt->error . "');</script>";
+            }
+            $insertStmt->close();
         }
-        $insertStmt->close();
-    } elseif ($_POST['action_type'] === 'complaint') {
-        $compAssetId = $_POST['complaint_asset_id'];
-        $compAssetType = $_POST['complaint_asset_type'];
-        $compProblem = $_POST['complaint_problem_category'];
-        $compText = $_POST['complaint_text'];
-        
-        $compStmt = $conn->prepare("INSERT INTO complaints (client_email, asset_id, asset_type, problem_category, complaint_text) VALUES (?, ?, ?, ?, ?)");
-        $compStmt->bind_param("sssss", $clientEmail, $compAssetId, $compAssetType, $compProblem, $compText);
-        
-        if ($compStmt->execute()) {
-            echo "<script>alert('Complaint registered successfully.'); window.location.href='client-dashboard.php';</script>";
-            exit();
-        } else {
-            echo "<script>alert('Error registering complaint.');</script>";
-        }
-        $compStmt->close();
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -272,9 +286,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
       <img src="img/logo.svg.svg" alt="ARN QuickFix Logo" style="height: 80px; width: auto; object-fit: contain;">  
       <i class="fa fa-tools me-2"></i>ARN QuickFix Ltd.
       </a>
-      <span class="fs-4 fw-bold text-dark border-start ps-3" style="border-color: var(--border-gray) !important;">
-        Client Dashboard
-      </span>
+      <!-- Changing border-start to border-start-4 thickens the line to 4px instantly -->
+<span class="fs-4 fw-bold text-dark border-start border-start-4 ps-3" style="border-color: var(--border-gray) !important;">
+  Client Dashboard
+</span>
+
     </div>
     
     <!-- Right Section: Interactive Actions and Session Controls -->
@@ -325,7 +341,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
       <div class="col-lg-5">
         <div class="dashboard-panel">
           <div class="panel-heading">Create Service Request</div>
-          <form action="client-dashboard.php" method="POST">
+          <form action="client-dashboard.php" method="POST" onsubmit="return validateFormLayout(event)">
             <input type="hidden" name="action_type" value="service_request">
             <div class="row g-3">
               <div class="col-12">
@@ -372,9 +388,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
                 <input type="text" name="location" class="form-control" placeholder="Enter Location" required>
               </div>
               <div class="col-12">
-                <label class="form-label small fw-bold text-secondary">Payment Method</label>
+                <label class="form-label small fw-bold text-secondary">Preferred Payment Method</label>
                 <select name="payment_method" class="form-select" required>
-                  <option value="" disabled selected hidden>Select Payment Method</option>
+                  <option value="" disabled selected hidden>Select Preferred Payment Method</option>
                   <option value="Bkash">bKash</option>
                   <option value="Nagad">Nagad</option>
                   <option value="Bank Transfer">Bank Transfer</option>
@@ -406,7 +422,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
                   <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Category</th>
                   <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Priority</th>
                   <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Location</th>
-                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Payment</th>
+                  <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Preferred Payment Method</th>
                   <th scope="col" class="fw-bold py-3" style="font-weight: 700 !important;">Created</th>
                 </tr>
               </thead>
@@ -570,17 +586,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
     <!-- Bootstrap 5 JavaScript Bundle Layout Core Engine CDN Injection -->
   <!-- <script src="https://jsdelivr.net"></script> -->
 
+  <!-- ================= MODERN CUSTOM TOAST POPUP NOTIFICATION CONTAINER ================= -->
+<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1100;">
+  <div id="validationToast" class="toast align-items-center text-white bg-danger border-0 rounded-3 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4500">
+    <div class="d-flex p-3">
+      <div class="toast-body d-flex align-items-center gap-2 font-monospace fw-bold" id="toastMessage" style="font-size: 14px;">
+        <!-- Your custom error text message will be dynamically injected right here -->
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" style="box-shadow: none;"></button>
+    </div>
+  </div>
+</div>
+
+  <!-- FIXED: Restored the official, working Bootstrap 5 compiled JavaScript engine link -->
+  <script src="https://jsdelivr.net"></script>
+
   <!-- Dynamic Problem Category Menu Loader Script Logic -->
-    <script>
+  <script>
     function updateProblemCategories() {
       const assetType = document.getElementById('asset_type').value;
       const problemSelect = document.getElementById('problem_category');
       const assetIdInput = document.getElementById('asset_id');
 
-      // 1. Reset problem options loop mapping
       problemSelect.innerHTML = '<option value="" disabled selected hidden>Select Issue</option>';
 
-      // 2. Dynamically swap input placeholders to guide client entry patterns
       if (assetType === 'Elevator') {
           assetIdInput.placeholder = "Enter ID (Must start with 'ELV', e.g., ELV-101)";
       } else if (assetType === 'AC') {
@@ -591,7 +620,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
           assetIdInput.placeholder = "Select Asset Type First";
       }
 
-      // Core technical criteria dictionary array matching your asset sectors
       const problems = {
         'Elevator': [
           { value: 'Component Repair', text: 'Component Repair (Motors, Gearboxes, Door systems, PCBs)' },
@@ -628,37 +656,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
       }
     }
 
-    // 3. FRONTEND INTERCEPT VALIDATION ATTACHMENT
-    // Intercepts the form on submission to evaluate string prefix characters
-    document.querySelector("form[action='client-dashboard.php']").addEventListener("submit", function(event) {
+    // DIRECTLY TARGETED FORM VALIDATION ENGINE
+    function validateFormLayout(event) {
         const assetType = document.getElementById('asset_type').value;
-        const assetId = document.getElementById('asset_id').value.trim().toUpperCase(); // Sanitizes entry string cases
+        const assetId = document.getElementById('asset_id').value.trim().toUpperCase();
         
+        const toastElement = document.getElementById('validationToast');
+        const toastMessage = document.getElementById('toastMessage');
+        const bsToast = new bootstrap.Toast(toastElement);
+
+        // Pattern validation parameter evaluation strings check
         if (assetType === 'Elevator' && !assetId.startsWith('ELV')) {
-            alert("Validation Error: Elevator Asset IDs must strictly start with 'ELV' (e.g., ELV-101). Please adjust your input.");
-            event.preventDefault(); // Kills form transit thread
+            toastMessage.innerHTML = '<i class="fa fa-exclamation-triangle fs-5"></i> Error: Elevator Asset ID must strictly start with "ELV" (e.g., ELV-101)';
+            bsToast.show();
+            event.preventDefault(); // Direct system halt rule injection
             return false;
         } 
         else if (assetType === 'AC' && !assetId.startsWith('AC')) {
-            alert("Validation Error: Air Conditioner Asset IDs must strictly start with 'AC' (e.g., AC-202). Please adjust your input.");
+            toastMessage.innerHTML = '<i class="fa fa-exclamation-triangle fs-5"></i> Error: AC Asset ID must strictly start with "AC" (e.g., AC-202)';
+            bsToast.show();
             event.preventDefault();
             return false;
         } 
         else if (assetType === 'Generator' && !assetId.startsWith('GEN')) {
-            alert("Validation Error: Generator Asset IDs must strictly start with 'GEN' (e.g., GEN-303). Please adjust your input.");
+            toastMessage.innerHTML = '<i class="fa fa-exclamation-triangle fs-5"></i> Error: Generator Asset ID must strictly start with "GEN" (e.g., GEN-303)';
+            bsToast.show();
             event.preventDefault();
             return false;
         }
-    });
+        
+        return true; // Let form process smoothly if parameters pass checking rules
+    }
   </script>
 
 </body>
 </html>
 <?php 
 // 6. Terminate Active Database Connection Thread Safely
-$conn->close(); 
+if (isset($conn)) {
+    $conn->close(); 
+}
 ?>
-
-
-
-
