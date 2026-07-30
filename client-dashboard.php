@@ -1,16 +1,14 @@
 <?php
-
-// 1. Initialize Active User Session and Force Authorization Guard Rails
+// 1. Force explicit session initialization parameters
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Force error reporting on for local workspace debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// BULLETPROOF FIX: We check for BOTH uppercase and lowercase variants to prevent any redirection loops!
+// BULLETPROOF ALIGNMENT: Unifies casing options so your queries never search with empty variables
 if (isset($_SESSION['Email'])) { $_SESSION['email'] = $_SESSION['Email']; }
 if (isset($_SESSION['Name'])) { $_SESSION['name'] = $_SESSION['Name']; }
 
@@ -19,38 +17,96 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['name'])) {
     exit();
 }
 
-// Extract authenticated user parameters safely
-$clientName = htmlspecialchars($_SESSION['name']);
-$clientEmail = htmlspecialchars($_SESSION['email']);
+$clientEmail = $_SESSION['email'];
+$clientName = $_SESSION['name'];
 
 
-
-// 3. Establish Secure Database Integration Network Link
-$servername = "localhost";
+// 2. High-Speed Local Database Integration Link
+$servername = "127.0.0.1";
 $username = "root";
 $password = "";
 $dbname = "arn_quickfix";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    die("Database Connection Error Trace: " . $conn->connect_error);
+    die("Database Connectivity Failure Trace: " . $conn->connect_error);
 }
 
-// 3. Process Backend Data Metric Tracking Summaries (RESTORED USERNAME PRESERVATION)
+// 3. Form Submission Handling Controller Logic Blocks
+$toastTriggerMsg = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
+    if ($_POST['action_type'] === 'service_request') {
+        $assetType = $_POST['asset_type'] ?? '';
+        $assetBrand = $_POST['asset_brand'] ?? '';
+        $assetId = trim(strtoupper($_POST['asset_id'] ?? ''));
+        $problemCategory = $_POST['problem_category'] ?? '';
+        $priority = $_POST['priority'] ?? '';
+        $phone = trim($_POST['phone'] ?? '');
+        $location = $_POST['location'] ?? '';
+        $paymentMethod = $_POST['payment_method'] ?? '';
+        
+        // Check for Duplicate Asset ID inside active connection thread pipelines
+        $checkAsset = $conn->prepare("SELECT id FROM service_requests WHERE asset_id = ?");
+        $checkAsset->bind_param("s", $assetId);
+        $checkAsset->execute();
+        $checkAsset->store_result();
+        $assetDuplicatesCount = $checkAsset->num_rows;
+        $checkAsset->close();
+        
+        // Check for Duplicate Contact Phone Number inside active connection thread pipelines
+        $checkPhone = $conn->prepare("SELECT id FROM service_requests WHERE phone = ?");
+        $checkPhone->bind_param("s", $phone);
+        $checkPhone->execute();
+        $checkPhone->store_result();
+        $phoneDuplicatesCount = $checkPhone->num_rows;
+        $checkPhone->close();
+        
+        if ($assetDuplicatesCount > 0) {
+            $toastTriggerMsg = "<i class='fa fa-database me-1'></i> Duplicate Error: This Asset ID is already linked to an active ticket!";
+        } elseif ($phoneDuplicatesCount > 0) {
+            $toastTriggerMsg = "<i class='fa fa-phone-slash me-1'></i> Duplicate Error: This Phone Number is already linked to an active ticket row!";
+        } else {
+            // Core database entry insertion execution mapping (amount defaults to NULL)
+            $insertStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL)");
+            $insertStmt->bind_param("sssssssss", $clientEmail, $assetType, $assetBrand, $assetId, $problemCategory, $priority, $phone, $location, $paymentMethod);
+            
+            if ($insertStmt->execute()) {
+                $_SESSION['flash_request_success'] = true;
+                header("Location: client-dashboard.php");
+                exit();
+            } else {
+                $toastTriggerMsg = "<i class='fa fa-exclamation-circle me-1'></i> Database Error: Failed to execute request submission.";
+            }
+            $insertStmt->close();
+        }
+    } elseif ($_POST['action_type'] === 'complaint') {
+        $compAssetId = trim(strtoupper($_POST['complaint_asset_id'] ?? ''));
+        $compAssetType = $_POST['complaint_asset_type'] ?? '';
+        $compProblem = $_POST['complaint_problem_category'] ?? '';
+        $compText = trim($_POST['complaint_text'] ?? '');
+        
+        $compStmt = $conn->prepare("INSERT INTO complaints (client_email, asset_id, asset_type, problem_category, complaint_text) VALUES (?, ?, ?, ?, ?)");
+        $compStmt->bind_param("sssss", $clientEmail, $compAssetId, $compAssetType, $compProblem, $compText);
+        
+        if ($compStmt->execute()) {
+            $_SESSION['flash_complaint_success'] = true;
+            header("Location: client-dashboard.php");
+            exit();
+        } else {
+            $toastTriggerMsg = "<i class='fa fa-exclamation-circle me-1'></i> Complaint Error: Failed registering escalation ticket.";
+        }
+        $compStmt->close();
+    }
+}
+
+// 4. Process Backend Metric Summaries (Aggregated Queries)
 $totalRequestsCount = 0;
 $openRequestsCount = 0;
-$overdueRequestsCount = 0; // Layout matching placeholder metric
+$overdueRequestsCount = 0;
 $notifications = [];
 
-// Combined Counter Logic: Single structured query lookup to reduce server round trips
-$countQuery = $conn->prepare("
-    SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status IN ('pending', 'processing') THEN 1 END) as open
-    FROM service_requests 
-    WHERE client_email = ?
-");
-
+$countQuery = $conn->prepare("SELECT COUNT(*) as total, COUNT(CASE WHEN status IN ('pending', 'processing', 'submitted') THEN 1 END) as open FROM service_requests WHERE client_email = ?");
 if ($countQuery) {
     $countQuery->bind_param("s", $clientEmail);
     $countQuery->execute();
@@ -60,12 +116,7 @@ if ($countQuery) {
     $countQuery->close();
 }
 
-// CRITICAL SAFETY GUARD: Re-verify that $clientName preserves your clean active session tracking token variables
-if (!isset($clientName) || empty($clientName)) {
-    $clientName = htmlspecialchars($_SESSION['name'] ?? 'Authorized Client');
-}
-
-// Optimized Notifications Pull Loop
+// Pull dynamic manager notification updates records
 $notifQuery = $conn->prepare("SELECT message, created_at FROM manager_notifications WHERE client_email = ? ORDER BY id DESC LIMIT 5");
 if ($notifQuery) {
     $notifQuery->bind_param("s", $clientEmail);
@@ -77,65 +128,16 @@ if ($notifQuery) {
     $notifQuery->close();
 }
 
-// 4. Form Submission Handling Rule Blocks (UPDATED WITH NATIVE ERROR EXCEPTION TRAPS)
-$toastTriggerMsg = ""; 
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) 
-    if ($_POST['action_type'] === 'service_request') 
-        $assetType = $_POST['asset_type'] ?? '';
-        $assetBrand = $_POST['asset_brand'] ?? '';
-        $assetId = trim(strtoupper($_POST['asset_id'] ?? ''));
-        $problemCategory = $_POST['problem_category'] ?? '';
-        $priority = $_POST['priority'] ?? '';
-        $phone = trim($_POST['phone'] ?? '');
-        $location = $_POST['location'] ?? '';
-        $paymentMethod = $_POST['payment_method'] ?? '';
-        
-                // ====================================================================
-        // FIXED SYNC SYSTEM CHECK: Using store_result() to clear MySQL buffer buffers
-        // ====================================================================
-        
-        // 1. Check for Duplicate Asset ID
-        $checkAsset = $conn->prepare("SELECT id FROM service_requests WHERE asset_id = ?");
-        $checkAsset->bind_param("s", $assetId);
-        $checkAsset->execute();
-        $checkAsset->store_result(); // CRITICAL: Frees up the MySQL pipe instantly!
-        $assetDuplicatesCount = $checkAsset->num_rows;
-        $checkAsset->close(); // Closes the channel cleanly
-        
-        // 2. Check for Duplicate Contact Phone Number
-        $checkPhone = $conn->prepare("SELECT id FROM service_requests WHERE phone = ?");
-        $checkPhone->bind_param("s", $phone);
-        $checkPhone->execute();
-        $checkPhone->store_result(); // CRITICAL: Frees up the MySQL pipe instantly!
-        $phoneDuplicatesCount = $checkPhone->num_rows;
-        $checkPhone->close(); // Closes the channel cleanly
-        
-        // Evaluate condition checks accurately matching constraints rules
-        if ($assetDuplicatesCount > 0) {
-            $toastTriggerMsg = "<i class='fa fa-database me-1'></i> Duplicate Error: This Asset ID is already linked to an active request ticket!";
-        } elseif ($phoneDuplicatesCount > 0) {
-            $toastTriggerMsg = "<i class='fa fa-phone-slash me-1'></i> Duplicate Error: This Phone Number is already linked to an active ticket row!";
-        } else {
-            // Proceed to execute your standard insertion queries block safely
-            $insertStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
-            $insertStmt->bind_param("sssssssss", $clientEmail, $assetType, $assetBrand, $assetId, $problemCategory, $priority, $phone, $location, $paymentMethod);
-            
-            if ($insertStmt->execute()) {
-                $_SESSION['flash_request_success'] = true;
-                header("Location: client-dashboard.php");
-                exit();
-            } else {
-                die("<h3>🚨 MySQL Statement Rejection Trace Log:</h3>" . 
-                    "<strong>Error Explanation:</strong> " . htmlspecialchars($insertStmt->error) . "<br>" .
-                    "<strong>Database Engine Log:</strong> " . htmlspecialchars($conn->error));
-            }
-            $insertStmt->close();
-        }
-
-
+// Check maintenance schedules to calculate overdue count status
+$maintQuery = $conn->prepare("SELECT COUNT(*) as overdue FROM maintenance_schedules WHERE client_email = ? AND status = 'Overdue'");
+if ($maintQuery) {
+    $maintQuery->bind_param("s", $clientEmail);
+    $maintQuery->execute();
+    $maintResult = $maintQuery->get_result()->fetch_assoc();
+    $overdueRequestsCount = $maintResult['overdue'] ?? 0;
+    $maintQuery->close();
+}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -143,16 +145,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Client Dashboard | ARN QuickFix Ltd.</title>
   
-      <!-- FIXED: Points to your actual local Bootstrap stylesheet file -->
   <link href="css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- FIXED: Points to your actual local custom style configurations file -->
   <link href="css/style.css" rel="stylesheet">
-  
-  <!-- FontAwesome v6 asset vector icons CDN (Keep this for font symbols) -->
   <link href="https://cloudflare.com" rel="stylesheet">
- 
-
   
   <style>
     :root {
@@ -177,28 +172,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
       font-size: 24px;
       text-decoration: none;
     }
-    .nav-user-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #64748B;
-    }
     .metric-card {
       background: #FFFFFF;
       border: 1px solid var(--border-gray);
       border-radius: 12px;
       padding: 20px;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.01);
     }
     .metric-title {
-      font-size: 13px;
+      font-size: 11px;
       color: #64748B;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       margin-bottom: 8px;
+      letter-spacing: 0.5px;
     }
     .metric-value {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--text-dark);
     }
@@ -206,18 +197,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
       background: #FFFFFF;
       border: 1px solid var(--border-gray);
       border-radius: 12px;
-      padding: 30px;
+      padding: 25px;
       margin-bottom: 24px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.01);
     }
     .panel-heading {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       margin-bottom: 20px;
       color: var(--text-dark);
     }
     .form-control, .form-select {
-      height: 48px;
+      height: 46px;
       background-color: #F8FAFC;
       border: 1px solid #CBD5E1;
       border-radius: 8px;
@@ -232,119 +223,72 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
       background-color: var(--primary-cyan);
       color: #FFFFFF;
       border: none;
-      height: 48px;
+      height: 46px;
       border-radius: 8px;
-      font-weight: 600;
+      font-weight: 700;
       width: 100%;
-      transition: background-color 0.2s;
     }
-    .btn-submit-cyan:hover {
-      background-color: #00AEC6;
-      color: #FFFFFF;
-    }
+    .btn-submit-cyan:hover { background-color: #00AEC6; color:#FFF; }
     .btn-complaint-red {
       background-color: #EF4444;
       color: #FFFFFF;
       border: none;
-      height: 48px;
+      height: 44px;
       border-radius: 8px;
-      font-weight: 600;
+      font-weight: 700;
       width: 100%;
     }
-    .btn-complaint-red:hover {
-      background-color: #DC2626;
-      color: #FFFFFF;
-    }
-    .action-icon-btn {
-      background: none;
-      border: none;
-      color: #64748B;
-      font-size: 18px;
-      position: relative;
-      padding: 5px;
-    }
-    .action-icon-btn:hover {
-      color: var(--primary-cyan);
-    }
-    .notification-dot {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 8px;
-      height: 8px;
-      background-color: #EF4444;
-      border-radius: 50%;
-    }
+    .btn-complaint-red:hover { background-color: #DC2626; color:#FFF; }
     .btn-outline-custom {
       border: 1px solid #CBD5E1;
-      border-radius: 20px;
-      padding: 6px 16px;
-      font-size: 13px;
+      border-radius: 4px;
+      padding: 5px 15px;
+      font-size: 12px;
       color: #64748B;
-      font-weight: 500;
+      font-weight: 600;
       text-decoration: none;
       background-color: #FFFFFF;
     }
-    .btn-outline-custom:hover {
-      border-color: var(--primary-cyan);
-      color: var(--primary-cyan);
-    }
+    .btn-outline-custom:hover { border-color: var(--primary-cyan); color: var(--primary-cyan); }
   </style>
 </head>
 <body>
-
-  <!-- ================= MASTER DASHBOARD NAVIGATION BAR ================= -->
-  <nav class="navbar dashboard-navbar d-flex align-items-center justify-content-between py-3 px-4 bg-white border-bottom">
-    
-    <!-- Left Section: Brand Logo and Title -->
+    <!-- ================= TOP NAVIGATION BAR ================= -->
+  <nav class="navbar dashboard-navbar d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-3">
-      <a href="index.php" class="brand-accent text-decoration-none d-flex align-items-center gap-2" style="color: var(--primary-cyan); font-weight: 700; font-size: 24px;">
-        <!-- FIXED: Repaired image filename layout string extension parameter typo -->
-        <img src="img/logo.svg.svg" alt="ARN QuickFix Logo" style="height: 38px; width: auto; object-fit: contain;" onerror="this.style.display='none';">  
+      <a href="client-dashboard.php" class="brand-accent d-flex align-items-center gap-2">
+        <img src="img/logo.svg.svg" alt="Logo" style="height: 50px; width: auto;" onerror="this.style.display='none';">
         <span>ARN QuickFix Ltd.</span>
       </a>
-      <!-- Changing border-start to border-start-4 thickens the line to 4px instantly -->
-      <span class="fs-4 fw-bold text-dark border-start border-start-4 ps-3" style="border-color: var(--border-gray) !important;">
+      <span class="fs-5 fw-bold text-dark border-start border-start-4 ps-3" style="border-color: var(--border-gray) !important;">
         Client Dashboard
       </span>
     </div>
-    
-    <!-- Right Section: Interactive Actions and Session Controls -->
-    <div class="d-flex align-items-center gap-4">
-      <span class="nav-user-label text-secondary small fw-semibold">
-        Client: <strong class="text-dark fw-bold" style="font-weight: 700 !important;"><?php echo $clientName; ?></strong>
-      </span>
-
-      <!-- Profile View Interface Controller Button -->
-      <a href="client-profile.php" class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold small d-flex align-items-center gap-2" style="font-size: 13px;">
-        <i class="fa fa-user-circle fs-6"></i> Profile
-      </a>
-      
-      <!-- Fully Terminated Session Exit Script Link -->
-      <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" onclick="return confirm('Are you sure you want to log out?');" style="font-size: 13px;">
-        <i class="fa fa-sign-out-alt me-1"></i> Logout
-      </a>
+    <div class="d-flex align-items-center gap-3">
+      <span class="nav-user-label text-secondary small fw-medium">Client: <strong><?php echo $clientName; ?></strong></span>
+      <a href="client-profile.php" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-bold" style="font-size:12px;">Profile</a>
+      <a href="logout.php" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" onclick="return confirm('Are you sure you want to log out?');" style="font-size:12px;">Logout</a>
     </div>
   </nav>
 
-  <!-- ================= MASTER DASHBOARD BODY GRID CONTAINER ================= -->
+  <!-- ================= MAIN LAYOUT WRAPPER GRID CONTAINER ================= -->
   <div class="container py-4">
 
-    <!-- Flash Alert Handler: Captures and fires success layouts after clean page routing loops -->
+    <!-- Interactive Action Status Flash Banners -->
     <?php if (isset($_SESSION['flash_request_success'])): ?>
-      <div class="alert alert-success border-0 shadow-sm rounded-3 p-3 mb-4 fw-bold font-monospace" style="border-left: 5px solid #10B981 !important; font-size:14px; color:#065F46;">
-        🎉 Service Request filed successfully! A dispatch manager will assign your technician shortly.
+      <div class="alert alert-success border-0 shadow-sm rounded-3 p-3 mb-4 fw-bold font-monospace" style="border-left: 5px solid #10B981 !important; font-size:13.5px; color:#065F46;">
+        🎉 Service Request submitted successfully! It has been dispatched to management.
       </div>
-      <?php unset($_SESSION['flash_request_success']); // Clears the variable instantly so it doesn't pop up again on manual refreshes ?>
+      <?php unset($_SESSION['flash_request_success']); ?>
     <?php endif; ?>
 
     <?php if (isset($_SESSION['flash_complaint_success'])): ?>
-      <div class="alert alert-warning border-0 shadow-sm rounded-3 p-3 mb-4 fw-bold font-monospace" style="border-left: 5px solid #F59E0B !important; font-size:14px; color:#92400E;">
-        ⚠️ Operational Escalation Complaint ticket successfully registered onto the supervisor queue loop.
+      <div class="alert alert-warning border-0 shadow-sm rounded-3 p-3 mb-4 fw-bold font-monospace" style="border-left: 5px solid #F59E0B !important; font-size:13.5px; color:#92400E;">
+        ⚠️ Complaint escalation ticket successfully recorded onto the supervisor queue.
       </div>
       <?php unset($_SESSION['flash_complaint_success']); ?>
     <?php endif; ?>
-    
+
     <!-- Counters Summary Metric Grid Rows -->
     <div class="row g-4 mb-4">
       <div class="col-md-4"><div class="metric-card"><div class="metric-title">Total Requests</div><div class="metric-value"><?php echo $totalRequestsCount; ?></div></div></div>
@@ -352,7 +296,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
       <div class="col-md-4"><div class="metric-card"><div class="metric-title">Overdue Maintenance</div><div class="metric-value text-danger"><?php echo $overdueRequestsCount; ?></div></div></div>
     </div>
 
-    <!-- Main Content Form / Table Dynamic Split Grid Setup Row -->
+    <!-- Main Split Columns Setup Layout Grid -->
+    <div class="row g-4">
+      
+      <!-- Main Content Form / Table Dynamic Split Grid Setup Row -->
     <div class="row g-4">
             <!-- LEFT HAND PANEL: Creation Matrix Form Panel Block -->
       <div class="col-lg-5">
@@ -552,7 +499,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
           <p class="text-muted small mb-3">Open a printable report and use Ctrl + P Save as PDF.</p>
           <div class="d-flex gap-2">
             <a href="print-requests.php?type=requests" target="_blank" class="btn btn-sm btn-light border px-3 py-2 text-secondary fw-semibold">Service Requests (PDF)</a>
-            <a href="generate_pdf.php?type=maintenance" target="_blank" class="btn btn-sm btn-light border px-3 py-2 text-secondary fw-semibold">Maintenance Overview (PDF)</a>
+            <a href="generate_maintenance-report.php?type=maintenance" target="_blank" class="btn btn-sm btn-light border px-3 py-2 text-secondary fw-semibold">Maintenance Overview (PDF)</a>
           </div>
         </div>
 
@@ -593,59 +540,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
     </div> <!-- Close main content split row -->
   </div> <!-- Close central wrapper container -->
 
-  <!-- ================= POPUP BOX MODAL A: NOTIFICATIONS PORTAL VIEW ================= -->
-  <!-- [Commented out intentionally since updates now rest permanently inline on your side-rail layout] -->
-
-  <!-- ================= POPUP BOX MODAL B: PROFILE VALUES PORTAL SETTINGS ================= -->
-  <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-4 border-0 shadow">
-        <div class="modal-header border-bottom">
-          <h5 class="modal-title fw-bold"><i class="fa fa-id-card text-primary me-2"></i>Profile Identity Parameters</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <div class="text-center mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center bg-light text-secondary rounded-circle border shadow-sm mb-2" style="width: 70px; height: 70px; font-size: 32px;">
-              <i class="fa fa-user"></i>
-            </div>
-            <h4 class="fw-bold m-0 text-dark"><?php echo $clientName; ?></h4>
-            <span class="badge bg-info text-capitalize mt-1 px-3 py-1"><?php echo htmlspecialchars($_SESSION['role'] ?? 'Client'); ?> Account</span>
-          </div>
-          <div class="border rounded-3 p-3 bg-light">
-            <div class="mb-2 pb-2 border-bottom d-flex justify-content-between align-items-center">
-              <span class="small text-secondary fw-semibold">Email Identity</span>
-              <span class="small text-dark font-monospace fw-bold"><?php echo $clientEmail; ?></span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="small text-secondary fw-semibold">Connection Node</span>
-              <span class="small text-muted font-monospace">Localhost DB Cluster v8.0</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= FIXED: MASTER MODERN CUSTOM TOAST POPUP NOTIFICATION CONTAINER ================= -->
-  <!-- Added right above your scripts so the Javascript engine can capture validation alerts cleanly -->
+  <!-- Modern Warning Toast DOM Structure -->
   <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1100;">
     <div id="validationToast" class="toast align-items-center text-white bg-danger border-0 rounded-3 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4500">
       <div class="d-flex p-3">
-        <div class="toast-body d-flex align-items-center gap-2 font-monospace fw-bold" id="toastMessage" style="font-size: 14px;">
-          <!-- Real-time error messages get injected right here by validation engines -->
-        </div>
+        <div class="toast-body d-flex align-items-center gap-2 font-monospace fw-bold" id="toastMessage" style="font-size: 14px;"></div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" style="box-shadow: none;"></button>
       </div>
     </div>
   </div>
 
-     <!-- FIXED: Restored the official, working Bootstrap 5 compiled JavaScript engine link library package -->
+  <!-- Framework Compiled Engine Injector Libraries -->
   <!-- <script src="https://jsdelivr.net"></script> -->
-
-  <!-- ================= MASTER DASHBOARD ACTIVE JAVASCRIPT ENGINES ================= -->
   <script>
-    // 1. Backend Duplicate Error Monitor Intercept Trigger on Page Load
+    // Module 1: Automated Backend Duplicate Error Monitor Intercept Trigger
     document.addEventListener("DOMContentLoaded", function() {
         const backendErrorMsg = "<?php echo isset($toastTriggerMsg) ? addslashes($toastTriggerMsg) : ''; ?>";
         if (backendErrorMsg.trim() !== "") {
@@ -658,7 +566,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
         }
     });
 
-    // 2. Dynamic Problem Category Dropdown Options Swapper
+    // Module 2: Dynamic Dropdown Problem Categories Swapper Menu Loader
     function updateProblemCategories() {
       const assetType = document.getElementById('asset_type').value;
       const problemSelect = document.getElementById('problem_category');
@@ -712,29 +620,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
       }
     }
 
-    // 3. Form Validation Intercept Engine (BULLETPROOF FIX)
+    // Module 3: Combined Form Verification Intercept Engine (Asset prefixes & 11-digit Phone)
     function validateFormLayout(event) {
         const assetType = document.getElementById('asset_type').value;
         const assetId = document.getElementById('asset_id').value.trim().toUpperCase();
-        
-        // Securely grabs the phone value by targeting either type or name attributes safely
-        const phoneInput = document.querySelector("input[name='phone']") || document.querySelector("input[type='tel']");
+        const phoneInput = document.querySelector("input[name='phone']");
         const phoneValue = phoneInput ? phoneInput.value.trim() : "";
         
         const toastElement = document.getElementById('validationToast');
         const toastMessage = document.getElementById('toastMessage');
         
-        if (!toastElement || !toastMessage) {
-            if (assetType === 'Elevator' && !assetId.startsWith('ELV')) { alert("Error: Elevator ID must start with ELV"); event.preventDefault(); return false; }
-            if (assetType === 'AC' && !assetId.startsWith('AC')) { alert("Error: AC ID must start with AC"); event.preventDefault(); return false; }
-            if (assetType === 'Generator' && !assetId.startsWith('GEN')) { alert("Error: Generator ID must start with GEN"); event.preventDefault(); return false; }
-            if (!/^\d{11}$/.test(phoneValue)) { alert("Error: Phone Number must be exactly 11 digits."); event.preventDefault(); return false; }
-            return true;
-        }
-
+        if (!toastElement || !toastMessage) { return true; }
         const bsToast = new bootstrap.Toast(toastElement);
 
-        // --- CHECK RULE 1: Prefix Asset Matching Validation ---
+        // Prefix Mismatch Validations Check
         if (assetType === 'Elevator' && !assetId.startsWith('ELV')) {
             toastMessage.innerHTML = '<i class="fa fa-exclamation-triangle fs-5 me-1"></i> Validation Error: Elevator Asset ID must start with "ELV" (e.g., ELV-101)';
             bsToast.show();
@@ -754,7 +653,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
             return false;
         }
         
-        // --- CHECK RULE 2: Strict 11-Digit Length Sequence Validation ---
+        // Strict 11-Digit Length Phone Match Rules
         const phonePattern = /^\d{11}$/;
         if (!phonePattern.test(phoneValue)) {
             toastMessage.innerHTML = '<i class="fa fa-phone fs-5 me-1"></i> Validation Error: Phone Number must contain exactly 11 numeric digits (e.g., 01712345678).';
@@ -769,7 +668,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
 </body>
 </html>
 <?php 
-if (isset($conn)) { 
-    $conn->close(); 
-} 
+// Terminate your database integration connection thread cleanly on page exit
+if (isset($conn)) {
+    $conn->close();
+}
 ?>

@@ -138,13 +138,14 @@ if ($conn->connect_error) {
               <th class="py-3" style="font-weight: 700 !important;">Phone</th>
               <th class="py-3" style="font-weight: 700 !important;">Location</th>
               <th class="py-3" style="font-weight: 700 !important;">Payment</th>
+              <th class="py-3" style="font-weight: 700 !important;">Amount</th>
               <th class="py-3" style="font-weight: 700 !important;">Created</th>
             </tr>
           </thead>
-          <tbody>
+                   <tbody>
             <?php
-            // Pulls every single recorded row linked to the authenticated user email loop parameters
-            $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, status, phone, location, payment_method, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
+            // UPDATED QUERY: Selects the amount field string safely
+            $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, status, phone, location, payment_method, amount, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
             if ($stmt) {
                 $stmt->bind_param("s", $clientEmail);
                 $stmt->execute();
@@ -153,27 +154,34 @@ if ($conn->connect_error) {
                 if ($result->num_rows > 0) {
                     $sl = 1;
                     while ($row = $result->fetch_assoc()) {
+                        $statusClass = "bg-warning text-dark"; 
+                        if ($row['status'] === 'processing') { $statusClass = "bg-primary text-white"; }
+                        elseif ($row['status'] === 'completed') { $statusClass = "bg-success text-white"; }
+                        
                         echo "<tr style='border-bottom: 1px solid #F1F5F9;'>";
                         echo "<td class='text-secondary fw-semibold'>" . $sl++ . "</td>";
-                        echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_id']) . "</td>";
+                        echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
                         echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
                         echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
                         echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
                         echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['priority']) . "</td>";
-                        
-                        // Status indicator custom class mapping matching your cyan layout look
-                        echo "<td><span class='status-badge-submitted'>" . htmlspecialchars($row['status']) . "</span></td>";
-                        
+                        echo "<td><span class='badge " . $statusClass . " text-capitalize px-3 py-1.5 fw-bold'>" . htmlspecialchars($row['status']) . "</span></td>";
                         echo "<td class='font-monospace text-dark'>" . htmlspecialchars($row['phone']) . "</td>";
                         echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
                         echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
                         
-                        // Formats full dynamic timestamps to show both clean dates and hours tracking logs
+                        // NEW FINANCIAL DATA PARAMETER EVALUATION STREAM
+                        if (is_null($row['amount']) || $row['amount'] == 0.00) {
+                            echo "<td><span class='text-muted small font-monospace fw-bold' style='color: #94A3B8 !important;'>Pending Work</span></td>";
+                        } else {
+                            echo "<td class='fw-bold text-dark font-monospace'>৳" . number_format($row['amount'], 2) . "</td>";
+                        }
+                        
                         echo "<td class='text-muted small fw-medium font-monospace'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
                         echo "</tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='11' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests logs found for this account node.</td></tr>";
+                    echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests logs found for this account node.</td></tr>";
                 }
                 $stmt->close();
             }

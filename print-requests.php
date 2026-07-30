@@ -35,7 +35,8 @@ if ($conn->connect_error) {
     <!-- Report Top Header Banner -->
     <div class="report-header d-flex justify-content-between align-items-end">
       <div>
-        <h1 class="fw-bold m-0" style="color: #00C2CB; letter-spacing: -0.5px;">ARN QuickFix Ltd.</h1>
+         <img src="img/logo.svg.svg" alt="Logo" class="report-logo" onerror="this.src='img/logo.png'; this.onerror=function(){this.style.display='none';};"><h1 class="fw-bold m-0" style="color: #00C2CB; letter-spacing: -0.5px;">ARN QuickFix Ltd.</h1>
+        
         <p class="text-muted m-0 small fw-semibold font-monospace text-uppercase" style="font-size: 11px;">Complete Customer Service Requests Master Ledger Statement</p>
       </div>
       <div class="text-end">
@@ -54,7 +55,7 @@ if ($conn->connect_error) {
 
     <!-- Expanded Complete Parameter Data Ledger Table Grid Matrix -->
     <div class="table-responsive">
-      <table class="table table-bordered table-striped align-middle" style="font-size: 12.5px;">
+            <table class="table table-bordered table-striped align-middle" style="font-size: 12.5px;">
         <thead class="table-dark text-uppercase font-monospace" style="font-size: 11.5px;">
           <tr>
             <th class="py-3" style="width: 50px; font-weight: 700 !important;">SL</th>
@@ -65,15 +66,16 @@ if ($conn->connect_error) {
             <th class="py-3" style="font-weight: 700 !important;">Priority</th>
             <th class="py-3" style="font-weight: 700 !important;">Contact Phone</th>
             <th class="py-3" style="font-weight: 700 !important;">Operational Location</th>
-            <th class="py-3" style="font-weight: 700 !important;">Preferred Billing Method</th>
+            <th class="py-3" style="font-weight: 700 !important;">Billing Method</th>
+            <!-- ADDED AMOUNT REPORT COLUMN -->
+            <th class="py-3" style="font-weight: 700 !important;">Amount</th>
             <th class="py-3" style="font-weight: 700 !important;">Status</th>
             <th class="py-3" style="font-weight: 700 !important;">Created Date</th>
           </tr>
         </thead>
         <tbody>
           <?php
-          // Pulls every single column value field recorded from the database rows matching the user email loop parameters
-          $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, phone, location, payment_method, status, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
+          $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, phone, location, payment_method, amount, status, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
           if ($stmt) {
               $stmt->bind_param("s", $clientEmail);
               $stmt->execute();
@@ -89,18 +91,23 @@ if ($conn->connect_error) {
                       echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
                       echo "<td class='fw-medium text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
                       echo "<td class='fw-semibold'>" . htmlspecialchars($row['priority']) . "</td>";
-                      
-                      // NEW ADDITION: Expanded information channels variables mappings row tracking
                       echo "<td class='font-monospace text-dark fw-semibold'>" . htmlspecialchars($row['phone']) . "</td>";
                       echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
                       echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
+                      
+                      // DYNAMIC AMOUNT PRINT CELL
+                      if (is_null($row['amount']) || $row['amount'] == 0.00) {
+                          echo "<td><span class='text-muted small font-monospace fw-bold'>Pending Work</span></td>";
+                      } else {
+                          echo "<td class='fw-bold text-dark font-monospace'>৳" . number_format($row['amount'], 2) . "</td>";
+                      }
                       
                       echo "<td class='text-capitalize fw-bold' style='color: #00C2CB;'>" . htmlspecialchars($row['status']) . "</td>";
                       echo "<td class='font-monospace small text-muted'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
                       echo "</tr>";
                   }
               } else {
-                  echo "<tr><td colspan='11' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests history logged under this profile.</td></tr>";
+                  echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests history logged under this profile.</td></tr>";
               }
               $stmt->close();
           }
