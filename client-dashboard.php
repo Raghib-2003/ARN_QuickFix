@@ -1,21 +1,28 @@
 <?php
-// 1. Force explicit error reporting on for local workspace debugging
+// 1. Initialize Active User Session and Force Authorization Guard Rails
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Force error reporting on for local workspace debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 2. Initialize Active User Session and Force Authorization Guard Rails
-session_start();
+// BULLETPROOF FIX: We check for BOTH uppercase and lowercase variants to prevent any redirection loops!
+if (isset($_SESSION['Email'])) { $_SESSION['email'] = $_SESSION['Email']; }
+if (isset($_SESSION['Name'])) { $_SESSION['name'] = $_SESSION['Name']; }
 
-// Redirect back to login if no valid session data exists
 if (!isset($_SESSION['email']) || !isset($_SESSION['name'])) {
     header("Location: login.php");
     exit();
 }
 
-// Extract authenticated user parameters
+// Extract authenticated user parameters safely
 $clientName = htmlspecialchars($_SESSION['name']);
 $clientEmail = htmlspecialchars($_SESSION['email']);
+
+
 
 // 3. Establish Secure Database Integration Network Link
 $servername = "localhost";
@@ -28,29 +35,37 @@ if ($conn->connect_error) {
     die("Database Connection Error Trace: " . $conn->connect_error);
 }
 
-// 4. Process Backend Data Metric Tracking Summaries
-// Total Requests Counter
-$totalQuery = $conn->prepare("SELECT COUNT(*) as count FROM service_requests WHERE client_email = ?");
-$totalQuery->bind_param("s", $clientEmail);
-$totalQuery->execute();
-$totalResult = $totalQuery->get_result()->fetch_assoc();
-$totalRequestsCount = $totalResult['count'] ?? 0;
-$totalQuery->close();
-
-// Open Requests Status Counter (Pending or In-Progress Actions)
-$openQuery = $conn->prepare("SELECT COUNT(*) as count FROM service_requests WHERE client_email = ? AND status IN ('pending', 'processing')");
-$openQuery->bind_param("s", $clientEmail);
-$openQuery->execute();
-$openResult = $openQuery->get_result()->fetch_assoc();
-$openRequestsCount = $openResult['count'] ?? 0;
-$openQuery->close();
-
-// Overdue Maintenance Task Counter Flag Tracking
-$overdueRequestsCount = 1; // Keeping placeholder metric matching your layout mock parameters
-
-// Fetch Notifications Loop Array for active user
-$notifQuery = $conn->prepare("SELECT message, created_at FROM manager_notifications WHERE client_email = ? ORDER BY id DESC LIMIT 5");
+// 3. Process Backend Data Metric Tracking Summaries (RESTORED USERNAME PRESERVATION)
+$totalRequestsCount = 0;
+$openRequestsCount = 0;
+$overdueRequestsCount = 0; // Layout matching placeholder metric
 $notifications = [];
+
+// Combined Counter Logic: Single structured query lookup to reduce server round trips
+$countQuery = $conn->prepare("
+    SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN status IN ('pending', 'processing') THEN 1 END) as open
+    FROM service_requests 
+    WHERE client_email = ?
+");
+
+if ($countQuery) {
+    $countQuery->bind_param("s", $clientEmail);
+    $countQuery->execute();
+    $countResult = $countQuery->get_result()->fetch_assoc();
+    $totalRequestsCount = $countResult['total'] ?? 0;
+    $openRequestsCount = $countResult['open'] ?? 0;
+    $countQuery->close();
+}
+
+// CRITICAL SAFETY GUARD: Re-verify that $clientName preserves your clean active session tracking token variables
+if (!isset($clientName) || empty($clientName)) {
+    $clientName = htmlspecialchars($_SESSION['name'] ?? 'Authorized Client');
+}
+
+// Optimized Notifications Pull Loop
+$notifQuery = $conn->prepare("SELECT message, created_at FROM manager_notifications WHERE client_email = ? ORDER BY id DESC LIMIT 5");
 if ($notifQuery) {
     $notifQuery->bind_param("s", $clientEmail);
     $notifQuery->execute();
@@ -117,7 +132,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
 }
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -296,16 +310,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
     <!-- Right Section: Interactive Actions and Session Controls -->
     <div class="d-flex align-items-center gap-4">
       
-      <!-- Functional Active Session Username Label -->
-      <span class="nav-user-label text-secondary small fw-medium">
-        Client: <strong class="text-dark"><?php echo $clientName; ?></strong>
-      </span>
-      
-      <!-- Profile View Interface Controller Button -->
-      <button class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold small d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#profileModal" style="font-size: 13px;">
-        <i class="fa fa-user-circle fs-6"></i> Profile
-      </button>
+      <span class="nav-user-label text-secondary small fw-semibold">
+  Client: <strong class="text-dark fw-bold" style="font-weight: 700 !important;"><?php echo $clientName; ?></strong>
+</span>
 
+      <!-- Profile View Interface Controller Button -->
+       <!-- Points directly to your new profile manager view layout page -->
+<a href="client-profile.php" class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold small d-flex align-items-center gap-2" style="font-size: 13px;">
+  <i class="fa fa-user-circle fs-6"></i> Profile
+</a>
       <!-- Fully Terminated Session Exit Script Link -->
       <a href="logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" onclick="return confirm('Are you sure you want to log out?');" style="font-size: 13px;">
         <i class="fa fa-sign-out-alt me-1"></i> Logout
@@ -453,17 +466,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
           </div>
         </div>
 
-        <!-- Module B: Scheduled Maintenance Cycles Calendar Box -->
+                <!-- Module B: Scheduled Maintenance Cycles Calendar Box -->
         <div class="dashboard-panel mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="panel-heading m-0">Maintenance Overview</div>
             <a href="maintenance_details.php" class="btn-outline-custom">View Maintenance Details</a>
           </div>
-          <div class="p-3 border rounded-3 bg-light" style="font-size: 13px;">
-            <div class="fw-bold text-dark mb-1">ELV-9-C</div>
-            <div class="text-secondary small">Type: Monthly | Last Check: 12-06-2026 | Next Check: 12-07-2026</div>
+          
+          <!-- Explicitly labeled sample container with subtle aesthetic background tint styling -->
+          <div class="p-3 border border-warning-subtle rounded-3" style="font-size: 13px; background-color: #FFFBEB !important;">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge bg-warning text-dark font-monospace fw-bold" style="font-size: 10px;">EXAMPLE DEMO</span>
+              <div class="fw-bold text-dark">ELV-9-C (Elevator Unit)</div>
+            </div>
+            <div class="text-secondary small fw-semibold">Type: Monthly Check | Last Check: 12-06-2026 | Next Due: 12-07-2026</div>
           </div>
         </div>
+
 
                 <!-- ================= NEW INFALLIBLE MANAGER NOTIFICATIONS PANEL ================= -->
         <div class="dashboard-panel mb-4" style="border-left: 5px solid var(--primary-cyan) !important;">
