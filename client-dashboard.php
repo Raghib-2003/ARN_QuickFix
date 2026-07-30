@@ -129,10 +129,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
   <link href="css/bootstrap.min.css" rel="stylesheet">
   
   <!-- FIXED: Points to your actual local custom style configurations file -->
-  <link href="css/style.css" rel="stylesheet">
+  <!-- <link href="css/style.css" rel="stylesheet"> -->
   
   <!-- FontAwesome v6 asset vector icons CDN (Keep this for font symbols) -->
-  <link href="https://cloudflare.com" rel="stylesheet">
+  <!-- <link href="https://cloudflare.com" rel="stylesheet"> -->
  
 
   
@@ -301,15 +301,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
         Client: <strong class="text-dark"><?php echo $clientName; ?></strong>
       </span>
       
-      <!-- Old-School Local FontAwesome Icon Layout Code -->
-<button class="btn btn-link p-1 position-relative text-dark" data-bs-toggle="modal" data-bs-target="#notificationModal" style="font-size: 22px; box-shadow: none; text-decoration: none;" title="View Notifications">
-  <i class="fa fa-envelope"></i> <!-- Swapped to a classic mail envelope symbol supported by older local setups -->
-  <?php if (!empty($notifications)): ?>
-    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 9px; height: 9px;"></span>
-  <?php endif; ?>
-</button>
-
-
       <!-- Profile View Interface Controller Button -->
       <button class="btn btn-outline-secondary rounded-pill px-3 py-1 fw-semibold small d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#profileModal" style="font-size: 13px;">
         <i class="fa fa-user-circle fs-6"></i> Profile
@@ -474,6 +465,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
           </div>
         </div>
 
+                <!-- ================= NEW INFALLIBLE MANAGER NOTIFICATIONS PANEL ================= -->
+        <div class="dashboard-panel mb-4" style="border-left: 5px solid var(--primary-cyan) !important;">
+          <div class="d-flex align-items-center mb-3">
+            <!-- Native HTML character emoji instead of FontAwesome ensures a symbol always renders -->
+            <span style="font-size: 20px; margin-right: 10px;">✉️</span>
+            <div class="panel-heading m-0">Manager Notifications</div>
+          </div>
+          
+          <div style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
+            <?php if (!empty($notifications)): ?>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <?php foreach ($notifications as $notif): ?>
+                  <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                      <span style="font-size: 13px; font-weight: 700; color: #334155;">📋 Operations Dispatcher</span>
+                      <span style="font-size: 11px; font-family: monospace; color: #64748B;"><?php echo htmlspecialchars($notif['created_at']); ?></span>
+                    </div>
+                    <p style="font-size: 13.5px; font-weight: 600; color: #475569; margin: 0; padding-left: 10px; border-left: 3px solid var(--primary-cyan);">
+                      <?php echo htmlspecialchars($notif['message']); ?>
+                    </p>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php else: ?>
+              <!-- Clean structural fallback card layout view -->
+              <div class="text-center py-4 text-muted" style="background-color: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px;">
+                <p class="small m-0 font-monospace fw-bold" style="color: #64748B;">No new messages received from the management team.</p>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+
+
         <!-- Module C: Document Downloads Portal -->
         <div class="dashboard-panel mb-4">
           <div class="panel-heading mb-1">Downloads</div>
@@ -487,7 +511,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
         <!-- Module D: Complaints Ticket Registration Escalation Form Block -->
         <div class="dashboard-panel border border-danger-subtle bg-white">
           <div class="panel-heading text-danger mb-1">Complaint</div>
-          <p class="text-muted small mb-3">Lodge a direct operational escalation ticket onto the general supervisor dashboard queue.</p>
+          <p class="text-muted small mb-3">Lodge a direct operational escalation ticket onto the manager dashboard queue.</p>
           <form action="client-dashboard.php" method="POST">
             <input type="hidden" name="action_type" value="complaint">
             <div class="row g-2">
@@ -522,7 +546,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
   </div> <!-- Close central wrapper container -->
 
   <!-- ================= POPUP BOX MODAL A: NOTIFICATIONS PORTAL VIEW ================= -->
-  <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+  <!-- <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow">
         <div class="modal-header border-bottom">
@@ -551,7 +575,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- ================= POPUP BOX MODAL B: PROFILE VALUES PORTAL SETTINGS ================= -->
   <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
@@ -599,7 +623,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) {
 </div>
 
   <!-- FIXED: Restored the official, working Bootstrap 5 compiled JavaScript engine link -->
-  <script src="https://jsdelivr.net"></script>
+  <!-- <script src="https://jsdelivr.net"></script> -->
 
   <!-- Dynamic Problem Category Menu Loader Script Logic -->
   <script>
