@@ -133,7 +133,7 @@ $currentImagePath = $userData['image_path'] ?? '';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account Settings Portal | ARN QuickFix</title>
+  <title>Client Profile | ARN QuickFix Ltd.</title>
   
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
@@ -163,7 +163,7 @@ $currentImagePath = $userData['image_path'] ?? '';
   <!-- ================= TOP NAVIGATION BAR ================= -->
   <nav class="navbar profile-navbar d-flex align-items-center justify-content-between">
     <a href="client-dashboard.php" class="brand-accent d-flex align-items-center gap-2">
-      <img src="img/logo.png" alt="Logo" style="height: 36px; width: auto;" onerror="this.style.display='none';">
+      <img src="img/logo.svg.svg" alt="Logo" style="height: 36px; width: auto;" onerror="this.style.display='none';">
       <span>ARN QuickFix Ltd.</span>
     </a>
     <div class="d-flex align-items-center gap-3">
