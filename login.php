@@ -40,14 +40,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if (password_verify($password, $user['password_hash'])) {
                 $_SESSION['email'] = $email;
                 $_SESSION['name'] = $user['name'];
-                $_SESSION['role'] = $user['role'];
+                
+                // FIXED INTERLOCK: Forces lower-case comparison to prevent string match typos
+                $userRole = strtolower(trim($user['role'] ?? 'client'));
+                $_SESSION['role'] = $userRole;
                 
                 $stmt->close();
                 $conn->close();
                 
-                // Routes the active authenticated user profile straight into your newly designed tracking portal lane
-                header("Location: client-dashboard.php");
-                exit();
+                // ====================================================================
+                // FIXED DYNAMIC ROUTER JUNCTION (ROUTING DRIVEN BY ACCURATE ACCOUNT ROLES)
+                // ====================================================================
+                if ($userRole === 'manager') {
+                    // Redirects administrative staff cleanly to the Management Dashboard panel
+                    header("Location: manager-dashboard.php");
+                    exit();
+                } else {
+                    // Redirects regular customer nodes cleanly to the Client Dashboard portal lane
+                    header("Location: client-dashboard.php");
+                    exit();
+                }
+                
             } else {
                 echo "<script>alert('Invalid account password credentials! Please try again.'); window.history.back();</script>";
                 exit();
@@ -62,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit();
     }
 }
-$conn->close();
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
