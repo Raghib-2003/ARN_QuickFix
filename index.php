@@ -1242,27 +1242,4 @@ function switchMachinery(type) {
 <script src="js/main.js"></script>
 </body>
 </html>
-<tr>
-                <td class="fw-bold text-dark py-3">Diagnostics & Repairs</td>
-                <td class="py-3">
-                  <div class="fw-semibold text-dark mb-1">Fault Decoding, Motor Rebuilds & 24/7 Calls</div>
-                  <div class="text-muted small">Using specialized tools to decode control panel alert flags, executing engine rebuild top/complete overhauls, replacing Automatic Voltage Regulators (AVR), and around-the-clock technician call-outs for power critical sites.</div>
-                </td>
-                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 25,000 – 1.50 Lakh</td>
-              </tr>
-              <tr>
-                <td class="fw-bold text-dark py-3">Advanced Testing</td>
-                <td class="py-3">
-                  <div class="fw-semibold text-dark mb-1">Load Bank Testing & Compliance Loops</div>
-                  <div class="text-muted small">Simulating full-capacity electrical demand to verify reliability, testing switch mechanics, environmental compliance certification, telemetry tracking integration, and temporary rentals.</div>
-                </td>
-                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 20,000 – 95,000</td>
-              </tr>
-              <tr>
-                <td class="fw-bold text-dark py-3">Auxiliary Support</td>
-                <td class="py-3">
-                  <div class="fw-semibold text-dark mb-1">Fuel Polishing & Cooling Care</div>
-                  <div class="text-muted small">Removing water and contaminants from sitting diesel fuel tanks, servicing block heaters, radiator fans, telemetry remote health trackers, and exhaust pathways.</div>
-                </td>
-                <td class="text-end text-primary fw-bold fs-5 py-3">৳ 10,000 – 35,000</td>
-              </tr>
+
