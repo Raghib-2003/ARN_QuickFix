@@ -15,8 +15,10 @@ if (!isset($_SESSION['email']) || (isset($_SESSION['role']) && strtolower($_SESS
     // exit();
 }
 
+// FIXED VARIABLE CAPTURE: Fallback cleanly to their actual email handle if their name hasn't been set yet
 $managerEmail = $_SESSION['email'] ?? 'manager@arnquickfix.com';
-$managerName = $_SESSION['name'] ?? 'Operations Director';
+$managerName = !empty($_SESSION['name']) ? $_SESSION['name'] : strstr($managerEmail, '@', true);
+
 
 // 2. High-Performance Database Integration Connection
 $servername = "127.0.0.1";
@@ -42,6 +44,21 @@ if ($qProgress) { $inProgressCount = $qProgress->fetch_assoc()['total'] ?? 0; }
 
 $qOverdue = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules WHERE status = 'Overdue'");
 if ($qOverdue) { $overdueAlertsCount = $qOverdue->fetch_assoc()['total'] ?? 0; }
+// Count Technician Updates (FIXED: Counts all active processing jobs on technician terminals)
+$techUpdatesCount = 0;
+$qTech = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'processing'");
+if ($qTech) { 
+    $techUpdatesCount = $qTech->fetch_assoc()['total'] ?? 0; 
+}
+// Count Total Completed Reports Statements 
+$reportsCount = 0;
+$qRep = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'completed'");
+if ($qRep) { $reportsCount = $qRep->fetch_assoc()['total'] ?? 0; }
+
+// Count Total Customer Complaint Tickets Registered
+$complaintsCount = 0;
+$qComp = $conn->query("SELECT COUNT(*) as total FROM complaints");
+if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -279,9 +296,12 @@ if ($qOverdue) { $overdueAlertsCount = $qOverdue->fetch_assoc()['total'] ?? 0; }
     </div>
     
     <div class="d-flex align-items-center gap-3">
-      <div class="d-flex align-items-center gap-2 me-2">
-        <div style="width: 8px; height: 8px; background-color: #10B981;" class="rounded-circle animate-pulse"></div>
-        <span class="small fw-bold text-secondary" style="font-size: 13px;">Admin Terminal Linked</span>
+      <div class="d-flex align-items-center gap-2 me-2 bg-light px-3 py-1.5 rounded-pill border" style="border-color: #E2E8F0 !important;">
+        <!-- Pulsing Active Connection Node Dot -->
+        <div style="width: 8px; height: 8px; background-color: #10B981;" class="rounded-circle"></div>
+        <span class="small fw-semibold text-secondary" style="font-size: 13px;">
+          Manager: <strong class="text-dark fw-bold"><?php echo $managerName; ?></strong>
+        </span>
       </div>
       <!-- REQUIRED ATTRIBUTES: Check that data-bs-toggle and data-bs-target match your modal exactly -->
 <a href="logout.php" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-bold" onclick="return confirm('Are you sure you want to log out?');" style="font-size:12px;">Logout</a>
@@ -303,10 +323,16 @@ if ($qOverdue) { $overdueAlertsCount = $qOverdue->fetch_assoc()['total'] ?? 0; }
       
       <!-- Premium Quick Action Buttons (Pill Shaped With Hover Transition Effects) -->
       <div class="d-flex gap-2">
-        <a href="technician_updates.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE;">Technician Updates</a>
-        <a href="manager_reports.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0;">Reports</a>
-        <a href="manager_profile.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;">Profile</a>
-        <a href="manager_complaints.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #FEF2F2; color: #EF4444; border: 1px solid #FEE2E2;">Complaints</a>
+       <a href="technician_updates.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; text-decoration: none; white-space: nowrap;">
+          Tech Updates <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #0891B2 !important; font-family: sans-serif; vertical-align: middle;"><?php echo $techUpdatesCount; ?></span>
+        </a>
+        <a href="manager_reports.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; text-decoration: none; white-space: nowrap;">
+          Reports <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #475569 !important; font-family: sans-serif; vertical-align: middle;"><?php echo $reportsCount; ?></span>
+        </a>
+        <a href="manager_complaints.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #FEF2F2; color: #EF4444; border: 1px solid #FEE2E2; text-decoration: none; white-space: nowrap;">
+          Complaints <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #EF4444 !important; font-family: sans-serif; vertical-align: middle;"><?php echo $complaintsCount; ?></span>
+        </a>         
+        <a href="manager-profile.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;">Profile</a>
       </div>
     </div>
 
