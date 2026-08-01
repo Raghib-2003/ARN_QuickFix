@@ -154,6 +154,43 @@ if ($conn->connect_error) {
                 if ($result->num_rows > 0) {
                     $sl = 1;
                     while ($row = $result->fetch_assoc()) {
+                        $currentProblem = trim($row['problem_category'] ?? '');
+                        $priceGuideTag = "";
+
+                        // Dynamic Price Guide Calculation Mapping Engine
+                        switch ($currentProblem) {
+                            // --- Elevator Categories ---
+                            case 'Component Repair':    $priceGuideTag = "৳4,500"; break;
+                            case 'Part Replacement':     $priceGuideTag = "৳3,000"; break;
+                            case 'Modernization':        $priceGuideTag = "৳15,000"; break;
+                            case 'Routine Servicing':    $priceGuideTag = "৳2,000"; break;
+                            case 'Emergency Breakdown':  $priceGuideTag = "৳5,000"; break;
+
+                            // --- AC Categories ---
+                            case 'Basic Servicing':      $priceGuideTag = "৳600"; break;
+                            case 'Deep Cleaning':        $priceGuideTag = "৳1,200"; break;
+                            case 'Duct Cleaning':        $priceGuideTag = "৳5,000"; break;
+                            case 'Gas Refill':           $priceGuideTag = "৳2,500"; break;
+                            case 'Electrical Repair':    $priceGuideTag = "৳1,500"; break;
+                            case 'Compressor Repair':    $priceGuideTag = "৳4,000"; break;
+
+                            // --- Generator Categories ---
+                            case 'Preventative Inspection': $priceGuideTag = "৳3,500"; break;
+                            case 'Fault Code Diagnostic':   $priceGuideTag = "৳1,800"; break;
+                            case 'Engine Rebuild':          $priceGuideTag = "৳25,000"; break;
+                            case 'Component Repairs':       $priceGuideTag = "৳6,000"; break;
+                            case 'Advanced Testing':        $priceGuideTag = "৳8,000"; break;
+                            case 'Fuel Polishing':          $priceGuideTag = "৳4,500"; break;
+                            
+                            default: $priceGuideTag = ""; break;
+                        }
+
+                        // Create the HTML pricing badge layout string cleanly if a price is matched
+                        $badgeHtml = "";
+                        if (!empty($priceGuideTag)) {
+                            $badgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10.5px; padding: 3px 7px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; font-weight: 700; display: inline-block;'>Base: " . $priceGuideTag . "</span></div>";
+                        }
+
                         $statusClass = "bg-warning text-dark"; 
                         if ($row['status'] === 'processing') { $statusClass = "bg-primary text-white"; }
                         elseif ($row['status'] === 'completed') { $statusClass = "bg-success text-white"; }
@@ -163,7 +200,10 @@ if ($conn->connect_error) {
                         echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
                         echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
                         echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
-                        echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
+                        
+                        // INJECTED PRICE DISPLAY: Prints out your problem name, immediately followed by the clean layout badge!
+                        echo "<td class='fw-semibold text-dark'><div>" . htmlspecialchars($currentProblem) . "</div>" . $badgeHtml . "</td>";
+                        
                         echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['priority']) . "</td>";
                         echo "<td><span class='badge " . $statusClass . " text-capitalize px-3 py-1.5 fw-bold'>" . htmlspecialchars($row['status']) . "</span></td>";
                         echo "<td class='font-monospace text-dark'>" . htmlspecialchars($row['phone']) . "</td>";
@@ -192,6 +232,7 @@ if ($conn->connect_error) {
     </div>
 
   </div>
+
 
   <!-- <script src="https://jsdelivr.net"></script> -->
 </body>

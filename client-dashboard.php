@@ -417,7 +417,7 @@ if ($maintQuery) {
 
       <!-- RIGHT HAND PANEL: Request History Logs, Overviews, and Complaint Box -->
       <div class="col-lg-7">
-        <!-- Module A: Recent Request Monitor Box Grid -->
+                <!-- Module A: Recent Request Monitor Box Grid (WITH LIVE INLINE BASELINE PRICE SYNC) -->
         <div class="dashboard-panel mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="panel-heading m-0">Recent Request</div>
@@ -450,16 +450,54 @@ if ($maintQuery) {
                         if ($logResult->num_rows > 0) {
                             $sl = 1;
                             while ($row = $logResult->fetch_assoc()) {
+                                $currentProblem = trim($row['problem_category'] ?? '');
+                                $priceGuideTag = "";
+
+                                // Dynamic Price Guide Calculation Mapping Engine
+                                switch ($currentProblem) {
+                                    // --- Elevator Categories ---
+                                    case 'Component Repair':    $priceGuideTag = "৳4,500"; break;
+                                    case 'Part Replacement':     $priceGuideTag = "৳3,000"; break;
+                                    case 'Modernization':        $priceGuideTag = "৳15,000"; break;
+                                    case 'Routine Servicing':    $priceGuideTag = "৳2,000"; break;
+                                    case 'Emergency Breakdown':  $priceGuideTag = "৳5,000"; break;
+
+                                    // --- AC Categories ---
+                                    case 'Basic Servicing':      $priceGuideTag = "৳600"; break;
+                                    case 'Deep Cleaning':        $priceGuideTag = "৳1,200"; break;
+                                    case 'Duct Cleaning':        $priceGuideTag = "৳5,000"; break;
+                                    case 'Gas Refill':           $priceGuideTag = "৳2,500"; break;
+                                    case 'Electrical Repair':    $priceGuideTag = "৳1,500"; break;
+                                    case 'Compressor Repair':    $priceGuideTag = "৳4,000"; break;
+
+                                    // --- Generator Categories ---
+                                    case 'Preventative Inspection': $priceGuideTag = "৳3,500"; break;
+                                    case 'Fault Code Diagnostic':   $priceGuideTag = "৳1,800"; break;
+                                    case 'Engine Rebuild':          $priceGuideTag = "৳25,000"; break;
+                                    case 'Component Repairs':       $priceGuideTag = "৳6,000"; break;
+                                    case 'Advanced Testing':        $priceGuideTag = "৳8,000"; break;
+                                    case 'Fuel Polishing':          $priceGuideTag = "৳4,500"; break;
+                                    
+                                    default: $priceGuideTag = ""; break;
+                                }
+
+                                // Create the HTML pricing badge layout string cleanly if a price is matched
+                                $badgeHtml = "";
+                                if (!empty($priceGuideTag)) {
+                                    $badgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10.5px; padding: 3px 7px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; font-weight: 700; display: inline-block;'>Base: " . $priceGuideTag . "</span></div>";
+                                }
+
                                 echo "<tr>";
-                                // Row contents boosted with 'fw-semibold' (font-weight: 600) or 'fw-bold' (font-weight: 700)
                                 echo "<td class='text-secondary fw-semibold'>" . $sl++ . "</td>";
                                 echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
                                 echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
-                                echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
+                                
+                                // INJECTED PRICE DISPLAY: Prints out your problem name, immediately followed by the clean layout badge!
+                                echo "<td class='fw-semibold text-dark'><div>" . htmlspecialchars($currentProblem) . "</div>" . $badgeHtml . "</td>";
+                                
                                 echo "<td><span class='badge bg-light text-dark border border-secondary fw-bold px-2.5 py-1.5'>" . htmlspecialchars($row['priority']) . "</span></td>";
-                                echo "<td class='text-truncate fw-semibold text-dark' style='max-width: 120px;'>" . htmlspecialchars($row['location']) . "</td>";
+                                echo "<td class='text-truncate fw-semibold text-dark' style='max-width: 120px;'><span title='" . htmlspecialchars($row['location']) . "'>" . htmlspecialchars($row['location']) . "</span></td>";
                                 echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['payment_method']) . "</td>";
-                                // Cleaned up creation date display visibility formatting layout row
                                 echo "<td class='text-dark fw-bold'>" . date('Y-m-d', strtotime($row['created_at'])) . "</td>";
                                 echo "</tr>";
                             }
@@ -474,6 +512,7 @@ if ($maintQuery) {
             </table>
           </div>
         </div>
+
 
                     <!-- ================= FIXED COMPACT MAINTENANCE OVERVIEW PANEL ================= -->
         <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
@@ -522,37 +561,83 @@ if ($maintQuery) {
 
 
 
-                <!-- ================= NEW INFALLIBLE MANAGER NOTIFICATIONS PANEL ================= -->
-        <div class="dashboard-panel mb-4" style="border-left: 5px solid var(--primary-cyan) !important;">
-          <div class="d-flex align-items-center mb-3">
-            <!-- Native HTML character emoji instead of FontAwesome ensures a symbol always renders -->
-            <span style="font-size: 20px; margin-right: 10px;">✉️</span>
-            <div class="panel-heading m-0">Manager Notifications</div>
+                        <!-- ================= DYNAMIC MANAGER NOTIFICATIONS MODULE ================= -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
+      <h5 class="fw-bold text-dark mb-3" style="font-size: 16px;">
+        <span class="me-2" style="font-size: 18px;">📊</span>Manager Notifications
+      </h5>
+      
+      <div class="d-flex flex-column gap-3">
+        <?php
+        $activeUserEmail = $_SESSION['email'] ?? '';
+        $hasNotifications = false;
+
+        // SYSTEM ENGINE A: FETCH LATEST ACTIVE DISPATCHED FIELD ENGINEER LOGS
+        $dispatchQuery = $conn->query("SELECT asset_id, asset_type, location, created_at FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' ORDER BY id DESC LIMIT 1");
+        
+        if ($dispatchQuery && $dispatchQuery->num_rows > 0):
+            $dRow = $dispatchQuery->fetch_assoc();
+            $hasNotifications = true;
+            
+            $locString = $dRow['location'] ?? '';
+            $techName = "A Field Engineer";
+            if (preg_match('/\(Assigned to:\s*([^)]+)\)/', $locString, $matches)) {
+                $techName = trim($matches[1]);
+            }
+        ?>
+          <!-- Dispatch Notification Item Badge -->
+          <div class="p-3 border rounded-3 d-flex align-items-start gap-3" style="background-color: #ECFEFF; border-color: #CFFAFE !important;">
+            <div class="mt-0.5" style="font-size: 16px;">⚡</div>
+            <div>
+              <span class="d-block fw-bold text-dark" style="font-size: 13px;">Field Crew Dispatched!</span>
+              <span class="d-block text-secondary mt-0.5" style="font-size: 12px; line-height: 1.4;">
+                Manager has approved your ticket for **<?php echo htmlspecialchars($dRow['asset_id']); ?>** (<?php echo htmlspecialchars($dRow['asset_type']); ?>). **<?php echo htmlspecialchars($techName); ?>** is arriving on site.
+              </span>
+            </div>
           </div>
-          
-          <div style="max-height: 250px; overflow-y: auto; padding-right: 5px;">
-            <?php if (!empty($notifications)): ?>
-              <div style="display: flex; flex-direction: column; gap: 12px;">
-                <?php foreach ($notifications as $notif): ?>
-                  <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                      <span style="font-size: 13px; font-weight: 700; color: #334155;">📋 Operations Dispatcher</span>
-                      <span style="font-size: 11px; font-family: monospace; color: #64748B;"><?php echo htmlspecialchars($notif['created_at']); ?></span>
-                    </div>
-                    <p style="font-size: 13.5px; font-weight: 600; color: #475569; margin: 0; padding-left: 10px; border-left: 3px solid var(--primary-cyan);">
-                      <?php echo htmlspecialchars($notif['message']); ?>
-                    </p>
-                  </div>
-                <?php endforeach; ?>
-              </div>
-            <?php else: ?>
-              <!-- Clean structural fallback card layout view -->
-              <div class="text-center py-4 text-muted" style="background-color: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px;">
-                <p class="small m-0 font-monospace fw-bold" style="color: #64748B;">No new messages received from the management team.</p>
-              </div>
-            <?php endif; ?>
+        <?php 
+        endif; 
+
+        // SYSTEM ENGINE B: FETCH LATEST SCHEDULED PERIODIC CALIBRATIONS
+        $maintQuery = $conn->query("SELECT asset_id, asset_type, next_due, status, maintenance_type FROM maintenance_schedules WHERE client_email = '$activeUserEmail' ORDER BY id DESC LIMIT 1");
+        
+        if ($maintQuery && $maintQuery->num_rows > 0):
+            $mRow = $maintQuery->fetch_assoc();
+            $hasNotifications = true;
+            
+            $isOverdue = (strtolower($mRow['status']) === 'overdue');
+            $bannerBg = $isOverdue ? '#FEF2F2' : '#F0FDF4';
+            $bannerBorder = $isOverdue ? '#FEE2E2' : '#DCFCE7';
+            $bannerEmoji = $isOverdue ? '⚠️' : '📅';
+            $bannerTitle = $isOverdue ? 'Delayed Overdue Alert' : 'New Maintenance Scheduled';
+            $bannerText = $isOverdue ? 'Your equipment calibration window is critically delayed.' : 'Manager has added a new preventative inspection cycle.';
+        ?>
+          <!-- Maintenance Alert Item Badge -->
+          <div class="p-3 border rounded-3 d-flex align-items-start gap-3" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important;">
+            <div class="mt-0.5" style="font-size: 16px;"><?php echo $bannerEmoji; ?></div>
+            <div>
+              <span class="d-block fw-bold text-dark" style="font-size: 13px;"><?php echo $bannerTitle; ?></span>
+              <span class="d-block text-secondary mt-0.5" style="font-size: 12px; line-height: 1.4;">
+                <?php echo $bannerText; ?> Next target due date: **<?php echo date('d-m-Y', strtotime($mRow['next_due'])); ?>** for unit **<?php echo htmlspecialchars($mRow['asset_id']); ?>**.
+              </span>
+            </div>
           </div>
-        </div>
+        <?php 
+        endif; 
+
+        // FALLBACK DISPLAY LAYOUT: CLEAR STATE
+        if (!$hasNotifications): 
+        ?>
+          <div class="text-center py-4 border rounded-3 bg-light text-muted font-monospace small" style="font-size: 12px; background-color: #F8FAFC !important; border-color: #E2E8F0 !important;">
+            🍃 Pristine Canvas: No new operational alerts or dispatches received from management.
+          </div>
+        <?php 
+        endif; 
+        ?>
+      </div>
+    </div>
+
+
 
 
         <!-- Module C: Document Downloads Portal -->

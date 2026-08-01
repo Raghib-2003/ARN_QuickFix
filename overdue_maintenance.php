@@ -30,39 +30,123 @@ $actionError = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
     if ($_POST['action_type'] === 'add_schedule') {
-        $client_email = trim($_POST['client_email']);
+        $client_email = trim($_POST['client_email'] ?? '');
         $asset_type = $_POST['asset_type'] ?? '';
-        $asset_id = trim($_POST['asset_id']);
+        $asset_id = trim($_POST['asset_id'] ?? '');
         $last_service = $_POST['last_service'] ?? '';
         $next_due = $_POST['next_due'] ?? '';
         $maintenance_type = $_POST['maintenance_type'] ?? '';
         $status = $_POST['status'] ?? 'Active';
-        
-        // Fetch client phone number matching their email node to keep synchronization integrity
-        $phoneStmt = $conn->prepare("SELECT phone, name FROM users WHERE email = ?");
-        $phoneStmt->bind_param("s", $client_email);
-        $phoneStmt->execute();
-        $clientProfile = $phoneStmt->get_result()->fetch_assoc();
-        $phoneStmt->close();
-        
-        $client_phone = $clientProfile['phone'] ?? '01234567899';
-        $client_name = $clientProfile['name'] ?? 'Client';
 
-        if (!empty($client_email) && !empty($asset_id) && !empty($next_due)) {
-            $insertStmt = $conn->prepare("INSERT INTO maintenance_schedules (client_email, client_name, phone, asset_type, asset_id, last_service, next_due, maintenance_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $insertStmt->bind_param("sssssssss", $client_email, $client_name, $client_phone, $asset_type, $asset_id, $last_service, $next_due, $maintenance_type, $status);
+        // Save form entries transiently to survive the reload cache loop
+        $_SESSION['form_cache'] = [
+            'client_email' => $client_email,
+            'asset_type' => $asset_type,
+            'asset_id' => strtoupper($asset_id),
+            'last_service' => $last_service,
+            'next_due' => $next_due,
+            'maintenance_type' => $maintenance_type,
+            'status' => $status
+        ];
+
+        // 1. Mandatory Fields Validation Check
+        if (!empty($client_email) && !empty($asset_id) && !empty($next_due) && !empty($asset_type) && !empty($maintenance_type)) {
             
-            if ($insertStmt->execute()) {
-                $actionMessage = "Success! Maintenance task logged and published onto client portal lanes.";
-            } else {
-                $actionError = "Database Error: Could not save schedule parameters.";
+            // Force asset ID into perfect uppercase string comparison matching rules
+            $asset_id = strtoupper(trim($asset_id));
+
+            // NEW ASSET INTEGRITY LOCK GATE: VERIFIES THE UNIT ACTUALLY EXISTS
+            $assetVerificationStmt = $conn->prepare("SELECT COUNT(*) as total FROM service_requests WHERE client_email = ? AND asset_id = ? AND asset_type = ?");
+            $assetVerificationStmt->bind_param("sss", $client_email, $asset_id, $asset_type);
+            $assetVerificationStmt->execute();
+            $assetCheckResult = $assetVerificationStmt->get_result()->fetch_assoc();
+            $assetVerificationStmt->close();
+
+            if ((int)$assetCheckResult['total'] === 0) {
+                $_SESSION['form_cache']['asset_id'] = ""; // Clear bad input field only
+                $_SESSION['action_error'] = "Data Validation Mismatch! The Asset ID '{$asset_id}' does not match any official request submitted by this client account.";
+                header("Location: overdue_maintenance.php");
+                exit();
             }
-            $insertStmt->close();
+
+            // Fetch client identity metrics
+            $phoneStmt = $conn->prepare("SELECT phone, name FROM users WHERE email = ?");
+            $phoneStmt->bind_param("s", $client_email);
+            $phoneStmt->execute();
+            $clientProfile = $phoneStmt->get_result()->fetch_assoc();
+            $phoneStmt->close();
+            
+            $client_phone = $clientProfile['phone'] ?? '01234567899';
+            $client_name = $clientProfile['name'] ?? 'Client User';
+
+            // 2. Critical Logical Date Checker Gates
+            $todayDateString = date('Y-m-d'); // Current system date: 2026-08-01
+            
+            // GATE A: Block future dates from being marked as Overdue
+            if ($status === 'Overdue' && $next_due > $todayDateString) {
+                $_SESSION['form_cache']['next_due'] = "";
+                $_SESSION['form_cache']['status'] = "Active";
+                $_SESSION['action_error'] = "Logical Error Rejected! A maintenance schedule cannot be marked as 'Overdue' if the Next Due Date is still in the future.";
+                header("Location: overdue_maintenance.php");
+                exit();
+            } 
+            // GATE B: Block future dates from being marked as Completed upfront
+            elseif ($status === 'Completed' && $next_due > $todayDateString) {
+                $_SESSION['form_cache']['next_due'] = "";
+                $_SESSION['form_cache']['status'] = "Active";
+                $_SESSION['action_error'] = "Workflow Error Rejected! You cannot mark a future maintenance cycle as 'Completed' before that date has actually arrived.";
+                header("Location: overdue_maintenance.php");
+                exit();
+            }
+            else {
+                // If all business rules pass with absolute accuracy, insert row cleanly
+                $insertStmt = $conn->prepare("INSERT INTO maintenance_schedules (client_email, client_name, phone, asset_type, asset_id, last_service, next_due, maintenance_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertStmt->bind_param("sssssssss", $client_email, $client_name, $client_phone, $asset_type, $asset_id, $last_service, $next_due, $maintenance_type, $status);
+                
+                if ($insertStmt->execute()) {
+                    $_SESSION['action_message'] = "Success! Maintenance task logged and published onto client portal lanes.";
+                    unset($_SESSION['form_cache']); // Erase form memory cache on success
+                } else {
+                    $_SESSION['action_error'] = "Database Error: Could not save schedule parameters.";
+                }
+                $insertStmt->close();
+                
+                header("Location: overdue_maintenance.php");
+                exit();
+            }
         } else {
-            $actionError = "Validation Error: Please fill in all mandatory form input variables.";
+            $_SESSION['action_error'] = "Validation Error: Please fill in all mandatory form input variables.";
+            header("Location: overdue_maintenance.php");
+            exit();
         }
     }
 }
+
+
+// --------------------------------------------------------------------
+// MEMORY STORAGE EXTRACTOR PIPELINES
+// --------------------------------------------------------------------
+$cache = $_SESSION['form_cache'] ?? [
+    'client_email'=>'', 'asset_type'=>'', 'asset_id'=>'', 'last_service'=>'', 'next_due'=>'', 'maintenance_type'=>'', 'status'=>'Active'
+];
+
+if (isset($_SESSION['action_message'])) { $actionMessage = $_SESSION['action_message']; unset($_SESSION['action_message']); }
+if (isset($_SESSION['action_error'])) { $actionError = $_SESSION['action_error']; unset($_SESSION['action_error']); }
+
+
+// --------------------------------------------------------------------
+// DYNAMIC MESSAGE EXTRACTOR (Pulls strings out of memory arrays)
+// --------------------------------------------------------------------
+if (isset($_SESSION['action_message'])) {
+    $actionMessage = $_SESSION['action_message'];
+    unset($_SESSION['action_message']); // Flush instantly to prevent repeating alerts
+}
+if (isset($_SESSION['action_error'])) {
+    $actionError = $_SESSION['action_error'];
+    unset($_SESSION['action_error']);
+}
+
+
 
 // --------------------------------------------------------------------
 // CALCULATE UPPER VIEW COMPONENT SUMS (DYNAMIC COUNTERS)
@@ -257,7 +341,7 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
       </div>
     </div> <!-- Close Section A Metric Row -->
 
-    <!-- ================= SECTION B: ADD MAINTENANCE CARD VIEW PANEL ================= -->
+        <!-- ================= SECTION B: ADD MAINTENANCE CARD VIEW PANEL (WITH ACTIVE FORMS MEMORY) ================= -->
     <div class="figma-card-layout mb-5">
       <h4 class="fw-bold mb-4 text-dark" style="font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Add Maintenance</h4>
       
@@ -265,14 +349,18 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
         <input type="hidden" name="action_type" value="add_schedule">
         
         <div class="row g-3">
-          <!-- Input 1: Client Email Target Selector Dropdown -->
+          <!-- Input 1: Client Email Target Selector -->
           <div class="col-md-4">
             <label class="form-label form-label-custom">Client Target Email</label>
             <select name="client_email" class="form-select form-select-custom w-100" required>
               <option value="" disabled selected hidden>Select Client Node</option>
-              <?php if ($clientsList && $clientsList->num_rows > 0): ?>
-                <?php while ($c = $clientsList->fetch_assoc()): ?>
-                  <option value="<?php echo htmlspecialchars($c['email']); ?>"><?php echo htmlspecialchars($c['name'] . " (" . $c['email'] . ")"); ?></option>
+              <?php if ($clientsList && $clientsList->num_rows > 0): 
+                // Rewind user list to start line for execution safety
+                $clientsList->data_seek(0);
+                while ($c = $clientsList->fetch_assoc()): 
+                  $selected = ($cache['client_email'] === $c['email']) ? 'selected' : '';
+              ?>
+                  <option value="<?php echo htmlspecialchars($c['email']); ?>" <?php echo $selected; ?>><?php echo htmlspecialchars($c['name'] . " (" . $c['email'] . ")"); ?></option>
                 <?php endwhile; ?>
               <?php endif; ?>
             </select>
@@ -283,28 +371,28 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
             <label class="form-label form-label-custom">Asset Type</label>
             <select name="asset_type" id="asset_type" class="form-select form-select-custom w-100" onchange="updateAssetIdPlaceholder()" required>
               <option value="" disabled selected hidden>Select Asset Type</option>
-              <option value="Elevator">Elevator (Vertical Transport)</option>
-              <option value="AC">Air Conditioner (HVAC)</option>
-              <option value="Generator">Power Generator (Grid Fallback)</option>
+              <option value="Elevator" <?php echo ($cache['asset_type'] === 'Elevator') ? 'selected' : ''; ?>>Elevator (Vertical Transport)</option>
+              <option value="AC" <?php echo ($cache['asset_type'] === 'AC') ? 'selected' : ''; ?>>Air Conditioner (HVAC)</option>
+              <option value="Generator" <?php echo ($cache['asset_type'] === 'Generator') ? 'selected' : ''; ?>>Power Generator (Grid Fallback)</option>
             </select>
           </div>
 
           <!-- Input 3: Asset Identification Prefix Field -->
           <div class="col-md-4">
             <label class="form-label form-label-custom">Asset ID</label>
-            <input type="text" name="asset_id" id="asset_id" class="form-control form-control-custom" placeholder="Select Asset Type First" required>
+            <input type="text" name="asset_id" id="asset_id" class="form-control form-control-custom text-uppercase" placeholder="Select Asset Type First" oninput="this.value = this.value.toUpperCase()" value="<?php echo htmlspecialchars($cache['asset_id']); ?>" required>
           </div>
 
           <!-- Input 4: Last Serviced Log Calendar Date Picker -->
           <div class="col-md-4">
             <label class="form-label form-label-custom">Last Service Date</label>
-            <input type="date" name="last_service" class="form-control form-control-custom">
+            <input type="date" name="last_service" class="form-control form-control-custom" value="<?php echo htmlspecialchars($cache['last_service']); ?>">
           </div>
 
           <!-- Input 5: Next Calibration Threshold Target Date Picker -->
           <div class="col-md-4">
             <label class="form-label form-label-custom">Next Due Date</label>
-            <input type="date" name="next_due" class="form-control form-control-custom" required>
+            <input type="date" name="next_due" class="form-control form-control-custom" value="<?php echo htmlspecialchars($cache['next_due']); ?>" required>
           </div>
 
           <!-- Input 6: Operation Interval Window Option Selector Menu -->
@@ -312,10 +400,10 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
             <label class="form-label form-label-custom">Maintenance Type</label>
             <select name="maintenance_type" class="form-select form-select-custom w-100" required>
               <option value="" disabled selected hidden>Select Maintenance Interval</option>
-              <option value="Monthly">Monthly Cycle Servicing</option>
-              <option value="Quarterly">Quarterly System Optimization</option>
-              <option value="Half-Yearly">Half-Yearly Deep Diagnostics</option>
-              <option value="Annually">Annual Structural Overhaul</option>
+              <option value="Monthly" <?php echo ($cache['maintenance_type'] === 'Monthly') ? 'selected' : ''; ?>>Monthly Cycle Servicing</option>
+              <option value="Quarterly" <?php echo ($cache['maintenance_type'] === 'Quarterly') ? 'selected' : ''; ?>>Quarterly System Optimization</option>
+              <option value="Half-Yearly" <?php echo ($cache['maintenance_type'] === 'Half-Yearly') ? 'selected' : ''; ?>>Half-Yearly Deep Diagnostics</option>
+              <option value="Annually" <?php echo ($cache['maintenance_type'] === 'Annually') ? 'selected' : ''; ?>>Annual Structural Overhaul</option>
             </select>
           </div>
 
@@ -323,9 +411,9 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
           <div class="col-md-4">
             <label class="form-label form-label-custom">Initial Status</label>
             <select name="status" class="form-select form-select-custom w-100">
-              <option value="Active" selected>Active / In Queue</option>
-              <option value="Overdue">Overdue / Delayed Action</option>
-              <option value="Completed">Completed / Closed Log</option>
+              <option value="Active" <?php echo ($cache['status'] === 'Active') ? 'selected' : ''; ?>>Active / In Queue</option>
+              <option value="Overdue" <?php echo ($cache['status'] === 'Overdue') ? 'selected' : ''; ?>>Overdue / Delayed Action</option>
+              <option value="Completed" <?php echo ($cache['status'] === 'Completed') ? 'selected' : ''; ?>>Completed / Closed Log</option>
             </select>
           </div>
 
@@ -336,6 +424,7 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
         </div>
       </form>
     </div>
+
 
     <!-- ================= SECTION C: ACTIVE SCHEDULES DATA GRID LISTBOARD ================= -->
     <div class="figma-card-layout">
@@ -359,13 +448,13 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
                 if (isset($row['status']) && strtolower($row['status']) === 'overdue') { $statusClass = 'status-overdue'; }
                 elseif (isset($row['status']) && strtolower($row['status']) === 'completed') { $statusClass = 'status-completed'; }
             ?>
-              <tr>
+                            <tr>
                 <!-- Clean Serial Incremental Counting Line Index Row (SL) -->
                 <td class="font-monospace fw-bold text-secondary text-center"><?php echo $serialNumberCounter++; ?></td>
                 
                 <td>
                   <span class="d-block fw-bold text-dark mb-0.5"><?php echo htmlspecialchars($row['client_name'] ?? 'Client User'); ?></span>
-                  <span class="text-muted font-monospace small d-block" style="font-size: 11.5px;"><?php echo htmlspecialchars($row['phone'] ?? '01XXXXXXXXX'); ?></span>
+                  <span class="text-muted font-monospace small d-block" style="font-size: 11.5px行业;"><?php echo htmlspecialchars($row['phone'] ?? '01XXXXXXXXX'); ?></span>
                 </td>
                 
                 <td>
@@ -382,10 +471,36 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
                   <span class="fw-semibold text-dark" style="font-size: 13px;"><i class="fa fa-rotate me-1 text-muted"></i> <?php echo htmlspecialchars($row['maintenance_type'] ?? 'Periodic'); ?></span>
                 </td>
                 
+                <!-- ================= AUTOMATED DYNAMIC STATUS VALIDATOR ENGINE ================= -->
                 <td class="text-center">
-                  <span class="status-badge-pill <?php echo $statusClass; ?>"><?php echo htmlspecialchars($row['status'] ?? 'Active'); ?></span>
+                  <?php
+                    $dbStatus = trim($row['status'] ?? 'Active');
+                    $nextDueTarget = $row['next_due'] ?? '';
+                    $currentCalendarDay = date('Y-m-d'); // Today: 2026-08-01
+
+                    // Strict Business Rules Interlock Overrides
+                    if ($nextDueTarget > $currentCalendarDay && $dbStatus === 'Completed') {
+                        // Force override future dates away from completed down to active status
+                        $verifiedStatus = 'Active';
+                        $statusClass = 'status-active';
+                    } elseif ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') {
+                        // Force override past unresolved dates to show up as overdue automatically
+                        $verifiedStatus = 'Overdue';
+                        $statusClass = 'status-overdue';
+                    } else {
+                        // Standard database mappings configuration fallback paths
+                        $verifiedStatus = $dbStatus;
+                        $statusClass = 'status-active';
+                        if (strtolower($dbStatus) === 'overdue') { $statusClass = 'status-overdue'; }
+                        elseif (strtolower($dbStatus) === 'completed') { $statusClass = 'status-completed'; }
+                    }
+                  ?>
+                  <span class="status-badge-pill <?php echo $statusClass; ?>">
+                    <?php echo htmlspecialchars($verifiedStatus); ?>
+                  </span>
                 </td>
               </tr>
+
             <?php endwhile; ?>
           <?php else: ?>
             <!-- Fallback state if database has zero historical maintenance entries -->
