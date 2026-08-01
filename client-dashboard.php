@@ -475,22 +475,51 @@ if ($maintQuery) {
           </div>
         </div>
 
-                <!-- Module B: Scheduled Maintenance Cycles Calendar Box -->
-        <div class="dashboard-panel mb-4">
+                    <!-- ================= FIXED COMPACT MAINTENANCE OVERVIEW PANEL ================= -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="panel-heading m-0">Maintenance Overview</div>
-            <a href="maintenance.php" class="btn-outline-custom">View Maintenance Details</a>
+            <h5 class="fw-bold m-0 text-dark" style="font-size: 16px;">Maintenance Overview</h5>
+            <a href="client_maintenance.php" class="btn btn-sm btn-light border fw-bold text-secondary small rounded-pill px-3" style="font-size: 11px; text-decoration: none;">View Maintenance Details</a>
           </div>
-          
-          <!-- Explicitly labeled sample container with subtle aesthetic background tint styling -->
-          <div class="p-3 border border-warning-subtle rounded-3" style="font-size: 13px; background-color: #FFFBEB !important;">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-warning text-dark font-monospace fw-bold" style="font-size: 10px;">EXAMPLE DEMO</span>
-              <div class="fw-bold text-dark">ELV-9-C (Elevator Unit)</div>
+
+          <?php
+          // Fetch the single latest active or overdue maintenance row matching this specific logged-in client
+          $activeUserEmail = $_SESSION['email'] ?? '';
+          $maintCheckQuery = $conn->query("SELECT asset_type, asset_id, last_service, next_due, maintenance_type, status FROM maintenance_schedules WHERE client_email = '$activeUserEmail' ORDER BY id DESC LIMIT 1");
+
+          if ($maintCheckQuery && $maintCheckQuery->num_rows > 0):
+              $maintRow = $maintCheckQuery->fetch_assoc();
+              
+              // Map elegant visual warning states matching your client UI dashboard standards
+              $isOverdue = (strtolower($maintRow['status']) === 'overdue');
+              $alertThemeBg = $isOverdue ? '#FEF2F2' : '#FFFBEB';
+              $alertThemeText = $isOverdue ? '#EF4444' : '#D97706';
+              $alertBadgeBg = $isOverdue ? '#EF4444' : '#F59E0B';
+          ?>
+            <!-- Live Active Notification Banner (Renders dynamically ONLY if a real row exists) -->
+            <div class="p-3 border rounded-3 d-flex flex-column gap-1" style="background-color: <?php echo $alertThemeBg; ?>; border-color: rgba(0,0,0,0.02) !important;">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge text-white px-2 py-1 font-monospace text-uppercase" style="font-size: 10px; background-color: <?php echo $alertBadgeBg; ?>; border: none; border-radius: 4px;">
+                  <?php echo htmlspecialchars($maintRow['status']); ?>
+                </span>
+                <strong style="color: #0F172A; font-size: 14px;">
+                  <?php echo htmlspecialchars($maintRow['asset_id']); ?> (<?php echo htmlspecialchars($maintRow['asset_type']); ?> Unit)
+                </strong>
+              </div>
+              <p class="m-0 font-monospace small mt-1" style="font-size: 12px; color: <?php echo $alertThemeText; ?> !important; opacity: 0.95;">
+                Type: <strong><?php echo htmlspecialchars($maintRow['maintenance_type']); ?> Check</strong> | 
+                Last Check: <?php echo (!empty($maintRow['last_service']) && $maintRow['last_service'] !== '0000-00-00') ? date('d-m-Y', strtotime($maintRow['last_service'])) : 'None'; ?> | 
+                Next Due: <strong class="<?php echo $isOverdue ? 'text-danger' : ''; ?> fw-bold"><?php echo date('d-m-Y', strtotime($maintRow['next_due'])); ?></strong>
+              </p>
             </div>
-            <div class="text-secondary small fw-semibold">Type: Monthly Check | Last Check: 12-06-2026 | Next Due: 12-07-2026</div>
-          </div>
+          <?php else: ?>
+            <!-- Fallback design layout placeholder if the manager hasn't pushed any tickets yet -->
+            <div class="text-center py-4 border rounded-3 bg-light text-muted font-monospace small" style="font-size: 12px; background-color: #F8FAFC !important; border-color: #E2E8F0 !important;">
+              🍃 Safe Status: No active or overdue maintenance intervals logged for your machinery.
+            </div>
+          <?php endif; ?>
         </div>
+
 
 
                 <!-- ================= NEW INFALLIBLE MANAGER NOTIFICATIONS PANEL ================= -->
@@ -719,4 +748,3 @@ if ($maintQuery) {
 if (isset($conn)) {
     $conn->close();
 }
-?>

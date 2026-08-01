@@ -353,7 +353,7 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
           <div class="fw-bold small mb-1" style="color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">New Requests</div>
           <div class="fw-bold mb-2" style="font-size: 36px; color: #0F172A; line-height: 1;"><?php echo $newRequestsCount; ?></div>
           <p class="text-secondary small mb-4" style="min-height: 36px; font-size: 12.5px; line-height: 1.5;">New client issue complaints queued and pending supervisor diagnostic review.</p>
-          <a href="manage_requests.php?filter=new" class="btn btn-sm w-100 fw-bold d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background-color: #F8FAFC; color: #1E293B; border: 1px solid #E2E8F0; font-size: 12px; text-decoration: none;">
+          <a href="manager_new_requests.php?filter=new" class="btn btn-sm w-100 fw-bold d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background-color: #F8FAFC; color: #1E293B; border: 1px solid #E2E8F0; font-size: 12px; text-decoration: none;">
             <span>Process New Requests</span>
             <!-- UNIVERSAL ARROW EMBED: Renders explicitly on any screen space -->
             <span style="font-weight: bold; font-family: monospace; color: #94A3B8;">➔</span>
@@ -370,7 +370,7 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
           <div class="fw-bold small mb-1" style="color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;">In Progress</div>
           <div class="fw-bold mb-2" style="font-size: 36px; color: #0F172A; line-height: 1;"><?php echo $inProgressCount; ?></div>
           <p class="text-secondary small mb-4" style="min-height: 36px; font-size: 12.5px; line-height: 1.5;">Service logs currently handled and open on technician field terminals.</p>
-          <a href="manage_requests.php?filter=progress" class="btn btn-sm w-100 fw-bold d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background-color: #F8FAFC; color: #1E293B; border: 1px solid #E2E8F0; font-size: 12px; text-decoration: none;">
+          <a href="manager_in_progress.php?filter=progress" class="btn btn-sm w-100 fw-bold d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background-color: #F8FAFC; color: #1E293B; border: 1px solid #E2E8F0; font-size: 12px; text-decoration: none;">
             <span>View Active Work</span>
             <span style="font-weight: bold; font-family: monospace; color: #94A3B8;">➔</span>
           </a>
