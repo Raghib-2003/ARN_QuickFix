@@ -379,10 +379,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </select>
           </div>
 
-          <!-- Column Box 6: Change Password Input -->
+                    <!-- Column Box 6: Change New Password Input with Eye Toggle -->
           <div class="col-xl-6 col-lg-6 col-md-12">
             <label class="form-label form-label-custom">Change Password</label>
-            <input type="password" name="change_password" class="form-control form-control-custom" placeholder="••••••••">
+            <div class="position-relative d-flex align-items-center">
+              <input type="password" name="change_password" id="newPassField" class="form-control form-control-custom w-100 pe-5" placeholder="••••••••">
+              <!-- Inline Toggle Button: Uses native unicode character symbols that don't need font files -->
+              <button type="button" class="position-absolute end-0 border-0 bg-transparent pe-3" style="outline: none; z-index: 5; cursor: pointer; color: #64748B;" onclick="togglePasswordVisibility('newPassField', this)">
+                👁️
+              </button>
+            </div>
           </div>
 
           <!-- Bottom Left: My Email Address Verified Box -->
@@ -391,6 +397,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               <span class="text-secondary d-block fw-semibold mb-1" style="font-size: 12px; color: var(--slate-gray) !important;">My email Address</span>
               <strong class="text-dark font-monospace fw-bold"><?php echo htmlspecialchars($managerEmail); ?></strong>
               <span class="text-success d-block font-monospace mt-1 fw-semibold" style="font-size: 11px;">🔒 Identity verified 1 month ago</span>
+            </div>
+          </div>
+
+          <!-- Column Box 7: Confirm New Password Input with Eye Toggle -->
+          <div class="col-xl-6 col-lg-6 col-md-12">
+            <label class="form-label form-label-custom">Confirm Password</label>
+            <div class="position-relative d-flex align-items-center">
+              <input type="password" name="confirm_password" id="confirmPassField" class="form-control form-control-custom w-100 pe-5" placeholder="••••••••">
+              <button type="button" class="position-absolute end-0 border-0 bg-transparent pe-3" style="outline: none; z-index: 5; cursor: pointer; color: #64748B;" onclick="togglePasswordVisibility('confirmPassField', this)">
+                👁️
+              </button>
             </div>
           </div>
 
@@ -405,28 +422,81 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </div> <!-- Close Profile Master Panel Container Box -->
   </div> <!-- Close Main Layout Body Canvas Container -->
 
-  <script src="https://jsdelivr.net">
-        function previewAvatar(event) {
+    <!-- ================= MODULE REFACTOR: UNIFIED INTERFACE HANDLERS ================= -->
+  <script>
+    // ====================================================================
+    // MODULE A: PASSWORD VISIBILITY INTERLOCK CONTROLLER
+    // ====================================================================
+    /**
+     * Toggles input fields dynamically between hidden stars and clear readable text.
+     * @param {string} fieldId - Target input element node link.
+     * @param {HTMLElement} actionButton - Self reference indicator click trigger.
+     */
+    function togglePasswordVisibility(fieldId, actionButton) {
+        const passwordField = document.getElementById(fieldId);
+        if (passwordField) {
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                actionButton.textContent = "🙈"; // Shifts to hidden view mask layout
+                actionButton.style.color = "var(--primary-cyan)";
+            } else {
+                passwordField.type = "password";
+                actionButton.textContent = "👁️"; // Shifts back to reveal state symbol
+                actionButton.style.color = "#64748B";
+            }
+        }
+    }
+
+    // ====================================================================
+    // MODULE B: REFACTORED PROFILE IMAGE COMPONENT SYSTEM
+    // ====================================================================
+    /**
+     * Captures file upload event variables and loads live binary data streams.
+     * @param {Event} event - Native device image upload file path stream.
+     */
+        /**
+     * Captures file upload event variables and loads live binary data streams with strict constraints.
+     * @param {Event} event - Native device image upload file path stream.
+     */
+    function previewAvatar(event) {
         const reader = new FileReader();
         reader.onload = function() {
             let view = document.getElementById('avatarView');
-            if(!view) {
+            if (!view) {
                 const placeholder = document.getElementById('avatarPlaceholder');
                 const img = document.createElement('img');
                 img.id = 'avatarView';
-                img.className = 'avatar-preview-box';
-                placeholder.replaceWith(img);
+                
+                // FIXED BOUNDING CONSTRAINTS: Forces your selected photo to match the 100px circular thumbnail frame perfectly
+                img.className = 'rounded-circle border shadow-sm';
+                img.style.width = '100px';
+                img.style.height = '100px';
+                img.style.objectFit = 'cover';
+                img.alt = 'Manager Picture';
+                
+                if (placeholder) {
+                    placeholder.replaceWith(img);
+                }
                 view = img;
             }
             view.src = reader.result;
-            document.getElementById('removeAvatarFlag').value = "0";
+            const flag = document.getElementById('removeAvatarFlag');
+            if (flag) { flag.value = "0"; }
         }
-        reader.readAsDataURL(event.target.files);
+        if (event.target.files && event.target.files[0]) {
+            reader.readAsDataURL(event.target.files[0]);
+        }
     }
 
+
+    /**
+     * Purges profile image display nodes and reverts elements to generic icon placeholders.
+     */
     function removeProfilePhoto() {
-        if(confirm("Are you sure you want to remove your profile display picture?")) {
-            document.getElementById('removeAvatarFlag').value = "1";
+        if (confirm("Are you sure you want to remove your profile display picture?")) {
+            const flag = document.getElementById('removeAvatarFlag');
+            if (flag) { flag.value = "1"; }
+            
             const currentImg = document.getElementById('avatarView');
             if (currentImg) {
                 const placeholder = document.createElement('div');
@@ -435,10 +505,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 placeholder.innerHTML = '<span style="font-size: 40px;">👤</span>';
                 currentImg.replaceWith(placeholder);
             }
-            document.getElementById('fileSelector').value = "";
+            
+            const selector = document.getElementById('fileSelector');
+            if (selector) { selector.value = ""; }
         }
     }
-
   </script>
+  
+  <!-- Core Bootstrap Engine compiled package (Loads perfectly right at the end) -->
+  <script src="https://jsdelivr.net"></script>
+
 </body>
 </html>

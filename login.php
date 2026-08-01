@@ -1,19 +1,25 @@
 <?php
-// 1. Force runtime error output tracking so we can view specific bugs instantly
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// 2. Safely initialize session storage loops
+// Initialize system session access wrappers
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// If the user is already logged in, route them straight onto their active portal node
-if (isset($_SESSION['email']) && isset($_SESSION['name'])) {
-    header("Location: client-dashboard.php");
-    exit();
+// ====================================================================
+// CRITICAL FIX: EXPLICITLY RESET CACHED SESSION VALUES ON INITIAL LAND
+// ====================================================================
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    // If the manager or client just loads the login screen fresh (NOT submitting the form),
+    // we completely clear out old active session tokens to prevent mixed tab routing bugs!
+    session_unset();
+    $_SESSION = array();
 }
+
+// Your database connectivity configurations and form handlers continue perfectly right underneath:
+$conn = @new mysqli("localhost", "root", "", "arn_quickfix");
+if ($conn->connect_error) {
+    die("Database connectivity node failed to sync: " . $conn->connect_error);
+}
+
 
 // 3. Establish database sync tracking loop
 $conn = @new mysqli("localhost", "root", "", "arn_quickfix");

@@ -65,7 +65,7 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manager Dashboard Terminal | ARN QuickFix</title>
+  <title>Manager Dashboard | ARN QuickFix</title>
   
   <!-- CRITICAL VECTOR INTERLOCK: Pulls all FontAwesome 6 icon and arrow metrics instantly from the CDN -->
   <!-- <link rel="stylesheet" href="https://cloudflare.com"> -->
@@ -354,7 +354,7 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
           <div class="fw-bold mb-2" style="font-size: 36px; color: #0F172A; line-height: 1;"><?php echo $newRequestsCount; ?></div>
           <p class="text-secondary small mb-4" style="min-height: 36px; font-size: 12.5px; line-height: 1.5;">New client issue complaints queued and pending supervisor diagnostic review.</p>
           <a href="manage_requests.php?filter=new" class="btn btn-sm w-100 fw-bold d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background-color: #F8FAFC; color: #1E293B; border: 1px solid #E2E8F0; font-size: 12px; text-decoration: none;">
-            <span>View Submitted Requests</span>
+            <span>Process New Requests</span>
             <!-- UNIVERSAL ARROW EMBED: Renders explicitly on any screen space -->
             <span style="font-weight: bold; font-family: monospace; color: #94A3B8;">➔</span>
           </a>
