@@ -323,15 +323,43 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
       
       <!-- Premium Quick Action Buttons (Pill Shaped With Hover Transition Effects) -->
       <div class="d-flex gap-2">
-       <a href="technician_updates.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; text-decoration: none; white-space: nowrap;">
-          Tech Updates <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #0891B2 !important; font-family: sans-serif; vertical-align: middle;"><?php echo $techUpdatesCount; ?></span>
-        </a>
+       <!-- REFACTORED INTERLOCK: Using a standard anchor link tag completely bypasses native OS element conflicts while preserving your beautiful cyan aesthetic design -->
+<!-- ROUTED TO NEW CLEAN FILE PAGE: Eliminates any JavaScript conflicts permanently -->
+<a href="manager-tech-updates.php" class="btn btn-sm d-flex align-items-center gap-1.5 fw-bold rounded-pill px-3" style="font-size: 11px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; text-decoration: none; display: inline-flex;">
+  TECH UPDATES <span style="width: 7px; height: 7px; background-color: #06B6D4;" class="rounded-circle d-inline-block"></span>
+</a>
+
+
         <a href="manager_reports.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; text-decoration: none; white-space: nowrap;">
-          Reports <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #475569 !important; font-family: sans-serif; vertical-align: middle;"><?php echo $reportsCount; ?></span>
+          Reports <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #475569 !important; font-family: sans-serif; vertical-align: middle;"></span>
         </a>
-        <a href="manager_complaints.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #FEF2F2; color: #EF4444; border: 1px solid #FEE2E2; text-decoration: none; white-space: nowrap;">
-          Complaints <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #EF4444 !important; font-family: sans-serif; vertical-align: middle;"><?php echo $complaintsCount; ?></span>
-        </a>         
+                <!-- ================= DYNAMIC COMPLAINTS HUB LINK MATRIX ================= -->
+        <?php
+          // FORCE ACTIVE SYNC: Recalculates raised disputes fresh from your table right before printing the badge
+          $liveComplaintsCount = 0;
+          $countQuery = $conn->query("SELECT COUNT(*) as active_claims FROM service_requests WHERE status = 'complaint_raised'");
+          if ($countQuery) {
+              $countData = $countQuery->fetch_assoc();
+              $liveComplaintsCount = (int)($countData['active_claims'] ?? 0);
+          }
+        ?>
+        
+        <a href="manager_complaints.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" 
+           style="font-size: 10px; text-decoration: none; white-space: nowrap;
+                  background-color: <?php echo ($liveComplaintsCount > 0) ? '#FEF2F2' : '#F8FAFC'; ?>; 
+                  color: <?php echo ($liveComplaintsCount > 0) ? '#EF4444' : '#64748B'; ?>; 
+                  border: 1px solid <?php echo ($liveComplaintsCount > 0) ? '#FEE2E2' : '#E2E8F0'; ?>;">
+          Complaints 
+          
+          <?php if ($liveComplaintsCount > 0): ?>
+            <!-- This badge container will ONLY show up on screen if a complaint is actively sitting in the database rows -->
+            <span class="badge rounded-pill text-white" 
+                  style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #EF4444 !important; font-family: sans-serif; vertical-align: middle;">
+              <?php echo $liveComplaintsCount; ?>
+            </span>
+          <?php endif; ?>
+        </a>
+        
         <a href="manager-profile.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;">Profile</a>
       </div>
     </div>
@@ -436,7 +464,7 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
 
       <!-- Card 3: Analytics, Reports & Metrics Link -->
       <div class="col-md-4">
-        <a href="manager_metrics.php" class="d-flex flex-column p-4 bg-white border rounded-4 text-decoration-none h-100 transition-panel" style="border-color: #E2E8F0; color: inherit;">
+        <a href="manager_reports.php" class="d-flex flex-column p-4 bg-white border rounded-4 text-decoration-none h-100 transition-panel" style="border-color: #E2E8F0; color: inherit;">
           <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center justify-content-center rounded-3" style="width: 50px; height: 50px; font-size: 24px; background-color: #F8FAFC !important;">
               📈
@@ -452,10 +480,80 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
     </div> <!-- Closes Section B card layout row container -->
   </div> <!-- Closes the central workspace central grid sheet wrapper -->
 
-  <!-- Framework Compiled Engine Injector Libraries -->
-  <script src="https://jsdelivr.net"></script>
+    <!-- ================= MASTER FIELD TECH OPERATIONS STREAM FEED MODAL ================= -->
+  <div class="modal fade" id="techUpdatesModal" tabindex="-1" aria-hidden="true" style="backdrop-filter: blur(4px);">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 440px;">
+      <div class="modal-content border-0 rounded-4 shadow-lg">
+        <div class="modal-header border-bottom p-3.5 bg-light">
+          <h6 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 m-0" style="font-size: 15px;">
+            <span>📡</span> Live Field Crew Activity Stream
+          </h6>
+          <button type="button" class="btn-close small" data-bs-dismiss="modal" aria-label="Close" style="font-size: 10px;"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="d-flex flex-column gap-2.5">
+            <?php
+            // Pull the 4 most active processing/completed ticket rows where a technician has taken action
+            $techFeed = $conn->query("SELECT id, asset_id, asset_type, location, status, updated_at FROM service_requests WHERE status IN ('processing', 'completed') ORDER BY updated_at DESC LIMIT 4");
+            
+            if ($techFeed && $techFeed->num_rows > 0):
+                while ($tLog = $techFeed->fetch_assoc()):
+                    $isDone = ($tLog['status'] === 'completed');
+                    $feedItemBg = $isDone ? '#F0FDF4' : '#EFF6FF';
+                    $feedItemBorder = $isDone ? '#DCFCE7' : '#BFDBFE';
+                    $feedItemDot = $isDone ? '#10B981' : '#2563EB';
+                    
+                    // Extract tech name from location template parameters cleanly
+                    $locStr = $tLog['location'] ?? '';
+                    $techEngineer = "Field Crew Engineer";
+                    if (preg_match('/\(Assigned to:\s*([^)]+)\)/', $locStr, $matches)) {
+                        $techEngineer = trim($matches[1]);
+                    }
+            ?>
+              <!-- Dynamic Field Notification Row Card -->
+              <div class="p-3 border rounded-3 d-flex flex-column gap-1" style="background-color: <?php echo $feedItemBg; ?>; border-color: <?php echo $feedItemBorder; ?> !important;">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="width: 6px; height: 6px; background-color: <?php echo $feedItemDot; ?>;" class="rounded-circle"></div>
+                    <strong class="text-dark" style="font-size: 12.5px;"><?php echo htmlspecialchars($techEngineer); ?></strong>
+                  </div>
+                  <span class="text-muted font-monospace" style="font-size: 10.5px;"><?php echo date('H:i', strtotime($tLog['updated_at'])); ?></span>
+                </div>
+                <p class="m-0 text-secondary" style="font-size: 12px; line-height: 1.45; font-weight: 500;">
+                  <?php if($isDone): ?>
+                    Successfully finalized all servicing arrays and closed out repair ticket for unit **#<?php echo htmlspecialchars($tLog['asset_id']); ?>** (<?php echo htmlspecialchars($tLog['asset_type']); ?>) [1.1].
+                  <?php else: ?>
+                    Initiated site deployment diagnostics and updated status to on-field processing for unit **#<?php echo htmlspecialchars($tLog['asset_id']); ?>** [1.1].
+                  <?php endif; ?>
+                </p>
+              </div>
+            <?php endwhile; else: ?>
+              <div class="text-center py-4 text-muted small font-monospace">🍃 No field technician logs recorded in the current active session logs.</div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+   <!-- ================= MASTER APPLICATION JS INFRASTRUCTURE ================= -->
+  
+   <!-- ================= MASTER APPLICATION INTERACTIVE SCRIPT STACK ================= -->
+  
+  <!-- ================= MASTER APPLICATION SCRIPT INFRASTRUCTURE ================= -->
+  
+  <!-- 1. ADD THIS JQUERY ENGINE FIRST (Paste this line right above the previous owner's scripts) -->
+  <script src="https://jquery.com"></script>
+
+  <!-- 2. The Previous Owner's Bootstrap script (Keep this exactly as they wrote it) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- 3. Your Local Project Animation script -->
+  <script src="js/main.js"></script>
+
 </body>
 </html>
+
 <?php 
 // Terminate your database integration connection thread cleanly on page exit
 if (isset($conn)) { 

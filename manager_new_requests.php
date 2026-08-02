@@ -237,7 +237,7 @@ $result = $conn->query($query);
                     <span class="text-muted font-monospace small" style="font-size: 11.5px;"><?php echo htmlspecialchars($row['asset_brand'] ?? ''); ?> — <strong><?php echo htmlspecialchars($row['asset_id'] ?? ''); ?></strong></span>
                   </td>
                   
-                  <!-- Diagnostics Profile Category and Urgency Badges Row (WITH DYNAMIC PRICE ESTIMATES) -->
+                                    <!-- Diagnostics Profile Category and Urgency Badges Row (WITH INVENTORY INTEGRITY) -->
                   <td>
                     <?php 
                       $currentProblem = $row['problem_category'] ?? '';
@@ -268,8 +268,17 @@ $result = $conn->query($query);
                       <?php echo htmlspecialchars($currentProblem); ?> 
                       <small class="text-secondary fw-semibold font-monospace" style="font-size: 11.5px;"><?php echo $priceGuideTag; ?></small>
                     </span>
+
+                    <!-- NEW INVENTORY INTERLOCK BADGE -->
+                    <div class="mb-1.5">
+                      <span class="badge font-monospace" style="font-size: 10px; padding: 2px 6px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; display: inline-block;">
+                        ⏳ Awaiting Field Inspection
+                      </span>
+                    </div>
+
                     <span class="priority-badge <?php echo $priorityClass; ?>"><?php echo htmlspecialchars($row['priority'] ?? 'Low'); ?></span>
                   </td>
+
                   
                   <!-- Customer Communications Info -->
                   <td>

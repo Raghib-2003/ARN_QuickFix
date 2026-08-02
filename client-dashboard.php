@@ -47,6 +47,64 @@ $sticky_type = "";
 $sticky_priority = "";
 $sticky_payment = "";
 
+// --------------------------------------------------------------------
+// FORM PROCESSING: HANDLE CLIENT ESCALATION COMPLAINT SUBMISSION
+// --------------------------------------------------------------------
+$actionMessage = "";
+$actionError = "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
+    if ($_POST['action_type'] === 'submit_complaint_escalation') {
+        $asset_id = strtoupper(trim($_POST['asset_id'] ?? ''));
+        $asset_type = $_POST['asset_type'] ?? '';
+        $problem_category = $_POST['problem_category'] ?? '';
+        $complaint_notes = trim($_POST['complaint_notes'] ?? '');
+
+        if (!empty($asset_id) && !empty($asset_type) && !empty($problem_category) && !empty($complaint_notes)) {
+            
+            // SECURITY CHECK: Verify this specific asset code combination actually matches a ticket logged by this client
+            // UPDATED SECURITY CHECK: Verifies the Asset ID and Type belong to this user account (removes category constraint for flexible complaints)
+$verifyStmt = $conn->prepare("SELECT id FROM service_requests WHERE client_email = ? AND asset_id = ? AND asset_type = ? LIMIT 1");
+$verifyStmt->bind_param("sss", $clientEmail, $asset_id, $asset_type);
+
+            $verifyStmt->execute();
+            $ticketResult = $verifyStmt->get_result()->fetch_assoc();
+            $verifyStmt->close();
+
+            if ($ticketResult) {
+                $targetTicketId = $ticketResult['id'];
+                
+                // Update the matching row's parameters with the complaint text and shift its state to highlight onto manager queues
+                $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'complaint_raised', complaint_text = ? WHERE id = ?");
+                $updateStmt->bind_param("si", $complaint_notes, $targetTicketId);
+                
+                if ($updateStmt->execute()) {
+                    $_SESSION['alert_success'] = "Success! Complaint escalated to Manager.";
+                } else {
+                    $_SESSION['alert_error'] = "Database Error: Could not save complaint text notes.";
+                }
+                $updateStmt->close();
+            } else {
+                $_SESSION['alert_error'] = "Data Error: No ticket records found matching Asset ID '{$asset_id}' with category '{$problem_category}' under your account.";
+            }
+        } else {
+            $_SESSION['alert_error'] = "Validation Mismatch: Please fill in all complaint details completely.";
+        }
+        
+        // Post-Redirect-Get Interlock to kill browser form resubmission memory caches on refresh
+        header("Location: client-dashboard.php");
+        exit();
+    }
+}
+
+// Extract temporary notifications arrays safely out of session memory structures
+if (isset($_SESSION['alert_success'])) { $actionMessage = $_SESSION['alert_success']; unset($_SESSION['alert_success']); }
+if (isset($_SESSION['alert_error'])) { $actionError = $_SESSION['alert_error']; unset($_SESSION['alert_error']); }
+
+// Fetch the list of historical asset components assigned to this user to populate form fields dynamically
+$distinctAssets = $conn->query("SELECT DISTINCT asset_id, asset_type, problem_category FROM service_requests WHERE client_email = '$clientEmail' ORDER BY id DESC");
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type'])) 
     if ($_POST['action_type'] === 'service_request') {
         $assetType = $_POST['asset_type'] ?? '';
@@ -564,7 +622,7 @@ if ($maintQuery) {
                         <!-- ================= DYNAMIC MANAGER NOTIFICATIONS MODULE ================= -->
     <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
       <h5 class="fw-bold text-dark mb-3" style="font-size: 16px;">
-        <span class="me-2" style="font-size: 18px;">📊</span>Manager Notifications
+        <span class="me-2" style="font-size: 18px;">📊</span>Notifications
       </h5>
       
       <div class="d-flex flex-column gap-3">
@@ -650,42 +708,64 @@ if ($maintQuery) {
           </div>
         </div>
 
-        <!-- Module D: Complaints Ticket Registration Escalation Form Block -->
-        <div class="dashboard-panel border border-danger-subtle bg-white">
-          <div class="panel-heading text-danger mb-1">Complaint</div>
+               <!-- ================= FIGMA SPEC COMPLAINT CARD MODULE ================= -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
+          <h5 class="fw-bold text-danger mb-1" style="font-size: 16px;">Complaint</h5>
           <p class="text-muted small mb-3">Lodge a direct operational escalation ticket onto the manager dashboard queue.</p>
+
+          <!-- System Alert Notifications Inline Banners -->
+          <?php if (!empty($actionMessage)): ?>
+            <div class="alert alert-success border-0 small py-2 px-3 font-monospace mb-3" style="font-size:12px; background-color:#F0FDF4; color:#16A34A; border:1px solid #DCFCE7;"><?php echo $actionMessage; ?></div>
+          <?php endif; ?>
+          <?php if (!empty($actionError)): ?>
+            <div class="alert alert-danger border-0 small py-2 px-3 font-monospace mb-3" style="font-size:12px; background-color:#FEF2F2; color:#EF4444; border:1px solid #FEE2E2;"><?php echo $actionError; ?></div>
+          <?php endif; ?>
+
+                    <!-- ================= FIXED ALIGNED COMPLAINT FORM MODULE ================= -->
           <form action="client-dashboard.php" method="POST">
-            <input type="hidden" name="action_type" value="complaint">
-            <div class="row g-2">
-              <div class="col-sm-4"><input type="text" name="complaint_asset_id" class="form-control" placeholder="Enter Asset ID" required></div>
-                            <div class="col-sm-4">
-                <select name="complaint_asset_type" class="form-select" required>
+            <input type="hidden" name="action_type" value="submit_complaint_escalation">
+            
+            <!-- Grid Split: Form row broken down cleanly into perfectly divisible column sets -->
+            <div class="row g-2 mb-2.5">
+              <!-- Column 1: Asset Code ID Field (Takes up exactly half the width box space) -->
+              <div class="col-6">
+                <input type="text" name="asset_id" class="form-control form-control-custom w-100 text-uppercase" placeholder="Enter Asset ID" style="height: 38px; font-size: 12.5px; background-color: #F8FAFC;" required>
+              </div>
+              
+              <!-- Column 2: Asset Machinery Classification Selector (Takes up the other half width box space) -->
+              <div class="col-6">
+                <select name="asset_type" class="form-select form-select-custom w-100" style="height: 38px; font-size: 12.5px; background-color: #F8FAFC;" required>
                   <option value="" disabled selected hidden>Select Asset Type</option>
-                  <option value="Elevator">Elevator / Lift</option>
                   <option value="AC">AC Unit</option>
+                  <option value="Elevator">Elevator</option>
                   <option value="Generator">Generator</option>
                 </select>
               </div>
-              <div class="col-sm-4">
-                <select name="complaint_problem_category" class="form-select" required>
-                  <option value="" disabled selected hidden>Select Category</option>
-                  <option value="Delay">Technical Dispatch Delay</option>
-                  <option value="Faulty Repair">Recurring Mechanical Fault</option>
-                  <option value="Billing">Invoice Verification Conflict</option>
-                </select>
-              </div>
-              <div class="col-12 mt-2">
-                <textarea name="complaint_text" class="form-control" rows="3" placeholder="Write your complaint" required></textarea>
-              </div>
-              <div class="col-12 mt-2">
-                <button type="submit" class="btn btn-complaint-red w-100">Submit Complaint</button>
-              </div>
             </div>
+
+            <!-- Full-Width Horizontal row for your complaint type categories -->
+            <div class="mb-3">
+              <select name="problem_category" class="form-select form-select-custom w-100" style="height: 38px; font-size: 12.5px; background-color: #F8FAFC;" required>
+                <option value="" disabled selected hidden>Select Complaint Type Category</option>
+                <option value="Machine Still Broken">Machine Still Broken / Faulty Servicing</option>
+                <option value="Technician Conduct">Technician Conduct / Negligence Issue</option>
+                <option value="Billing Dispute">Billing Dispute / Overcharged Parts</option>
+                <option value="Warranty Refusal">Warranty Claim Rejection Request</option>
+              </select>
+            </div>
+
+            <!-- Detailed Technical Notes Context Textarea -->
+            <div class="mb-3">
+              <textarea name="complaint_notes" class="form-control" rows="3" placeholder="Write your complaint notes details here..." style="font-size: 13px; background-color: #F8FAFC;" required></textarea>
+            </div>
+
+            <!-- Submit Button Trigger Element Layout Layout Card -->
+            <button type="submit" class="btn btn-danger w-100 fw-bold text-uppercase" style="height: 42px; font-size: 12px; background-color: #EF4444; border: none; border-radius: 6px; transition: all 0.2s;">
+              Submit Complaint
+            </button>
           </form>
         </div>
-      </div> <!-- Close col-lg-7 right hand column -->
-    </div> <!-- Close main content split row -->
-  </div> <!-- Close central wrapper container -->
+
 
   <!-- Modern Warning Toast DOM Structure -->
   <div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1100;">

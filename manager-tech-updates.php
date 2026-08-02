@@ -1,267 +1,212 @@
 <?php
-require_once "config.php";
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-/* Only manager/admin can access */
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin','manager'])) {
-  header("Location: login.php");
-  exit;
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-/* ---------- Helpers ---------- */
-function table_exists(PDO $pdo, string $table): bool {
-  $stmt = $pdo->prepare("
-    SELECT COUNT(*)
-    FROM information_schema.tables
-    WHERE table_schema = DATABASE()
-      AND table_name = ?
-  ");
-  $stmt->execute([$table]);
-  return (int)$stmt->fetchColumn() > 0;
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Force authorization checks for managers strictly
+if (!isset($_SESSION['email']) || (isset($_SESSION['role']) && strtolower($_SESSION['role']) !== 'manager')) {
+    header("Location: login.php");
+    exit();
 }
 
-function col_exists(PDO $pdo, string $table, string $col): bool {
-  $stmt = $pdo->prepare("
-    SELECT COUNT(*)
-    FROM information_schema.columns
-    WHERE table_schema = DATABASE()
-      AND table_name = ?
-      AND column_name = ?
-  ");
-  $stmt->execute([$table, $col]);
-  return (int)$stmt->fetchColumn() > 0;
+$managerEmail = $_SESSION['email'];
+$managerName = $_SESSION['name'] ?? 'Operations Manager';
+
+// Connect to Database
+$conn = new mysqli("127.0.0.1", "root", "", "arn_quickfix");
+if ($conn->connect_error) {
+    die("Database Connection Error: " . $conn->connect_error);
 }
 
-function status_badge(string $s): string {
-  $map = [
-    'submitted'  => 'secondary',
-    'assigned'   => 'info',
-    'processing' => 'primary',
-    'pending'    => 'warning',
-    'completed'  => 'success',
-    'closed'     => 'dark',
-  ];
-  $key = strtolower(trim($s));
-  $c = $map[$key] ?? 'secondary';
-  return "<span class=\"badge rounded-pill text-bg-$c\">" . htmlspecialchars(ucfirst($key)) . "</span>";
-}
-
-function priority_badge(string $p): string {
-  $map = ['low'=>'secondary','medium'=>'warning','high'=>'danger','critical'=>'danger'];
-  $key = strtolower(trim($p));
-  $c = $map[$key] ?? 'dark';
-  return "<span class=\"badge rounded-pill text-bg-$c\">" . htmlspecialchars(ucfirst($key)) . "</span>";
-}
-
-/* ---------- Guards ---------- */
-if (!table_exists($pdo, "technician_notes")) {
-  die("Table <b>technician_notes</b> not found. Create it first.");
-}
-
-/* check optional columns */
-$has_is_read = col_exists($pdo, "technician_notes", "is_read");
-$has_suggest = col_exists($pdo, "technician_notes", "suggested_status");
-
-/* ---------- Actions ---------- */
-$success = "";
-$error = "";
-
-/* Mark a note as read */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_read'])) {
-  $note_id = (int)($_POST['note_id'] ?? 0);
-
-  if ($note_id > 0 && $has_is_read) {
-    try {
-      $st = $pdo->prepare("UPDATE technician_notes SET is_read = 1 WHERE id = ?");
-      $st->execute([$note_id]);
-      $success = "✅ Marked as read.";
-    } catch (Throwable $e) {
-      $error = "❌ Failed to mark as read.";
-    }
-  } else {
-    $error = "❌ is_read column not found. Run ALTER TABLE to add it.";
-  }
-}
-
-/* Manager updates FINAL status in client_requests */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_final_status'])) {
-  $request_id = (int)($_POST['request_id'] ?? 0);
-  $final_status = trim($_POST['final_status'] ?? '');
-
-  $allowed = ['Submitted','Assigned','Processing','Pending','Completed','Closed'];
-  if ($request_id <= 0 || !in_array($final_status, $allowed)) {
-    $error = "❌ Invalid request/status.";
-  } else {
-    try {
-      $st = $pdo->prepare("UPDATE client_requests SET status = ? WHERE id = ?");
-      $st->execute([$final_status, $request_id]);
-      $success = "✅ Client status updated (final).";
-    } catch (Throwable $e) {
-      $error = "❌ Failed to update client status.";
-    }
-  }
-}
-
-/* ---------- Fetch notes ---------- */
-try {
-  $sql = "
-    SELECT
-      tn.id AS note_id,
-      tn.request_id,
-      tn.technician_id,
-      tn.note,
-      tn.created_at,
-      " . ($has_is_read ? "tn.is_read" : "0 AS is_read") . ",
-      " . ($has_suggest ? "tn.suggested_status" : "NULL AS suggested_status") . ",
-
-      cr.elevator_id,
-      cr.category,
-      cr.priority,
-      cr.status AS client_status,
-
-      tech.name AS technician_name
-    FROM technician_notes tn
-    LEFT JOIN client_requests cr ON cr.id = tn.request_id
-    LEFT JOIN users tech ON tech.id = tn.technician_id
-    ORDER BY " . ($has_is_read ? "tn.is_read ASC," : "") . " tn.id DESC
-    LIMIT 100
-  ";
-  $notes = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-  $notes = [];
-  $error = "❌ Failed to load technician updates.";
-}
+// Pull active processing/completed ticket rows where a technician has taken field action
+// FIXED QUERY: Fetches your inventory parameters right out of your main service requests table
+$techFeed = $conn->query("SELECT id, asset_id, asset_type, asset_brand, location, allocated_part, part_price, status, created_at AS updated_at FROM service_requests WHERE status IN ('processing', 'completed') ORDER BY id DESC");
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Technician Updates | Manager</title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technician Updates | ARN QuickFix Ltd.</title>
+  
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+  <link href="https://cloudflare.com" rel="stylesheet">
 
   <style>
-    :root{ --sonic:#00C2CB; --border:rgba(15,23,42,.08); }
-    body{ background:#f7fbfc; }
-    .card-soft{ background:#fff; border:1px solid var(--border); border-radius:16px; box-shadow:0 10px 30px rgba(2,8,23,.06); }
-    .btn-sonic{ background:var(--sonic); border:none; font-weight:700; }
-    .btn-sonic:hover{ background:#06aeb6; }
-    .muted{ color:#64748b; }
-    .unread{ border-left:6px solid #dc3545; }
+    :root {
+      --primary-cyan: #00C2CB;
+      --deep-navy: #0F172A;
+      --slate-gray: #475569;
+      --bg-canvas: #F8FAFC;
+      --border-light: #E2E8F0;
+    }
+    body {
+      background-color: var(--bg-canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--deep-navy);
+      -webkit-font-smoothing: antialiased;
+    }
+    .manager-navbar {
+      background-color: #FFFFFF;
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 45px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+    }
+    .brand-accent {
+      font-weight: 800;
+      font-size: 24px;
+      color: var(--deep-navy);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .brand-accent span { color: var(--primary-cyan); }
+    
+    .feed-container-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 35px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.015);
+    }
+    .log-row-card {
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+    .log-row-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.015);
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .pulse-active { background-color: #2563EB; animation: pulse-blink 1.5s infinite; }
+    .pulse-complete { background-color: #10B981; }
+    @keyframes pulse-blink {
+      50% { opacity: 0.4; }
+    }
   </style>
 </head>
+<body>
 
-<body class="p-4">
-
-<div class="container">
-
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h3 class="fw-bold mb-1"><i class="fa-solid fa-bell me-2" style="color:var(--sonic)"></i>Technician Updates</h3>
-      <div class="muted">Technicians send notes here. Manager approves and updates final client status.</div>
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <nav class="navbar manager-navbar d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+      <a href="manager-dashboard.php" class="brand-accent d-flex align-items-center gap-2">
+        <img src="img/logo.svg.svg" alt="Logo" style="height: 55px; width: auto;" onerror="this.style.display='none';">
+        <span>  ARN QuickFix Ltd. </span>
+      </a> 
     </div>
-    <a href="manager-dashboard.php" class="btn btn-outline-dark rounded-pill">
-      <i class="fa-solid fa-arrow-left me-2"></i>Back
-    </a>
-  </div>
+    
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2 me-2 bg-light px-3 py-1.5 rounded-pill border" style="border-color: #E2E8F0 !important;">
+        <div style="width: 8px; height: 8px; background-color: #10B981;" class="rounded-circle"></div>
+        <span class="small fw-semibold text-secondary" style="font-size: 13px;">
+          Manager: <strong class="text-dark fw-bold"><?php echo htmlspecialchars($managerName); ?></strong>
+        </span>
+      </div>
+      <a href="manager-dashboard.php" class="btn btn-sm btn-outline-secondary rounded-pill px-4 fw-bold" style="font-size: 12.5px; height: 34px; display: flex; align-items: center;">Back to Hub</a>
+    </div>
+  </nav>
 
-  <?php if ($error): ?>
-    <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-  <?php endif; ?>
-  <?php if ($success): ?>
-    <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-  <?php endif; ?>
+  <!-- ================= MASTER TELEMETRY FEED CANVAS ================= -->
+  <div class="container py-5" style="max-width: 900px;">
+    
+    <!-- Header Content Row -->
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h2 class="fw-bold m-0" style="font-size: 26px; letter-spacing: -0.5px;">Live Technician Field Stream</h2>
+        <p class="text-muted m-0 small fw-medium mt-1">Real-time tactical audit of operations updates, site arrivals, and repair logs directly from field crews [1.1].</p>
+      </div>
+      <span class="badge bg-dark rounded-pill font-monospace px-3 py-2" style="font-size: 11px;">
+        FEED REFRESH: LIVE
+      </span>
+    </div>
 
-  <div class="card-soft p-4">
-    <?php if (empty($notes)): ?>
-      <div class="text-secondary">No technician updates found.</div>
-    <?php else: ?>
-
-      <?php foreach ($notes as $n): ?>
-        <?php
-          $isUnread = ((int)($n['is_read'] ?? 0) === 0);
-          $reqId = (int)$n['request_id'];
+    <!-- ================= STREAM CARDS TIMELINE Repositories ================= -->
+    <div class="feed-container-card">
+      <div class="d-flex flex-column gap-3.5">
+                <?php
+        if ($techFeed && $techFeed->num_rows > 0):
+            while ($tLog = $techFeed->fetch_assoc()):
+                $isDone = ($tLog['status'] === 'completed');
+                $feedBg = $isDone ? '#F0FDF4' : '#EFF6FF';
+                $feedBorder = $isDone ? '#DCFCE7' : '#BFDBFE';
+                $dotClass = $isDone ? 'pulse-complete' : 'pulse-active';
+                $statusTextLabel = $isDone ? 'Servicing Complete' : 'Active Deployment';
+                
+                // Extract technician name from location string pattern mapping
+                $locStr = $tLog['location'] ?? '';
+                $techEngineer = "Field Crew Engineer";
+                if (preg_match('/\(Assigned to:\s*([^)]+)\)/', $locStr, $matches)) {
+                    $techEngineer = trim($matches[1]);
+                }
         ?>
-        <div class="p-3 mb-3 rounded-3 bg-light <?php echo $isUnread ? 'unread' : ''; ?>">
-          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-            <div>
-              <div class="fw-bold">
-                Request #<?php echo $reqId; ?>
-                <span class="ms-2 text-secondary">Elevator:</span> <?php echo htmlspecialchars($n['elevator_id'] ?? '-'); ?>
+          <!-- Individual Feed Row Card (FIXED TAG LAYOUT STRUCTURE) -->
+          <div class="p-4 log-row-card mb-3" style="background-color: <?php echo $feedBg; ?>; border-color: <?php echo $feedBorder; ?>; border-radius: 12px; border-style: solid; border-width: 1px;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex align-items-center gap-2">
+                <span class="pulse-dot <?php echo $dotClass; ?>"></span>
+                <h5 class="m-0 fw-bold text-dark" style="font-size: 14.5px;"><?php echo htmlspecialchars($techEngineer); ?></h5>
+                <span class="badge text-uppercase text-secondary font-monospace border bg-white" style="font-size: 10px;"><?php echo $statusTextLabel; ?></span>
               </div>
-              <div class="muted">
-                Technician: <b><?php echo htmlspecialchars($n['technician_name'] ?? ('#'.$n['technician_id'])); ?></b>
-                • <?php echo htmlspecialchars($n['created_at'] ?? ''); ?>
-              </div>
+              <span class="text-muted small font-monospace fw-semibold" style="font-size: 12px;">
+                <i class="fa-regular fa-clock me-1 text-muted"></i><?php echo date('d-m-Y | h:i A', strtotime($tLog['updated_at'])); ?>
+              </span>
             </div>
+            
+            <!-- Dynamic Real-Time Text Description Block -->
+            <p class="m-0 text-secondary" style="font-size: 13.5px; line-height: 1.5; font-weight: 500;">
+              <?php 
+                $allocatedPart = trim($tLog['allocated_part'] ?? '');
+                $partPrice = (float)($tLog['part_price'] ?? 0.00);
 
-            <div class="d-flex gap-2 align-items-center">
-              <?php echo priority_badge($n['priority'] ?? ''); ?>
-              <?php echo status_badge($n['client_status'] ?? ''); ?>
-            </div>
-          </div>
+                if($isDone): 
+              ?>
+                Successfully finalized all system calibrations, resolved diagnostic nodes, and closed out maintenance repair operations for unit <strong class="text-dark">#<?php echo htmlspecialchars($tLog['asset_id']); ?></strong> (<?php echo htmlspecialchars($tLog['asset_brand'] . ' ' . $tLog['asset_type']); ?>).
+                
+                <!-- LIVE PARTS ALLOCATION NOTICE INSIDE THE FEED -->
+                <span class="d-block mt-2 font-monospace small p-2 rounded" style="background-color: #FFFFFF; border: 1px solid #DCFCE7; color: #15803D; font-size: 12px; width: fit-content;">
+                  📦 <strong>Warehouse Stock Drawn:</strong> <?php echo !empty($allocatedPart) ? htmlspecialchars($allocatedPart) : 'Standard Consumables'; ?> (+৳<?php echo number_format($partPrice, 2); ?>)
+                </span>
 
-          <hr class="my-3">
-
-          <div class="mb-2">
-            <div class="fw-semibold">Technician Note</div>
-            <div class="bg-white border rounded-3 p-3">
-              <?php echo nl2br(htmlspecialchars($n['note'] ?? '')); ?>
-            </div>
-          </div>
-
-          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-3">
-            <div class="muted">
-              Suggested Status:
-              <b><?php echo htmlspecialchars($n['suggested_status'] ?? '—'); ?></b>
-              <?php if ($isUnread): ?>
-                <span class="badge text-bg-danger ms-2">Unread</span>
               <?php else: ?>
-                <span class="badge text-bg-secondary ms-2">Read</span>
+                Arrived on site location, initialized hardware fault code telemetry tracing, and shifted operational status to processing for unit <strong class="text-dark">#<?php echo htmlspecialchars($tLog['asset_id']); ?></strong>.
+                
+                <span class="d-block mt-2 font-monospace small p-2 rounded" style="background-color: #FFFFFF; border: 1px solid #BFDBFE; color: #1D4ED8; font-size: 12px; width: fit-content;">
+                  ⏳ <strong>Current Action:</strong> Investigating failure nodes & checking local parts inventory compatibility...
+                </span>
               <?php endif; ?>
-            </div>
-
-            <div class="d-flex flex-wrap gap-2">
-
-              <?php if ($has_is_read && $isUnread): ?>
-                <form method="POST" class="m-0">
-                  <input type="hidden" name="note_id" value="<?php echo (int)$n['note_id']; ?>">
-                  <button class="btn btn-outline-dark btn-sm rounded-pill" name="mark_read">
-                    <i class="fa-solid fa-check me-1"></i>Mark as Read
-                  </button>
-                </form>
-              <?php endif; ?>
-
-              <!-- Final client status update -->
-              <form method="POST" class="m-0 d-flex gap-2 align-items-center">
-                <input type="hidden" name="request_id" value="<?php echo $reqId; ?>">
-                <select name="final_status" class="form-select form-select-sm" style="width:180px" required>
-                  <?php
-                    $statuses = ['Submitted','Assigned','Processing','Pending','Completed','Closed'];
-                    foreach ($statuses as $s) {
-                      $sel = (strtolower($s) === strtolower($n['client_status'] ?? '')) ? 'selected' : '';
-                      echo "<option $sel>$s</option>";
-                    }
-                  ?>
-                </select>
-                <button class="btn btn-sonic btn-sm rounded-pill" name="update_final_status">
-                  <i class="fa-solid fa-floppy-disk me-1"></i>Update Client
-                </button>
-              </form>
-
-            </div>
+            </p>
           </div>
+        <?php 
+            endwhile; 
+        else: 
+        ?>
+          <div class="text-center py-5 text-muted font-monospace fw-bold">
+            📡 Standby Mode: Waiting for incoming connection logs from field crew engineer terminal links.
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
 
-        </div>
-      <?php endforeach; ?>
+  </div> <!-- Close Master Canvas Layout Container Wrapper -->
 
-    <?php endif; ?>
-  </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Application Engine Injector Libraries -->
+  <script src="https://jquery.com"></script>
+  <script src="https://jsdelivr.net"></script>
 </body>
 </html>
+<?php 
+if (isset($conn)) { 
+    $conn->close(); 
+} 
+?>

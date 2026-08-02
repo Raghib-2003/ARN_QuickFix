@@ -1,5 +1,4 @@
 <?php
-// 1. Initialize Active User Session and Force Authorization Guard Rails
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -17,20 +16,27 @@ if (!isset($_SESSION['email']) || (isset($_SESSION['role']) && strtolower($_SESS
 $managerEmail = $_SESSION['email'];
 $managerName = $_SESSION['name'] ?? 'Operations Manager';
 
-// 2. Establish High-Speed Database Connection
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$dbname = "arn_quickfix";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
+// Establish High-Speed Database Connection
+$conn = new mysqli("127.0.0.1", "root", "", "arn_quickfix");
 if ($conn->connect_error) {
     die("Database Connection Error: " . $conn->connect_error);
 }
 
-// 3. Pull Live Active Job Dataset Rows (Only 'processing' status)
-// FIXED QUERY: Fetches your fresh inventory parameters directly from your data table rows
-$query = "SELECT id, client_email, asset_type, asset_brand, asset_id, problem_category, allocated_part, part_price, priority, phone, location, payment_method, status FROM service_requests WHERE status = 'processing' ORDER BY id DESC";
+// Capture Active Filter Parameters from the Navigation Row Tabs
+$filterStatus = $_GET['filter'] ?? 'all';
+
+// Build dynamic SQL queries matching select tabs cleanly
+if ($filterStatus === 'new') {
+    $sqlFilter = "WHERE status IN ('pending', 'submitted')";
+} elseif ($filterStatus === 'progress') {
+    $sqlFilter = "WHERE status = 'processing'";
+} elseif ($filterStatus === 'completed') {
+    $sqlFilter = "WHERE status = 'completed'";
+} else {
+    $sqlFilter = ""; // Pull absolutely everything out of the row logs
+}
+
+$query = "SELECT id, client_email, asset_type, asset_brand, asset_id, problem_category, allocated_part, part_price, amount, priority, phone, location, payment_method, status FROM service_requests {$sqlFilter} ORDER BY id DESC";
 $result = $conn->query($query);
 ?>
 <!DOCTYPE html>
@@ -38,7 +44,7 @@ $result = $conn->query($query);
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Active In-Progress Repairs | ARN QuickFix Ltd.</title>
+  <title>Master Service Registry Ledger | ARN QuickFix Ltd.</title>
   
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
@@ -107,29 +113,29 @@ $result = $conn->query($query);
     .priority-medium { background-color: #FFFBEB; color: #D97706; border: 1px solid #FEF3C7; }
     .priority-low { background-color: #F0FDF4; color: #16A34A; border: 1px solid #DCFCE7; }
     
-    .status-pulse-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: #EFF6FF;
-      color: #2563EB;
-      border: 1px solid #BFDBFE;
+    .filter-tab-link {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-gray);
+      text-decoration: none;
+      padding: 8px 20px;
+      border-radius: 30px;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .filter-tab-link:hover { color: var(--primary-cyan); background-color: #ECEFF1; }
+    .filter-tab-active { background-color: var(--deep-navy) !important; color: #FFFFFF !important; }
+    
+    .badge-status {
       font-size: 11px;
       font-weight: 700;
       padding: 5px 12px;
-      border-radius: 20px;
+      border-radius: 30px;
       text-transform: uppercase;
     }
-    .pulse-dot {
-      width: 6px;
-      height: 6px;
-      background-color: #2563EB;
-      border-radius: 50%;
-      animation: blinker 1.5s linear infinite;
-    }
-    @keyframes blinker {
-      50% { opacity: 0; }
-    }
+    .status-lbl-pending { background-color: #FFF7ED; color: #EA580C; border: 1px solid #FFEDD5; }
+    .status-lbl-processing { background-color: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+    .status-lbl-completed { background-color: #F0FDF4; color: #16A34A; border: 1px solid #DCFCE7; }
   </style>
 </head>
 <body>
@@ -154,32 +160,37 @@ $result = $conn->query($query);
     </div>
   </nav>
 
-  <!-- ================= MASTER MONITOR CANVAS WRAPPER ================= -->
-  <div class="container py-5" style="max-width: 1200px;">
+  <!-- ================= MASTER CANVAS LEDGER CONTAINER ================= -->
+  <div class="container py-5" style="max-width: 1240px;">
     
-    <!-- Header Summary Title Layout -->
-    <div class="d-flex justify-content-between align-items-end mb-4">
+    <!-- Headline Section Header Row -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-5">
       <div>
-        <h2 class="fw-bold m-0" style="font-size: 26px; letter-spacing: -0.5px;">In Progress Tasks</h2>
-        <p class="text-muted m-0 small fw-medium mt-1">Real-time status tracking of all repair jobs currently active on technician fields.</p>
+        <h2 class="fw-bold m-0" style="font-size: 26px; letter-spacing: -0.5px;">All Service Requests</h2>
+        <p class="text-muted m-0 small fw-medium mt-1">Master historical administrative ledger tracking absolutely all submitted machinery repair complaints.</p>
       </div>
-      <span class="badge bg-primary rounded-pill font-monospace px-3 py-2" style="font-size: 11px; background-color: #2563EB !important;">
-        LIVE ACTIVE JOBS: <?php echo $result ? $result->num_rows : 0; ?>
-      </span>
+      
+      <!-- Interactive Status Navigation Filtering Row Tabs -->
+      <div class="d-flex bg-white border p-1.5 rounded-pill gap-1 shadow-sm" style="border-color: var(--border-light) !important;">
+        <a href="manager_all_requests.php?filter=all" class="filter-tab-link <?php echo ($filterStatus === 'all') ? 'filter-tab-active' : ''; ?>">All History</a>
+        <a href="manager_all_requests.php?filter=new" class="filter-tab-link <?php echo ($filterStatus === 'new') ? 'filter-tab-active' : ''; ?>">New Inbox</a>
+        <a href="manager_all_requests.php?filter=progress" class="filter-tab-link <?php echo ($filterStatus === 'progress') ? 'filter-tab-active' : ''; ?>">In Progress</a>
+        <a href="manager_all_requests.php?filter=completed" class="filter-tab-link <?php echo ($filterStatus === 'completed') ? 'filter-tab-active' : ''; ?>">Completed</a>
+      </div>
     </div>
-
-    <!-- ================= DATA GRID SHEET LEDGER CONTAINER ================= -->
+    <!-- ================= SECTION B: DATA GRID REPOSITORY LEDGER ================= -->
     <div class="ledger-container-card">
       <div class="table-responsive">
         <table class="table align-middle m-0">
           <thead>
             <tr>
-              <th style="width: 65px; text-align: center;">SL</th>
+              <th style="width: 60px; text-align: center;">SL</th>
               <th>Asset Information</th>
               <th>Issue Diagnostics & Estimates</th>
               <th>Contact Node</th>
-              <th>Location & Dispatch Assignment</th>
-              <th style="width: 160px; text-align: center;">Live Status</th>
+              <th>Location Profile Matrix</th>
+              <th style="width: 140px; text-align: right;">Final Bill</th>
+              <th style="width: 150px; text-align: center;">Operational Status</th>
             </tr>
           </thead>
           <tbody>
@@ -190,25 +201,33 @@ $result = $conn->query($query);
                 $priorityClass = 'priority-low';
                 if (isset($row['priority']) && strtolower($row['priority']) === 'high') { $priorityClass = 'priority-high'; }
                 elseif (isset($row['priority']) && strtolower($row['priority']) === 'medium') { $priorityClass = 'priority-medium'; }
+                
+                // Map system database operational flags onto your styled CSS badges
+                $statusLabelText = $row['status'] ?? 'pending';
+                $statusBadgeClass = 'status-lbl-pending';
+                if ($statusLabelText === 'processing') { $statusBadgeClass = 'status-lbl-processing'; }
+                elseif ($statusLabelText === 'completed') { $statusBadgeClass = 'status-lbl-completed'; }
+                
+                $allocatedPart = trim($row['allocated_part'] ?? '');
+                $partPrice = (float)($row['part_price'] ?? 0.00);
+                $finalBillAmount = (float)($row['amount'] ?? 0.00); // MAPS TO YOUR EXISTING AMOUNT COLUMN
             ?>
                 <tr>
-                  <!-- Clean Human Sequential Serial Order -->
+                  <!-- Clean Human-Readable Sequential Serial Listing Line Lines -->
                   <td class="font-monospace fw-bold text-secondary text-center" style="font-size: 13.5px;">
                     <?php echo $serialNumberCounter++; ?>
                   </td>
                   
-                  <!-- Asset Parameters Grid -->
+                  <!-- Asset Machinery Grid Data Summary Details -->
                   <td>
-                    <span class="d-block fw-bold text-dark mb-0.5"><?php echo htmlspecialchars($row['asset_type'] ?? ''); ?></span>
+                    <span class="d-block fw-bold text-dark mb-0.5"><?php echo htmlspecialchars($row['asset_type'] ?? 'Asset'); ?></span>
                     <span class="text-muted font-monospace small" style="font-size: 11.5px;"><?php echo htmlspecialchars($row['asset_brand'] ?? ''); ?> — <strong><?php echo htmlspecialchars($row['asset_id'] ?? ''); ?></strong></span>
                   </td>
                   
-                                   <!-- Diagnostics with Exact Client-Matched Baseline Price Switches & Dynamic Inventory Check -->
+                  <!-- Diagnostics Profile Category with Cross-Synced Pricing Switches -->
                   <td>
                     <?php 
-                      $currentProblem = $row['problem_category'] ?? '';
-                      $allocatedPart = trim($row['allocated_part'] ?? '');
-                      $partPrice = (float)($row['part_price'] ?? 0.00);
+                      $currentProblem = trim($row['problem_category'] ?? '');
                       $priceGuideTag = "";
 
                       switch ($currentProblem) {
@@ -232,29 +251,28 @@ $result = $conn->query($query);
                           default: $priceGuideTag = ""; break;
                       }
                     ?>
-                    <span class="d-block text-dark fw-medium mb-1.5">
+                    <span class="d-block text-dark fw-medium mb-1">
                       <?php echo htmlspecialchars($currentProblem); ?> 
                       <small class="text-secondary fw-semibold font-monospace" style="font-size: 11.5px;"><?php echo $priceGuideTag; ?></small>
                     </span>
 
-                    <!-- DYNAMIC ADAPTIVE TECHNICIAN ON-SITE PARTS REVEALER -->
+                    <!-- AUTOMATED ON-SITE TECHNICIAN INVENTORY PARTS DISPLAY -->
                     <div class="mb-1.5">
                       <?php if (!empty($allocatedPart)): ?>
-                        <!-- Renders automatically if the technician logs an inventory part item from the field -->
-                        <span class="badge font-monospace" style="font-size: 10px; padding: 2px 6px; background-color: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block;">
-                          📦 Allocated: <?php echo htmlspecialchars($allocatedPart); ?> (+৳<?php echo number_format($partPrice); ?>)
+                        <span class="badge font-monospace" style="font-size: 10px; padding: 2px 5px; background-color: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block;">
+                          📦 Used: <?php echo htmlspecialchars($allocatedPart); ?> (+৳<?php echo number_format($partPrice); ?>)
                         </span>
                       <?php else: ?>
-                        <!-- Standard standby alert showing that the job is currently being investigated -->
-                        <span class="badge font-monospace" style="font-size: 10px; padding: 2px 6px; background-color: #FFFBEB; color: #D97706; border: 1px solid #FEF3C7; border-radius: 4px; display: inline-block;">
-                          ⏳ Technician on-site diagnosing parts requirements...
-                        </span>
+                        <?php if ($statusLabelText === 'processing'): ?>
+                          <span class="badge font-monospace" style="font-size: 10px; padding: 2px 5px; background-color: #FFFBEB; color: #D97706; border: 1px solid #FEF3C7; border-radius: 4px; display: inline-block;">⏳ On-Site Investigating...</span>
+                        <?php else: ?>
+                          <span class="badge font-monospace text-muted" style="font-size: 10px; padding: 2px 5px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block;">No Extra Parts Needed</span>
+                        <?php endif; ?>
                       <?php endif; ?>
                     </div>
 
                     <span class="priority-badge <?php echo $priorityClass; ?>"><?php echo htmlspecialchars($row['priority'] ?? 'Low'); ?></span>
                   </td>
-
                   
                   <!-- Customer Communications Info -->
                   <td>
@@ -262,28 +280,38 @@ $result = $conn->query($query);
                     <span class="text-muted font-monospace d-block" style="font-size: 11px;"><?php echo htmlspecialchars($row['client_email'] ?? ''); ?></span>
                   </td>
                   
-                  <!-- Customer Location & Real-Time Dispatch Allocation Node -->
+                  <!-- Customer Target Delivery Site Location Parameters -->
                   <td>
                     <span class="d-block text-dark fw-medium" style="font-size: 13.5px;"><?php echo htmlspecialchars($row['location'] ?? ''); ?></span>
-                    <span class="text-muted small font-monospace d-block mt-0.5" style="font-size: 11px;">Payment Method: <strong><?php echo htmlspecialchars($row['payment_method'] ?? 'Not Set'); ?></strong></span>
+                    <span class="text-muted small font-monospace d-block mt-0.5" style="font-size: 11px;">Method: <strong><?php echo htmlspecialchars($row['payment_method'] ?? 'Not Set'); ?></strong></span>
+                  </td>
+
+                  <!-- DYNAMIC BILLING VALUE RENDERED FROM YOUR NATIVE AMOUNT ROW CELL -->
+                  <td class="text-end fw-bold font-monospace text-dark" style="font-size: 14px;">
+                    <?php 
+                      if ($statusLabelText !== 'completed' || $finalBillAmount == 0.00) {
+                          echo "<span class='text-muted small fw-normal font-sans' style='color: #94A3B8 !important; font-size:11px;'>Pending Job</span>";
+                      } else {
+                          echo "৳" . number_format($finalBillAmount, 2);
+                      }
+                    ?>
                   </td>
                   
-                  <!-- Live Tracking Pulse Badge Column -->
+                  <!-- Unified System Status Badge Print -->
                   <td class="text-center">
-                    <div class="status-pulse-badge">
-                      <div class="pulse-dot"></div>
-                      <span>On Field</span>
-                    </div>
+                    <span class="badge-status <?php echo $statusBadgeClass; ?>">
+                      <?php echo htmlspecialchars($statusLabelText); ?>
+                    </span>
                   </td>
                 </tr>
               <?php 
               endwhile; 
             else: 
             ?>
-              <!-- Fallback state if database has zero active processing rows -->
+              <!-- Fallback state display window container if rows are zero -->
               <tr>
-                <td colspan="6" class="text-center py-5 text-muted font-monospace fw-bold" style="background-color: #FFFFFF;">
-                  ⚙️ Standby State: There are zero active repair tickets running on technician fields right now.
+                <td colspan="7" class="text-center py-5 text-muted font-monospace fw-bold" style="background-color: #FFFFFF;">
+                  📁 Empty Archive Node! No matching historical requests registered under this status filter right now.
                 </td>
               </tr>
             <?php endif; ?>
@@ -291,14 +319,14 @@ $result = $conn->query($query);
         </table>
       </div>
     </div> <!-- Close Ledger Container Card -->
-  </div> <!-- Close Master Monitor Canvas Wrapper Container -->
+  </div> <!-- Close Master Canvas Layout Wrapper Container Container -->
 
-  <!-- Bootstrap 5 JavaScript Bundle Layout Core Engine CDN Injection -->
+  <!-- Framework Compiled Engine Injector Libraries -->
   <script src="https://jsdelivr.net"></script>
 </body>
 </html>
 <?php 
-// Terminate your database integration connection thread cleanly on page exit
+// Terminate database active network thread connection cleanly on module exit
 if (isset($conn)) { 
     $conn->close(); 
 } 
