@@ -3,6 +3,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Intercepts the clear click, updates the session memory safely, and returns to dashboard
+if (isset($_POST['action_type']) && $_POST['action_type'] === 'mark_all_tech_read') {
+    $_SESSION['tech_muted_until'] = date('Y-m-d H:i:s');
+    header("Location: manager-dashboard.php");
+    exit();
+}
+// ... (Your existing database connection and query lines continue exactly as before)
+
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -124,11 +133,22 @@ $techFeed = $conn->query("SELECT id, asset_id, asset_type, asset_brand, location
     <div class="d-flex justify-content-between align-items-end mb-4">
       <div>
         <h2 class="fw-bold m-0" style="font-size: 26px; letter-spacing: -0.5px;">Live Technician Field Stream</h2>
-        <p class="text-muted m-0 small fw-medium mt-1">Real-time tactical audit of operations updates, site arrivals, and repair logs directly from field crews [1.1].</p>
+        <p class="text-muted m-0 small fw-medium mt-1">Real-time tactical audit of operations updates, site arrivals, and repair logs directly from field crews.</p>
       </div>
-      <span class="badge bg-dark rounded-pill font-monospace px-3 py-2" style="font-size: 11px;">
-        FEED REFRESH: LIVE
-      </span>
+          <!-- Header Content Row -->
+    <div class="d-flex justify-content-between align-items-end mb-4">
+    
+      
+      <!-- ================= CLEAN DEDICATED MARK ALL READ ACTION BUTTON ================= -->
+      <form action="manager-tech-updates.php" method="POST" class="m-0">
+        <input type="hidden" name="action_type" value="mark_all_tech_read">
+        <button type="submit" class="btn btn-sm px-3 fw-bold rounded-pill text-uppercase d-flex align-items-center gap-1.5" 
+                style="font-size: 11px; height: 34px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; transition: all 0.2s;">
+          <i class="fa-solid fa-check-double"></i> Mark All Read
+        </button>
+      </form>
+    </div>
+
     </div>
 
     <!-- ================= STREAM CARDS TIMELINE Repositories ================= -->

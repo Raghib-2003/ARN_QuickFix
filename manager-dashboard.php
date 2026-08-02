@@ -10,10 +10,41 @@ error_reporting(E_ALL);
 
 // Restrict access directly to Authorized Managers only
 if (!isset($_SESSION['email']) || (isset($_SESSION['role']) && strtolower($_SESSION['role']) !== 'manager')) {
-    // If testing without session memory locally right now, you can keep this line commented out
     // header("Location: login.php");
     // exit();
 }
+
+// 2. Establish High-Speed Local Database Integration Link
+$servername = "127.0.0.1";
+$username = "root";
+$password = "";
+$dbname = "arn_quickfix";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Database Connection Error: " . $conn->connect_error);
+}
+
+// ====================================================================
+// SESSION-BASED NOTIFICATION INTERCEPTOR TRACKER (SAFE REFACTOR)
+// ====================================================================
+// FIXED: This interceptor catches the double-click '?clear=1' url trigger cleanly!
+if (isset($_GET['clear']) && $_GET['clear'] == '1') {
+    // Stores a snapshot marker in the session memory instead of modifying database states!
+    $_SESSION['tech_muted_until'] = date('Y-m-d H:i:s');
+    header("Location: manager-dashboard.php");
+    exit();
+}
+
+// Safely pull the isolation time-marker out of active session memory
+$techMuteMarker = $_SESSION['tech_muted_until'] ?? '1970-01-01 00:00:00';
+
+
+
+// Keep your remaining sticky layout parameters running right below here smoothly...
+
+
+
 
 // FIXED VARIABLE CAPTURE: Fallback cleanly to their actual email handle if their name hasn't been set yet
 $managerEmail = $_SESSION['email'] ?? 'manager@arnquickfix.com';
@@ -322,17 +353,84 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
       </div>
       
       <!-- Premium Quick Action Buttons (Pill Shaped With Hover Transition Effects) -->
-      <div class="d-flex gap-2">
-       <!-- REFACTORED INTERLOCK: Using a standard anchor link tag completely bypasses native OS element conflicts while preserving your beautiful cyan aesthetic design -->
-<!-- ROUTED TO NEW CLEAN FILE PAGE: Eliminates any JavaScript conflicts permanently -->
-<a href="manager-tech-updates.php" class="btn btn-sm d-flex align-items-center gap-1.5 fw-bold rounded-pill px-3" style="font-size: 11px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; text-decoration: none; display: inline-flex;">
-  TECH UPDATES <span style="width: 7px; height: 7px; background-color: #06B6D4;" class="rounded-circle d-inline-block"></span>
-</a>
-
-
-        <a href="manager_reports.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" style="font-size: 10px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; text-decoration: none; white-space: nowrap;">
-          Reports <span class="badge rounded-pill text-white" style="font-size: 9px; padding: 2px 5px; margin-left: 2px; background-color: #475569 !important; font-family: sans-serif; vertical-align: middle;"></span>
+              <!-- ================= DYNAMIC TECH UPDATES LINK MATRIX (WITH EMBEDDED DBLCLICK CLEAR) ================= -->
+            <!-- ================= DYNAMIC TECH UPDATES LINK MATRIX (FIXED SYMMETRY) ================= -->
+        <div class="d-flex align-items-center gap-2">
+        <!-- ================= DYNAMIC TECH UPDATES LINK MATRIX (WITH EMBEDDED DBLCLICK CLEAR) ================= -->
+                <!-- ================= TECH UPDATES BUTTON: WITH HYBRID SINGLE/DOUBLE CLICK INTERLOCK ================= -->
+        <?php
+          $liveTechUpdatesCount = 0;
+          $techCountQuery = $conn->query("SELECT COUNT(*) as active_updates FROM service_requests WHERE status = 'processing' OR (status = 'completed' AND DATE(created_at) = CURDATE())");
+          if ($techCountQuery) {
+              $techCountData = $techCountQuery->fetch_assoc();
+              $liveTechUpdatesCount = (int)($techCountData['active_updates'] ?? 0);
+          }
+        ?>
+        
+        <!-- THE INTELLIGENT ROUTER LINK: Bypasses standard href redirect blocks to allow double-clicks to execute perfectly -->
+        <a href="javascript:void(0);" 
+           id="techUpdatesPillButton"
+           title="Click once to view updates. Double-click to Mark All Read."
+           class="btn btn-sm px-3 fw-bold text-uppercase rounded-pill d-inline-flex align-items-center justify-content-center gap-1.5" 
+           style="font-size: 10px; height: 32px; text-decoration: none; white-space: nowrap;
+                  background-color: <?php echo ($liveTechUpdatesCount > 0) ? '#ECFEFF' : '#F8FAFC'; ?>; 
+                  color: <?php echo ($liveTechUpdatesCount > 0) ? '#0891B2' : '#64748B'; ?>; 
+                  border: 1px solid <?php echo ($liveTechUpdatesCount > 0) ? '#CFFAFE' : '#E2E8F0'; ?>;">
+          Tech Updates
+          
+          <?php if ($liveTechUpdatesCount > 0): ?>
+            <span class="badge rounded-circle text-white d-flex align-items-center justify-content-center p-0 font-monospace" 
+                  style="width: 15px; height: 15px; font-size: 9px; background-color: #06B6D4 !important; line-height: 1;">
+              <?php echo $liveTechUpdatesCount; ?>
+            </span>
+          <?php else: ?>
+            <span style="width: 5px; height: 5px; background-color: #94A3B8;" class="rounded-circle d-inline-block"></span>
+          <?php endif; ?>
         </a>
+
+        <!-- CLICK MATRIX INTERFERENCE LOCK SCRIPTS -->
+        <script>
+          (function() {
+              let tapTrackingTimer = null;
+              const targetButtonElement = document.getElementById("techUpdatesPillButton");
+              
+              if (targetButtonElement) {
+                  targetButtonElement.addEventListener("click", function(event) {
+                      event.preventDefault(); // Blocks standard browser page-jump overrides
+                      
+                      if (tapTrackingTimer === null) {
+                          // Step A: First Tap Caught! Start waiting 250 milliseconds for a second tap
+                          tapTrackingTimer = setTimeout(function() {
+                              tapTrackingTimer = null;
+                              // Standard Single Click: Navigate to updates list board smoothly
+                              window.location.href = "manager-tech-updates.php";
+                          }, 250);
+                      } else {
+                          // Step B: Second Tap Caught within 250ms! Double-click confirmed
+                          clearTimeout(tapTrackingTimer);
+                          tapTrackingTimer = null;
+                          // Execute clear all parameters inside XAMPP database rows instantly
+                          window.location.href = "manager-dashboard.php?clear=1";
+                      }
+                  });
+              }
+          })();
+        </script>
+
+
+
+
+
+
+
+
+
+                <!-- FIXED ALIGNED REPORTS PILL: Flexbox alignment parameters force text exactly to the vertical center -->
+        <a href="manager_reports.php" class="btn btn-sm px-3 fw-bold text-uppercase rounded-pill d-inline-flex align-items-center justify-content-center" 
+           style="font-size: 10px; height: 32px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; text-decoration: none; white-space: nowrap;">
+          Reports
+        </a>
+
                 <!-- ================= DYNAMIC COMPLAINTS HUB LINK MATRIX ================= -->
         <?php
           // FORCE ACTIVE SYNC: Recalculates raised disputes fresh from your table right before printing the badge
@@ -344,8 +442,8 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
           }
         ?>
         
-        <a href="manager_complaints.php" class="btn btn-sm px-2 py-1.5 fw-bold text-uppercase rounded-pill" 
-           style="font-size: 10px; text-decoration: none; white-space: nowrap;
+        <a href="manager_complaints.php" class="btn btn-sm px-3 fw-bold text-uppercase rounded-pill d-inline-flex align-items-center justify-content-center gap-1.5" 
+           style="font-size: 10px; height: 32px; text-decoration: none; white-space: nowrap;
                   background-color: <?php echo ($liveComplaintsCount > 0) ? '#FEF2F2' : '#F8FAFC'; ?>; 
                   color: <?php echo ($liveComplaintsCount > 0) ? '#EF4444' : '#64748B'; ?>; 
                   border: 1px solid <?php echo ($liveComplaintsCount > 0) ? '#FEE2E2' : '#E2E8F0'; ?>;">
@@ -363,6 +461,9 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
         <a href="manager-profile.php" class="btn btn-sm px-3 py-2 fw-bold text-uppercase rounded-pill" style="font-size: 11px; background-color: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;">Profile</a>
       </div>
     </div>
+
+            
+
 
     <!-- ================= SECTION A: UPPER COUNTER METRICS CARDS (WITH INTEGRATED ICON BOXES) ================= -->
     <div class="row g-4 mb-5">

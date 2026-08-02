@@ -32,6 +32,20 @@ if ($conn->connect_error) {
     die("Database Connectivity Failure Trace: " . $conn->connect_error);
 }
 
+// ====================================================================
+// CLIENT NOTIFICATION MEMORY ROUTER (DATA-SAFE INTERLOCK)
+// ====================================================================
+if (isset($_GET['clear_client_alerts']) && $_GET['clear_client_alerts'] == '1') {
+    // Saves a clear snapshot marker to active session memory instead of altering data rows!
+    $_SESSION['client_muted_until'] = date('Y-m-d H:i:s');
+    header("Location: client-dashboard.php");
+    exit();
+}
+
+// Safely pull the isolation time-marker boundary out of memory
+$clientMuteMarker = $_SESSION['client_muted_until'] ?? '1970-01-01 00:00:00';
+
+
 // 3. Form Submission Handling Controller Logic Blocks
 $toastTriggerMsg = "";
 
@@ -619,81 +633,200 @@ if ($maintQuery) {
 
 
 
-                        <!-- ================= DYNAMIC MANAGER NOTIFICATIONS MODULE ================= -->
+                                   <!-- ================= REFACTORED NOTIFICATIONS HUB WITH MARK READ MATRIX ================= -->
     <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
-      <h5 class="fw-bold text-dark mb-3" style="font-size: 16px;">
-        <span class="me-2" style="font-size: 18px;">📊</span>Notifications
-      </h5>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        
+        <?php
+          // FORCE ACTIVE CLIENT SYNC: Only counts notification updates that occurred AFTER the user clicked read all!
+          $activeUserEmail = $_SESSION['email'] ?? '';
+          $totalLiveAlerts = 0;
+
+                    // Count 1: Processing Dispatches
+          $qCountA = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND created_at > '$clientMuteMarker'");
+          if ($qCountA) { $totalLiveAlerts += (int)$qCountA->fetch_assoc()['total']; }
+
+          // Count 2: Today's Completed Closures
+          $qCountB = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND created_at > '$clientMuteMarker'");
+          if ($qCountB) { $totalLiveAlerts += (int)$qCountB->fetch_assoc()['total']; }
+
+          // Count 3: Maintenance Schedule Alerts (FIXED WITH FILTER LOCK)
+          $qCountC = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules WHERE client_email = '$activeUserEmail' AND next_due > '$clientMuteMarker'");
+          if ($qCountC) { $totalLiveAlerts += (int)$qCountC->fetch_assoc()['total']; }
+
+        ?>
+
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="fw-bold text-dark m-0 d-flex align-items-center gap-1.5" style="font-size: 16px;">
+            <span style="font-size: 18px;">📊</span> Notifications
+            
+            <?php if ($totalLiveAlerts > 0): ?>
+              <!-- Inline Live Indicator Badge -->
+              <span class="badge rounded-circle text-white d-inline-flex align-items-center justify-content-center p-0 font-monospace fw-bold" 
+                    style="width: 16px; height: 16px; font-size: 9.5px; background-color: #EF4444 !important; line-height: 1; vertical-align: middle;">
+                <?php echo $totalLiveAlerts; ?>
+              </span>
+            <?php endif; ?>
+          </h5>
+
+          <?php if ($totalLiveAlerts > 0): ?>
+            <!-- ================= SLEEK MINI MARK READ QUICK LINK ================= -->
+            <a href="client-dashboard.php?clear_client_alerts=1" class="text-decoration-none fw-bold ms-2" 
+               style="font-size: 11px; color: #64748B; transition: color 0.2s;"
+               onmouseover="this.style.color='#1E293B';" onmouseout="this.style.color='#64748B';">
+              <i class="fa-solid fa-check-double text-secondary" style="font-size: 10px;"></i> Mark all read
+            </a>
+          <?php endif; ?>
+        </div>
+
+        <span class="badge rounded-pill bg-light text-secondary border px-2.5 py-1" style="font-size: 11px; font-weight: 700;">
+          Live Stream Feed
+        </span>
+      </div>
+
+
       
-      <div class="d-flex flex-column gap-3">
+      <!-- SCROLL CONTAINER HOOK: Height capped at 245px with an invisible responsive scroll track -->
+      <div class="d-flex flex-column gap-2.5" style="max-height: 245px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; -ms-overflow-style: none;">
         <?php
         $activeUserEmail = $_SESSION['email'] ?? '';
         $hasNotifications = false;
 
-        // SYSTEM ENGINE A: FETCH LATEST ACTIVE DISPATCHED FIELD ENGINEER LOGS
-        $dispatchQuery = $conn->query("SELECT asset_id, asset_type, location, created_at FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' ORDER BY id DESC LIMIT 1");
+        // --------------------------------------------------------------------
+        // LOGIC REPOSITORY A: FETCH ALL TICKETS CURRENTLY IN PROCESSING STATE
+        // --------------------------------------------------------------------
+        // REMOVED "LIMIT 1" to let ALL active field dispatches populate fluidly inline!
+$dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND created_at > '$clientMuteMarker' ORDER BY id DESC");
         
         if ($dispatchQuery && $dispatchQuery->num_rows > 0):
-            $dRow = $dispatchQuery->fetch_assoc();
-            $hasNotifications = true;
-            
-            $locString = $dRow['location'] ?? '';
-            $techName = "A Field Engineer";
-            if (preg_match('/\(Assigned to:\s*([^)]+)\)/', $locString, $matches)) {
-                $techName = trim($matches[1]);
-            }
+            while ($dRow = $dispatchQuery->fetch_assoc()):
+                $hasNotifications = true;
+                $locString = $dRow['location'] ?? '';
+                $techName = "A Field Engineer";
+                if (preg_match('/\(Assigned to:\s*([^)]+)\)/', $locString, $matches)) {
+                    $techName = trim($matches[1]);
+                }
         ?>
-          <!-- Dispatch Notification Item Badge -->
-          <div class="p-3 border rounded-3 d-flex align-items-start gap-3" style="background-color: #ECFEFF; border-color: #CFFAFE !important;">
-            <div class="mt-0.5" style="font-size: 16px;">⚡</div>
+          <!-- Dispatch Notification Item Badge Grid -->
+          <div class="p-3 border rounded-3 d-flex align-items-start gap-2.5 text-start animate-fade-in" style="background-color: #ECFEFF; border-color: #CFFAFE !important; transition: all 0.2s;">
+            <div class="mt-0.5" style="font-size: 15px;">⚡</div>
             <div>
               <span class="d-block fw-bold text-dark" style="font-size: 13px;">Field Crew Dispatched!</span>
-              <span class="d-block text-secondary mt-0.5" style="font-size: 12px; line-height: 1.4;">
-                Manager has approved your ticket for **<?php echo htmlspecialchars($dRow['asset_id']); ?>** (<?php echo htmlspecialchars($dRow['asset_type']); ?>). **<?php echo htmlspecialchars($techName); ?>** is arriving on site.
+              <span class="d-block text-secondary mt-0.5" style="font-size: 11.5px; line-height: 1.45;">
+                Manager has approved your ticket for **<?php echo htmlspecialchars($dRow['asset_id']); ?>** (<?php echo htmlspecialchars($dRow['asset_type']); ?>). **<?php echo htmlspecialchars($techName); ?>** is arriving on site [1.1].
               </span>
             </div>
           </div>
         <?php 
+            endwhile;
         endif; 
 
-        // SYSTEM ENGINE B: FETCH LATEST SCHEDULED PERIODIC CALIBRATIONS
-        $maintQuery = $conn->query("SELECT asset_id, asset_type, next_due, status, maintenance_type FROM maintenance_schedules WHERE client_email = '$activeUserEmail' ORDER BY id DESC LIMIT 1");
+        // --------------------------------------------------------------------
+        // LOGIC REPOSITORY B: FETCH ALL OUTSTANDING MAINTENANCE CALIBRATIONS
+        // --------------------------------------------------------------------
+        // REMOVED "LIMIT 1" to pull every individual machine scheduling alert live!
+        $maintQuery = $conn->query("SELECT asset_id, asset_type, next_due, status FROM maintenance_schedules WHERE client_email = '$activeUserEmail' ORDER BY id DESC");
         
         if ($maintQuery && $maintQuery->num_rows > 0):
-            $mRow = $maintQuery->fetch_assoc();
-            $hasNotifications = true;
-            
-            $isOverdue = (strtolower($mRow['status']) === 'overdue');
-            $bannerBg = $isOverdue ? '#FEF2F2' : '#F0FDF4';
-            $bannerBorder = $isOverdue ? '#FEE2E2' : '#DCFCE7';
-            $bannerEmoji = $isOverdue ? '⚠️' : '📅';
-            $bannerTitle = $isOverdue ? 'Delayed Overdue Alert' : 'New Maintenance Scheduled';
-            $bannerText = $isOverdue ? 'Your equipment calibration window is critically delayed.' : 'Manager has added a new preventative inspection cycle.';
+            while ($mRow = $maintQuery->fetch_assoc()):
+                $dbStatus = trim($mRow['status'] ?? 'Active');
+                $nextDueTarget = $mRow['next_due'] ?? '';
+                $currentCalendarDay = date('Y-m-d'); // Today's Date Check
+                
+                // Determine rules logic parameters dynamically for every single item row loop
+                $isOverdue = ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') || (strtolower($dbStatus) === 'overdue');
+                
+                $bannerBg = $isOverdue ? '#FEF2F2' : '#F0FDF4';
+                $bannerBorder = $isOverdue ? '#FEE2E2' : '#DCFCE7';
+                $bannerEmoji = $isOverdue ? '⚠️' : '📅';
+                $bannerTitle = $isOverdue ? 'Delayed Overdue Alert' : 'New Maintenance Scheduled';
+                $bannerText = $isOverdue ? 'Your equipment calibration window is critically delayed.' : 'Manager has added a new preventative inspection cycle.';
+                
+                $hasNotifications = true;
         ?>
-          <!-- Maintenance Alert Item Badge -->
-          <div class="p-3 border rounded-3 d-flex align-items-start gap-3" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important;">
-            <div class="mt-0.5" style="font-size: 16px;"><?php echo $bannerEmoji; ?></div>
+          <!-- Maintenance Alert Item Badge Grid -->
+          <div class="p-3 border rounded-3 d-flex align-items-start gap-2.5 text-start" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important;">
+            <div class="mt-0.5" style="font-size: 15px;"><?php echo $bannerEmoji; ?></div>
             <div>
               <span class="d-block fw-bold text-dark" style="font-size: 13px;"><?php echo $bannerTitle; ?></span>
-              <span class="d-block text-secondary mt-0.5" style="font-size: 12px; line-height: 1.4;">
+              <span class="d-block text-secondary mt-0.5" style="font-size: 11.5px; line-height: 1.45;">
                 <?php echo $bannerText; ?> Next target due date: **<?php echo date('d-m-Y', strtotime($mRow['next_due'])); ?>** for unit **<?php echo htmlspecialchars($mRow['asset_id']); ?>**.
               </span>
             </div>
           </div>
         <?php 
+            endwhile;
         endif; 
 
-        // FALLBACK DISPLAY LAYOUT: CLEAR STATE
+                  // --------------------------------------------------------------------
+        // LOGIC REPOSITORY C: FETCH RECENTLY COMPLETED REPAIR TASKS (FIXED)
+        // --------------------------------------------------------------------
+        // Pulls completed items and automatically resolves base rate fallbacks if empty
+$completedFeedQuery = $conn->query("SELECT asset_id, asset_type, problem_category, allocated_part, part_price, amount FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND created_at > '$clientMuteMarker' ORDER BY id DESC");
+        
+        if ($completedFeedQuery && $completedFeedQuery->num_rows > 0):
+            while ($cRow = $completedFeedQuery->fetch_assoc()):
+                $hasNotifications = true;
+                $usedPart = trim($cRow['allocated_part'] ?? '');
+                $partPrice = (float)($cRow['part_price'] ?? 0.00);
+                $finalAmount = (float)($cRow['amount'] ?? 0.00);
+                $currentProblem = trim($cRow['problem_category'] ?? '');
+
+                // Match labor fees exactly to calculate fallback baseline rates for every single row item
+                $baseRateNumeric = 0.00;
+                switch ($currentProblem) {
+                    case 'Component Repair':          $baseRateNumeric = 4500.00; break;
+                    case 'Part Replacement':           $baseRateNumeric = 3000.00; break;
+                    case 'Modernization':              $baseRateNumeric = 15000.00; break;
+                    case 'Routine Servicing':          $baseRateNumeric = 2000.00; break;
+                    case 'Emergency Breakdown':        $baseRateNumeric = 5000.00; break;
+                    case 'Basic Servicing':            $baseRateNumeric = 600.00; break;
+                    case 'Deep Cleaning':              $baseRateNumeric = 1200.00; break;
+                    case 'Duct Cleaning':              $baseRateNumeric = 5000.00; break;
+                    case 'Gas Refill':                 $baseRateNumeric = 2500.00; break;
+                    case 'Electrical Repair':          $baseRateNumeric = 1500.00; break;
+                    case 'Compressor Repair':          $baseRateNumeric = 4000.00; break;
+                    case 'Preventative Inspection':    $baseRateNumeric = 3500.00; break;
+                    case 'Fault Code Diagnostic':         $baseRateNumeric = 1800.00; break;
+                    case 'Engine Rebuild':                $baseRateNumeric = 25000.00; break;
+                    case 'Component Repairs':             $baseRateNumeric = 6000.00; break;
+                    case 'Advanced Testing':              $baseRateNumeric = 8000.00; break;
+                    case 'Fuel Polishing':                $baseRateNumeric = 4500.00; break;
+                    default:                              $baseRateNumeric = 0.00; break;
+                }
+
+                // SMART FALLBACK COMPILER: If database amount is empty, calculate Base Labor + Part Price automatically!
+                $displayBill = ($finalAmount > 0.00) ? $finalAmount : ($baseRateNumeric + $partPrice);
+        ?>
+          <!-- Completed Task Notification Item Badge Card -->
+          <div class="p-3 border rounded-3 d-flex align-items-start gap-2.5 text-start animate-fade-in" style="background-color: #F0FDF4; border-color: #DCFCE7 !important; transition: all 0.2s;">
+            <div class="mt-0.5" style="font-size: 15px;">✅</div>
+            <div>
+              <span class="d-block fw-bold text-success" style="font-size: 13px;">Servicing Completed Successfully!</span>
+              <span class="d-block text-secondary mt-0.5" style="font-size: 11.5px; line-height: 1.45;">
+                Your request for unit **<?php echo htmlspecialchars($cRow['asset_id']); ?>** (<?php echo htmlspecialchars($cRow['asset_type']); ?>) has been closed by the field engineer. 
+                <strong>Invoice Total:</strong> ৳<?php echo number_format($displayBill, 2); ?> <?php echo !empty($usedPart) ? "(Warehouse part allocated: " . htmlspecialchars($usedPart) . ")" : ""; ?>.
+              </span>
+            </div>
+          </div>
+        <?php 
+            endwhile;
+        endif; 
+
+
+
+        // --------------------------------------------------------------------
+        // FALLBACK CONTAINER: RENDERS ONLY IF MATRIX SUM RECOVERY IS COMPLETELY ZERO
+        // --------------------------------------------------------------------
         if (!$hasNotifications): 
         ?>
           <div class="text-center py-4 border rounded-3 bg-light text-muted font-monospace small" style="font-size: 12px; background-color: #F8FAFC !important; border-color: #E2E8F0 !important;">
             🍃 Pristine Canvas: No new operational alerts or dispatches received from management.
           </div>
-        <?php 
-        endif; 
-        ?>
+        <?php endif; ?>
       </div>
     </div>
+
 
 
 

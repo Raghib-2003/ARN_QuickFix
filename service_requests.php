@@ -155,80 +155,86 @@ $logQuery = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_ca
                 $result = $stmt->get_result();
                 
                 if ($result->num_rows > 0) {
-                    $sl = 1;
-                    while ($row = $result->fetch_assoc()) {
-                        $currentProblem = trim($row['problem_category'] ?? '');
-                        $allocatedPart = trim($row['allocated_part'] ?? '');
-                        $partPrice = (float)($row['part_price'] ?? 0.00);
-                        $finalAmount = (float)($row['amount'] ?? 0.00); // READS YOUR EXISTING AMOUNT COLUMN
+    $sl = 1;
+    // SINGLE CLEAN LOOP: Resolves the duplicate row layout issue permanently
+    while ($row = $result->fetch_assoc()) {
+        $currentProblem = trim($row['problem_category'] ?? '');
+        $allocatedPart = trim($row['allocated_part'] ?? '');
+        $partPrice = (float)($row['part_price'] ?? 0.00);
+        $finalAmount = (float)($row['amount'] ?? 0.00); 
 
-                        // Fetch our baseline service pricing parameters matching user selections
-                        $priceGuideTag = "";
-                        switch ($currentProblem) {
-                            case 'Component Repair':    $priceGuideTag = "৳4,500"; break;
-                            case 'Part Replacement':     $priceGuideTag = "৳3,000"; break;
-                            case 'Modernization':        $priceGuideTag = "৳15,000"; break;
-                            case 'Routine Servicing':    $priceGuideTag = "৳2,000"; break;
-                            case 'Emergency Breakdown':  $priceGuideTag = "৳5,000"; break;
-                            case 'Basic Servicing':      $priceGuideTag = "৳600"; break;
-                            case 'Deep Cleaning':        $priceGuideTag = "৳1,200"; break;
-                            case 'Duct Cleaning':        $priceGuideTag = "৳5,000"; break;
-                            case 'Gas Refill':           $priceGuideTag = "৳2,500"; break;
-                            case 'Electrical Repair':    $priceGuideTag = "৳1,500"; break;
-                            case 'Compressor Repair':    $priceGuideTag = "৳4,000"; break;
-                            case 'Preventative Inspection': $priceGuideTag = "৳3,500"; break;
-                            case 'Fault Code Diagnostic':   $priceGuideTag = "৳1,800"; break;
-                            case 'Engine Rebuild':          $priceGuideTag = "৳25,000"; break;
-                            case 'Component Repairs':       $priceGuideTag = "৳6,000"; break;
-                            case 'Advanced Testing':        $priceGuideTag = "৳8,000"; break;
-                            case 'Fuel Polishing':          $priceGuideTag = "৳4,500"; break;
-                            default: $priceGuideTag = ""; break;
-                        }
+        // Fetch our baseline service pricing parameters matching user selections
+        $baseRateNumeric = 0.00;
+        $priceGuideTag = "";
+        
+        switch ($currentProblem) {
+            case 'Component Repair':    $priceGuideTag = "৳4,500"; $baseRateNumeric = 4500.00; break;
+            case 'Part Replacement':     $priceGuideTag = "৳3,000"; $baseRateNumeric = 3000.00; break;
+            case 'Modernization':        $priceGuideTag = "৳15,000"; $baseRateNumeric = 15000.00; break;
+            case 'Routine Servicing':    $priceGuideTag = "৳2,000"; $baseRateNumeric = 2000.00; break;
+            case 'Emergency Breakdown':  $priceGuideTag = "৳5,000"; $baseRateNumeric = 5000.00; break;
+            case 'Basic Servicing':      $priceGuideTag = "৳600";   $baseRateNumeric = 600.00; break;
+            case 'Deep Cleaning':        $priceGuideTag = "৳1,200"; $baseRateNumeric = 1200.00; break;
+            case 'Duct Cleaning':        $priceGuideTag = "৳5,000"; $baseRateNumeric = 5000.00; break;
+            case 'Gas Refill':           $priceGuideTag = "৳2,500"; $baseRateNumeric = 2500.00; break;
+            case 'Electrical Repair':    $priceGuideTag = "৳1,500"; $baseRateNumeric = 1500.00; break;
+            case 'Compressor Repair':    $priceGuideTag = "৳4,000"; $baseRateNumeric = 4000.00; break;
+            case 'Preventative Inspection': $priceGuideTag = "৳3,500"; $baseRateNumeric = 3500.00; break;
+            case 'Fault Code Diagnostic':   $priceGuideTag = "৳1,800"; $baseRateNumeric = 1800.00; break;
+            case 'Engine Rebuild':          $priceGuideTag = "৳25,000"; $baseRateNumeric = 25000.00; break;
+            case 'Component Repairs':       $priceGuideTag = "৳6,000"; $baseRateNumeric = 6000.00; break;
+            case 'Advanced Testing':        $priceGuideTag = "৳8,000"; $baseRateNumeric = 8000.00; break;
+            case 'Fuel Polishing':          $priceGuideTag = "৳4,500"; $baseRateNumeric = 4500.00; break;
+            default: $priceGuideTag = ""; $baseRateNumeric = 0.00; break;
+        }
 
-                        // Generate the dynamic inventory part allocated notice badge array
-                        $inventoryBadgeHtml = "";
-                        if (!empty($allocatedPart)) {
-                            $inventoryBadgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10px; padding: 2px 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block;'>📦 Part: " . htmlspecialchars($allocatedPart) . " (+৳" . number_format($partPrice) . ")</span></div>";
-                        } else {
-                            if (!empty($priceGuideTag)) {
-                                $inventoryBadgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10px; padding: 2px 6px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; display: inline-block;'>Base Rate: " . $priceGuideTag . "</span></div>";
-                            }
-                        }
+        // Generate the dynamic inventory part allocated notice badge array
+        $inventoryBadgeHtml = "";
+        if (!empty($allocatedPart)) {
+            $inventoryBadgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10px; padding: 2px 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block;'>📦 Part: " . htmlspecialchars($allocatedPart) . " (+৳" . number_format($partPrice) . ")</span></div>";
+        } else {
+            if (!empty($priceGuideTag)) {
+                $inventoryBadgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10px; padding: 2px 6px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; display: inline-block;'>Base Rate: " . $priceGuideTag . "</span></div>";
+            }
+        }
 
-                        $statusClass = "bg-warning text-dark"; 
-                        if ($row['status'] === 'processing') { $statusClass = "bg-primary text-white"; }
-                        elseif ($row['status'] === 'completed') { $statusClass = "bg-success text-white"; }
-                        
-                        echo "<tr style='border-bottom: 1px solid #F1F5F9;'>";
-                        echo "<td class='text-secondary fw-semibold'>" . $sl++ . "</td>";
-                        echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
-                        echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
-                        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
-                        
-                        // Category Column Cell with our clean nested inline inventory badge
-                        echo "<td class='fw-semibold text-dark'><div>" . htmlspecialchars($currentProblem) . "</div>" . $inventoryBadgeHtml . "</td>";
-                        
-                        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['priority']) . "</td>";
-                        echo "<td><span class='badge " . $statusClass . " text-capitalize px-3 py-1.5 fw-bold'>" . htmlspecialchars($row['status']) . "</span></td>";
-                        echo "<td class='font-monospace text-dark'>" . htmlspecialchars($row['phone']) . "</td>";
-                        echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
-                        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
-                        
-                        // FINANCIAL AMOUNT COLUMN VALUE DISPLAY FROM YOUR EXISTING COLUMN
-                        if ($row['status'] !== 'completed' || $finalAmount == 0.00) {
-                            echo "<td><span class='text-muted small font-monospace fw-bold' style='color: #94A3B8 !important; font-size:12px;'>Pending Work</span></td>";
-                        } else {
-                            echo "<td class='fw-bold text-dark font-monospace' style='color: #0F172A !important;'>৳" . number_format($finalAmount, 2) . "</td>";
-                        }
-                        
-                        echo "<td class='text-muted small fw-medium font-monospace'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
-                        echo "</tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests logs found for this account node.</td></tr>";
+        // Setup status colors cleanly
+        $statusClass = "bg-warning text-dark"; 
+        if ($row['status'] === 'processing') { $statusClass = "bg-primary text-white"; }
+        elseif ($row['status'] === 'completed') { $statusClass = "bg-success text-white"; }
+        elseif ($row['status'] === 'complaint_raised') { $statusClass = "bg-danger text-white"; }
+        
+        echo "<tr style='border-bottom: 1px solid #F1F5F9;'>";
+        echo "<td class='text-secondary fw-semibold'>" . $sl++ . "</td>";
+        echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
+        echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
+        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
+        echo "<td class='fw-semibold text-dark'><div>" . htmlspecialchars($currentProblem) . "</div>" . $inventoryBadgeHtml . "</td>";
+        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['priority']) . "</td>";
+        echo "<td><span class='badge " . $statusClass . " text-capitalize px-3 py-1.5 fw-bold'>" . htmlspecialchars($row['status']) . "</span></td>";
+        echo "<td class='font-monospace text-dark'>" . htmlspecialchars($row['phone']) . "</td>";
+        echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
+        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
+        
+        // DYNAMIC ACCURATE BILLING LOGIC:
+        // If the job is ongoing, display "Pending Work"
+        if ($row['status'] !== 'completed' && $row['status'] !== 'complaint_raised') {
+            echo "<td><span class='text-muted small font-monospace fw-bold' style='color: #94A3B8 !important; font-size:12px;'>Pending Work</span></td>";
+        } else {
+            // SMART FALLBACK: If the column amount is still 0, use the official Base Rate automatic calculation!
+            $displayBill = ($finalAmount > 0.00) ? $finalAmount : $baseRateNumeric;
+            echo "<td class='fw-bold text-dark font-monospace' style='color: #0F172A !important;'>৳" . number_format($displayBill, 2) . "</td>";
+        }
+        
+        echo "<td class='text-muted small fw-medium font-monospace'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
+        echo "</tr>";
+    }
+} else {
+    echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests logs found for this account node.</td></tr>";
+}
+
                 }
                 $stmt->close();
-            }
 
             ?>
           </tbody>

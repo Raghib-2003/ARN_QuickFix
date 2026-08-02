@@ -151,7 +151,7 @@ $complaintsLedger = $conn->query("SELECT id, client_email, phone, asset_type, as
     
     <div class="mb-5">
       <h2 class="fw-bold m-0" style="font-size: 26px; letter-spacing: -0.5px;">Customer Complaint Desk</h2>
-      <p class="text-muted m-0 small fw-medium mt-1">Review live escalations submitted regarding performance failures, billing discrepancies, or field technician conduct [1.1].</p>
+      <p class="text-muted m-0 small fw-medium mt-1">Review live escalations submitted regarding performance failures, billing discrepancies, or field technician conduct.</p>
     </div>
 
     <!-- System Interface Operations Alerts Layer Banners -->

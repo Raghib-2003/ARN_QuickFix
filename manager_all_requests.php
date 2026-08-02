@@ -286,16 +286,48 @@ $result = $conn->query($query);
                     <span class="text-muted small font-monospace d-block mt-0.5" style="font-size: 11px;">Method: <strong><?php echo htmlspecialchars($row['payment_method'] ?? 'Not Set'); ?></strong></span>
                   </td>
 
-                  <!-- DYNAMIC BILLING VALUE RENDERED FROM YOUR NATIVE AMOUNT ROW CELL -->
-                  <td class="text-end fw-bold font-monospace text-dark" style="font-size: 14px;">
+                                    <!-- DYNAMIC DEDICATED BILLING AMOUNT COLUMN CELL (FIXED COMPOSITE INTERLOCK) -->
+                  <td class="text-end fw-bold font-monospace text-dark" style="font-size: 13.5px;">
                     <?php 
-                      if ($statusLabelText !== 'completed' || $finalBillAmount == 0.00) {
+                      $statusLabelText = strtolower(trim($row['status'] ?? 'pending'));
+                      $finalBillAmount = (float)($row['amount'] ?? 0.00);
+                      $partPrice = (float)($row['part_price'] ?? 0.00);
+                      $currentProblem = trim($row['problem_category'] ?? '');
+
+                      // Match labor fees exactly to calculate fallback baseline rates
+                      $baseRateNumeric = 0.00;
+                      switch ($currentProblem) {
+                          case 'Component Repair':          $baseRateNumeric = 4500.00; break;
+                          case 'Part Replacement':           $baseRateNumeric = 3000.00; break;
+                          case 'Modernization':              $baseRateNumeric = 15000.00; break;
+                          case 'Routine Servicing':          $baseRateNumeric = 2000.00; break;
+                          case 'Emergency Breakdown':        $baseRateNumeric = 5000.00; break;
+                          case 'Basic Servicing':            $baseRateNumeric = 600.00; break;
+                          case 'Deep Cleaning':              $baseRateNumeric = 1200.00; break;
+                          case 'Duct Cleaning':              $baseRateNumeric = 5000.00; break;
+                          case 'Gas Refill':                 $baseRateNumeric = 2500.00; break;
+                          case 'Electrical Repair':          $baseRateNumeric = 1500.00; break;
+                          case 'Compressor Repair':          $baseRateNumeric = 4000.00; break;
+                          case 'Preventative Inspection':    $baseRateNumeric = 3500.00; break;
+                          case 'Fault Code Diagnostic':         $baseRateNumeric = 1800.00; break;
+                          case 'Engine Rebuild':                $baseRateNumeric = 25000.00; break;
+                          case 'Component Repairs':             $baseRateNumeric = 6000.00; break;
+                          case 'Advanced Testing':              $baseRateNumeric = 8000.00; break;
+                          case 'Fuel Polishing':                $baseRateNumeric = 4500.00; break;
+                          default:                              $baseRateNumeric = 0.00; break;
+                      }
+
+                      // If the job is ongoing, display "Pending Job"
+                      if ($statusLabelText !== 'completed' && $statusLabelText !== 'complaint_raised') {
                           echo "<span class='text-muted small fw-normal font-sans' style='color: #94A3B8 !important; font-size:11px;'>Pending Job</span>";
                       } else {
-                          echo "৳" . number_format($finalBillAmount, 2);
+                          // SMART FALLBACK: If amount column is still 0.00, automatically add Base Labor Fee + Installed Part Price!
+                          $displayBill = ($finalBillAmount > 0.00) ? $finalBillAmount : ($baseRateNumeric + $partPrice);
+                          echo "৳" . number_format($displayBill, 2);
                       }
                     ?>
                   </td>
+
                   
                   <!-- Unified System Status Badge Print -->
                   <td class="text-center">
