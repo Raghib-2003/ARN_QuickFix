@@ -635,28 +635,48 @@ if ($maintQuery) {
       </div>
 
       <!-- MAINTENANCE FEED BODY LOOP -->
-      <div class="d-flex flex-column gap-2">
+            <div class="d-flex flex-column gap-2">
         <?php
           // Fetch only items that are unread (is_read = 0)
           $maintListQuery = $conn->query("SELECT asset_id, asset_type, next_due, status FROM maintenance_schedules WHERE client_email = '$activeUserEmail' AND is_read = 0 ORDER BY id DESC");
           
           if ($maintListQuery && $maintListQuery->num_rows > 0):
               while ($mRow = $maintListQuery->fetch_assoc()):
-                  $dbStatus = trim($mRow['status'] ?? 'Active');
+                  $dbStatus = strtolower(trim($mRow['status'] ?? 'active'));
                   $nextDueTarget = $mRow['next_due'] ?? '';
                   $currentCalendarDay = date('Y-m-d');
                   
-                  $isOverdue = ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') || (strtolower($dbStatus) === 'overdue');
-                  
-                  $bannerBg = $isOverdue ? '#FEF2F2' : '#F0FDF4';
-                  $bannerBorder = $isOverdue ? '#FEE2E2' : '#DCFCE7';
-                  $bannerTextClass = $isOverdue ? 'text-danger' : 'text-success';
-                  $bannerBadgeText = $isOverdue ? 'OVERDUE' : 'SCHEDULED';
+                  // 1. DETERMINE SYSTEM LOGIC COLOR SCHEME NODES
+                  if ($dbStatus === 'overdue' || ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'completed')) {
+                      // CRIMSON RED OVERDUE THEME
+                      $bannerBg = '#FEF2F2';
+                      $bannerBorder = '#FEE2E2';
+                      $bannerBadgeBg = '#EF4444';
+                      $bannerTextClass = 'text-danger';
+                      $bannerBadgeText = 'OVERDUE';
+                  } elseif ($dbStatus === 'completed') {
+                      // EMERALD GREEN COMPLETED THEME
+                      $bannerBg = '#F0FDF4';
+                      $bannerBorder = '#DCFCE7';
+                      $bannerBadgeBg = '#10B981';
+                      $bannerTextClass = 'text-success';
+                      $bannerBadgeText = 'COMPLETED';
+                  } else {
+                      // OPERATIONS BLUE ACTIVE UPCOMING THEME
+                      $bannerBg = '#EFF6FF';
+                      $bannerBorder = '#DBEAFE';
+                      $bannerBadgeBg = '#3B82F6';
+                      $bannerTextClass = 'text-primary';
+                      $bannerBadgeText = 'ACTIVE';
+                  }
           ?>
-            <!-- Dynamic Maintenance Row Alert Box Container -->
-            <div class="p-3 border rounded-3 text-start" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important;">
+            <!-- Dynamic Maintenance Row Alert Box Container (FIXED THREE COLOR STATES) -->
+            <div class="p-3 border rounded-3 text-start" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important; transition: all 0.2s;">
               <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge text-uppercase font-monospace fw-extrabold" style="font-size: 9px; padding: 2px 5px; background-color: <?php echo $isOverdue ? '#EF4444' : '#10B981'; ?>; color: #FFFFFF; font-weight:800; border-radius:4px;"><?php echo $bannerBadgeText; ?></span>
+                <span class="badge text-uppercase font-monospace fw-extrabold" 
+                      style="font-size: 9px; padding: 2px 6px; background-color: <?php echo $bannerBadgeBg; ?>; color: #FFFFFF; font-weight:800; border-radius:4px;">
+                  <?php echo $bannerBadgeText; ?>
+                </span>
                 <strong class="text-dark" style="font-size: 13.5px;"><?php echo htmlspecialchars($mRow['asset_id'] . " (" . $mRow['asset_type'] . ")"); ?></strong>
               </div>
               <div class="text-muted mt-1 small font-monospace" style="font-size: 11.5px;">

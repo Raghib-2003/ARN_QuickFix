@@ -62,12 +62,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
             $assetCheckResult = $assetVerificationStmt->get_result()->fetch_assoc();
             $assetVerificationStmt->close();
 
+                        // ====================================================================
+            // FIXED UNIFIED ASSET TYPE & ID MATCH VALIDATION
+            // ====================================================================
             if ((int)$assetCheckResult['total'] === 0) {
                 $_SESSION['form_cache']['asset_id'] = ""; // Clear bad input field only
-                $_SESSION['action_error'] = "Data Validation Mismatch! The Asset ID '{$asset_id}' does not match any official request submitted by this client account.";
+                
+                // FIXED ERGONOMIC PHRASING: Combined into your active session redirect block!
+                $_SESSION['action_error'] = "⚠️ Operational Limit: Data Validation Mismatch! Both the Asset Type and Asset ID must match our records.";
+                
                 header("Location: overdue_maintenance.php");
                 exit();
             }
+
+                        // ====================================================================
+            // INTERLOCK GUARD RAIL: BLOCKS DUPLICATE SCHEDULES FOR ONGOING REPAIRS
+            // ====================================================================
+            // Scans your service ledger to see if this precise asset is actively being fixed right now
+            $repairCheckQuery = $conn->query("SELECT COUNT(*) as active_repair FROM service_requests WHERE asset_id = '$asset_id' AND status = 'processing'");
+            if ($repairCheckQuery) {
+                $repairCheckResult = $repairCheckQuery->fetch_assoc();
+                if ((int)$repairCheckResult['active_repair'] > 0) {
+                    $_SESSION['form_cache']['asset_id'] = $asset_id; // Retain input for the manager's convenience
+                    $_SESSION['action_error'] = "🛑 Operational Lockout: A technician is currently overseeing an active repair request for Asset ID '{$asset_id}'! You cannot schedule routine maintenance until the ticket is marked Completed.";
+                    header("Location: overdue_maintenance.php");
+                    exit();
+                }
+            }
+
+
 
             // Fetch client identity metrics
             $phoneStmt = $conn->prepare("SELECT phone, name FROM users WHERE email = ?");
@@ -178,7 +201,14 @@ if ($qOver) {
 $clientsList = $conn->query("SELECT email, name FROM users WHERE role = 'client' OR role = 'user' ORDER BY name ASC");
 
 // Fetch active schedules record ledger
-$schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id DESC");
+// ====================================================================
+// RELATIONAL DATA JOIN TUNING LAYER (MAIN MASTER LIST QUERY)
+// ====================================================================
+// Links tables using asset_id to pull the real telephone digits recorded by the client!
+$schedulesLedger = $conn->query("SELECT ms.*, sr.phone as real_client_phone 
+                                 FROM maintenance_schedules ms
+                                 LEFT JOIN service_requests sr ON ms.asset_id = sr.asset_id
+                                 ORDER BY ms.id DESC");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -473,10 +503,22 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
                 <!-- Clean Serial Incremental Counting Line Index Row (SL) -->
                 <td class="font-monospace fw-bold text-secondary text-center"><?php echo $serialNumberCounter++; ?></td>
                 
-                <td>
-                  <span class="d-block fw-bold text-dark mb-0.5"><?php echo htmlspecialchars($row['client_name'] ?? 'Client User'); ?></span>
-                  <span class="text-muted font-monospace small d-block" style="font-size: 11.5px行业;"><?php echo htmlspecialchars($row['phone'] ?? '01XXXXXXXXX'); ?></span>
+                                <td>
+                  <span class="d-block fw-bold text-dark mb-0.5">
+                    <?php echo htmlspecialchars($row['client_name'] ?? 'Client User'); ?>
+                  </span>
+                  
+                  <?php 
+                    // FIXED HOOK: If an asset has an active repair service request, pull its unique phone number, else fall back safely
+                    $displayPhoneNumber = !empty($row['real_client_phone']) ? $row['real_client_phone'] : ($row['phone'] ?? '01XXXXXXXXX'); 
+                  ?>
+                  
+                  <!-- CLEANED: Removed the accidental text characters '行业' to restore standard CSS styling rules -->
+                  <span class="text-muted font-monospace small d-block" style="font-size: 11.5px;">
+                    <?php echo htmlspecialchars($displayPhoneNumber); ?>
+                  </span>
                 </td>
+
                 
                 <td>
                   <span class="d-block text-dark fw-bold mb-0.5"><?php echo htmlspecialchars($row['asset_type'] ?? 'Asset'); ?></span>

@@ -156,8 +156,35 @@ if ($conn->connect_error) {
                         echo "<td class='text-dark fw-medium'>" . htmlspecialchars($row['maintenance_type']) . "</td>";
                         
                         // Overdue badge formatting matching Figma button look
-                        echo "<td><span class='status-badge-overdue'>" . htmlspecialchars($row['status']) . "</span></td>";
+                                                // ====================================================================
+                        // FIXED THREE-COLOR STATUS BADGE GRID (CLEAN INLINE MERGE)
+                        // ====================================================================
+                        $dbStatus = strtolower(trim($row['status'] ?? 'active'));
+                        $nextDueTarget = $row['next_due'] ?? '';
+                        $currentCalendarDay = date('Y-m-d'); // Today: 2026-08-03
+
+                        // 1. Compile exact style tokens based on database lifecycle steps
+                        if ($dbStatus === 'overdue' || ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'completed')) {
+                            $badgeBgColor = '#EF4444'; // Red
+                            $badgeLabelText = 'Overdue';
+                        } elseif ($dbStatus === 'completed') {
+                            $badgeBgColor = '#10B981'; // Green
+                            $badgeLabelText = 'Completed';
+                        } else {
+                            $badgeBgColor = '#3B82F6'; // Blue
+                            $badgeLabelText = 'Active';
+                        }
+
+                        // 2. Output the table cell data cleanly using a single echo stream
+                        echo "<td>
+                                <span class='badge px-3 py-1.5 fw-bold text-uppercase text-white text-center d-inline-block' 
+                                      style='background-color: {$badgeBgColor} !important; font-size: 10px; border-radius: 50rem; min-width: 85px; letter-spacing: 0.3px;'>
+                                  {$badgeLabelText}
+                                </span>
+                              </td>";
+                        
                         echo "</tr>";
+
                     }
                 } else {
                     echo "<tr><td colspan='7' class='text-center text-muted py-4 fw-semibold font-monospace'>No scheduled maintenance lifecycles found for your assets.</td></tr>";

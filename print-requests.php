@@ -137,7 +137,9 @@ $result = $conn->query($queryStr);
         echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
         echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
         
+                // ====================================================================
         // DYNAMIC AMOUNT PRINT CELL (FIXED COMPOSITE INTERLOCK)
+        // ====================================================================
         if ($row['status'] !== 'completed' && $row['status'] !== 'complaint_raised') {
             echo "<td><span class='text-muted small font-monospace fw-bold'>Pending Work</span></td>";
         } else {
@@ -146,13 +148,34 @@ $result = $conn->query($queryStr);
             echo "<td class='fw-bold text-dark font-monospace'>৳" . number_format($displayBillNumeric, 2) . "</td>";
         }
         
-        echo "<td class='text-capitalize fw-bold' style='color: #00C2CB;'>" . htmlspecialchars($row['status']) . "</td>";
+        // ====================================================================
+        // FIXED DYNAMIC COLOR STATUS COLUMN (CLEAN INLINE INTERLOCK)
+        // ====================================================================
+        $currentStatusText = strtolower(trim($row['status'] ?? 'pending'));
+        $printStatusLabel = ucfirst($currentStatusText);
+        $statusTextHexColor = "#D97706"; // Default Golden Amber for Pending
+
+        if ($currentStatusText === 'completed') {
+            $statusTextHexColor = "#10B981"; // Fresh Emerald Green
+        } elseif ($currentStatusText === 'processing') {
+            $statusTextHexColor = "#3B82F6"; // Clear Operations Blue
+        } elseif ($currentStatusText === 'complaint_raised') {
+            $statusTextHexColor = "#EF4444"; // Bold Crimson Red
+            $printStatusLabel = "Complaint";
+        }
+
+        // Output your status column using your custom hexadecimal color assignments seamlessly
+        echo "<td class='text-capitalize fw-bold' style='color: {$statusTextHexColor} !important;'>";
+        echo htmlspecialchars($printStatusLabel);
+        echo "</td>";
+        
         echo "<td class='font-monospace small text-muted'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
         echo "</tr>";
     }
 } else {
     echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests history logged under this profile.</td></tr>";
 }
+
 // FIXED: Removed the broken crashing $stmt->close() statement cleanly!
 ?>
 
