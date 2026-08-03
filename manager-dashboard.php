@@ -73,8 +73,21 @@ if ($qNew) { $newRequestsCount = $qNew->fetch_assoc()['total'] ?? 0; }
 $qProgress = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'processing'");
 if ($qProgress) { $inProgressCount = $qProgress->fetch_assoc()['total'] ?? 0; }
 
-$qOverdue = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules WHERE status = 'Overdue'");
-if ($qOverdue) { $overdueAlertsCount = $qOverdue->fetch_assoc()['total'] ?? 0; }
+// ====================================================================
+// SYNCED COMMAND DESK SUMMARY OVERDUE ALERTS METRIC (FIXED)
+// ====================================================================
+$currentCalendarDay = date('Y-m-d'); // Baseline: 2026-08-03
+$overdueAlertsCount = 0;
+
+// FIXED PATH: Evaluates past deadlines and checks all casing types ('Overdue', 'overdue') cleanly!
+$qOverdue = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules 
+                          WHERE LOWER(status) != 'completed' 
+                          AND (LOWER(status) = 'overdue' OR next_due < '$currentCalendarDay')");
+
+if ($qOverdue) { 
+    $overdueAlertsCount = (int)($qOverdue->fetch_assoc()['total'] ?? 0); 
+}
+
 // Count Technician Updates (FIXED: Counts all active processing jobs on technician terminals)
 $techUpdatesCount = 0;
 $qTech = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'processing'");

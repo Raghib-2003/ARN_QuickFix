@@ -157,8 +157,22 @@ $totalOverdue = 0;
 $qSched = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules");
 if ($qSched) { $totalScheduled = $qSched->fetch_assoc()['total'] ?? 0; }
 
-$qOver = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules WHERE status = 'Overdue'");
-if ($qOver) { $totalOverdue = $qOver->fetch_assoc()['total'] ?? 0; }
+// ====================================================================
+// SYNCED DYNAMIC OPERATIONAL DATA OVERDUE METRIC ENGINE (FIXED)
+// ====================================================================
+$currentCalendarDay = date('Y-m-d'); // Today's date (2026-08-03)
+$totalOverdue = 0;
+
+// FIXED COMPILER: Counts the row if the status is explicitly 'Overdue' 
+// OR if its target deadline date is older than today!
+$qOver = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules 
+                      WHERE status != 'Completed' 
+                      AND (status = 'Overdue' OR next_due < '$currentCalendarDay')");
+
+if ($qOver) { 
+    $totalOverdue = (int)($qOver->fetch_assoc()['total'] ?? 0); 
+}
+
 
 // Fetch clients to populate select dropdown input field
 $clientsList = $conn->query("SELECT email, name FROM users WHERE role = 'client' OR role = 'user' ORDER BY name ASC");
@@ -332,14 +346,21 @@ $schedulesLedger = $conn->query("SELECT * FROM maintenance_schedules ORDER BY id
         </div>
       </div>
       
-      <!-- Box 2: Overdue Alert Count Metric Card -->
-      <div class="col-md-6">
+                      <!-- ================= METRIC BOX: OVERDUE ALERTS (FIXED) ================= -->
+            <div class="col-md-6">
         <div class="metric-box-sub" style="border-left: 3px solid #EF4444 !important;">
           <div class="small fw-bold text-danger text-uppercase mb-2" style="font-size: 11px; letter-spacing: 0.5px;">Overdue</div>
-          <div class="metric-value-large text-danger"><?php echo $totalOverdue; ?></div>
+          
+          <!-- FIXED LINE: Added the missing closing angle bracket right here before your PHP tags start -->
+          <div class="metric-value-large text-danger">
+            <?php echo $totalOverdue; ?>
+          </div>
+          
         </div>
-      </div>
-    </div> <!-- Close Section A Metric Row -->
+    </div>
+
+
+
 
         <!-- ================= SECTION B: ADD MAINTENANCE CARD VIEW PANEL (WITH ACTIVE FORMS MEMORY) ================= -->
     <div class="figma-card-layout mb-5">

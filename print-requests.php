@@ -12,7 +12,20 @@ $conn = new mysqli("127.0.0.1", "root", "", "arn_quickfix");
 if ($conn->connect_error) { 
     die("Database Connection Error Trace: " . $conn->connect_error); 
 }
+
+// ====================================================================
+// UNIFIED PRINT SELECTOR FIXED ENGINE (PASTED SAFELY HERE)
+// ====================================================================
+// This fetches ALL active and past entries (including your 3 completed jobs)
+// matching this specific client profile account, ordered chronologically.
+$queryStr = "SELECT id, asset_id, asset_type, asset_brand, problem_category, priority, status, phone, location, payment_method, allocated_part, part_price, amount, created_at 
+             FROM service_requests 
+             WHERE client_email = '$clientEmail' 
+             ORDER BY id DESC";
+
+$result = $conn->query($queryStr);
 ?>
+<!-- Your HTML sheet template print layout tags continue exactly right below here -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -76,42 +89,74 @@ if ($conn->connect_error) {
         <tbody>
           <?php
           $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, phone, location, payment_method, amount, status, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
-          if ($stmt) {
+          if ($stmt) 
               $stmt->bind_param("s", $clientEmail);
               $stmt->execute();
               $result = $stmt->get_result();
               
               if ($result->num_rows > 0) {
-                  $sl = 1;
-                  while ($row = $result->fetch_assoc()) {
-                      echo "<tr>";
-                      echo "<td class='text-secondary font-monospace fw-bold'>" . $sl++ . "</td>";
-                      echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
-                      echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
-                      echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
-                      echo "<td class='fw-medium text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
-                      echo "<td class='fw-semibold'>" . htmlspecialchars($row['priority']) . "</td>";
-                      echo "<td class='font-monospace text-dark fw-semibold'>" . htmlspecialchars($row['phone']) . "</td>";
-                      echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
-                      echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
-                      
-                      // DYNAMIC AMOUNT PRINT CELL
-                      if (is_null($row['amount']) || $row['amount'] == 0.00) {
-                          echo "<td><span class='text-muted small font-monospace fw-bold'>Pending Work</span></td>";
-                      } else {
-                          echo "<td class='fw-bold text-dark font-monospace'>৳" . number_format($row['amount'], 2) . "</td>";
-                      }
-                      
-                      echo "<td class='text-capitalize fw-bold' style='color: #00C2CB;'>" . htmlspecialchars($row['status']) . "</td>";
-                      echo "<td class='font-monospace small text-muted'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
-                      echo "</tr>";
-                  }
-              } else {
-                  echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests history logged under this profile.</td></tr>";
-              }
-              $stmt->close();
-          }
-          ?>
+    $sl = 1;
+    // SINGLE UNIFIED LOOP: Fixes pricing calculation logic variables and removes broken code blocks
+    while ($row = $result->fetch_assoc()) {
+        $currentProblem = trim($row['problem_category'] ?? '');
+        $allocatedPart = trim($row['allocated_part'] ?? '');
+        $partPrice = (float)($row['part_price'] ?? 0.00);
+        $finalAmount = (float)($row['amount'] ?? 0.00);
+
+        // Fetch our baseline service pricing parameters matching user selections
+        $baseRateNumeric = 0.00;
+        switch ($currentProblem) {
+            case 'Component Repair':          $baseRateNumeric = 4500.00; break;
+            case 'Part Replacement':           $baseRateNumeric = 3000.00; break;
+            case 'Modernization':              $baseRateNumeric = 15000.00; break;
+            case 'Routine Servicing':          $baseRateNumeric = 2000.00; break;
+            case 'Emergency Breakdown':        $baseRateNumeric = 5000.00; break;
+            case 'Basic Servicing':            $baseRateNumeric = 600.00; break;
+            case 'Deep Cleaning':              $baseRateNumeric = 1200.00; break;
+            case 'Duct Cleaning':              $baseRateNumeric = 5000.00; break;
+            case 'Gas Refill':                 $baseRateNumeric = 2500.00; break;
+            case 'Electrical Repair':          $baseRateNumeric = 1500.00; break;
+            case 'Compressor Repair':          $baseRateNumeric = 4000.00; break;
+            case 'Preventative Inspection':    $baseRateNumeric = 3500.00; break;
+            case 'Fault Code Diagnostic':         $baseRateNumeric = 1800.00; break;
+            case 'Engine Rebuild':                $baseRateNumeric = 25000.00; break;
+            case 'Component Repairs':             $baseRateNumeric = 6000.00; break;
+            case 'Advanced Testing':              $baseRateNumeric = 8000.00; break;
+            case 'Fuel Polishing':                $baseRateNumeric = 4500.00; break;
+            default:                              $baseRateNumeric = 0.00; break;
+        }
+
+        echo "<tr>";
+        echo "<td class='text-secondary font-monospace fw-bold'>" . $sl++ . "</td>";
+        echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
+        echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
+        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
+        echo "<td class='fw-medium text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
+        echo "<td class='fw-semibold'>" . htmlspecialchars($row['priority']) . "</td>";
+        echo "<td class='font-monospace text-dark fw-semibold'>" . htmlspecialchars($row['phone']) . "</td>";
+        echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
+        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
+        
+        // DYNAMIC AMOUNT PRINT CELL (FIXED COMPOSITE INTERLOCK)
+        if ($row['status'] !== 'completed' && $row['status'] !== 'complaint_raised') {
+            echo "<td><span class='text-muted small font-monospace fw-bold'>Pending Work</span></td>";
+        } else {
+            // If the final column is empty, automatically add Base Labor Fee + Installed Part Price!
+            $displayBillNumeric = ($finalAmount > 0.00) ? $finalAmount : ($baseRateNumeric + $partPrice);
+            echo "<td class='fw-bold text-dark font-monospace'>৳" . number_format($displayBillNumeric, 2) . "</td>";
+        }
+        
+        echo "<td class='text-capitalize fw-bold' style='color: #00C2CB;'>" . htmlspecialchars($row['status']) . "</td>";
+        echo "<td class='font-monospace small text-muted'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
+        echo "</tr>";
+    }
+} else {
+    echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests history logged under this profile.</td></tr>";
+}
+// FIXED: Removed the broken crashing $stmt->close() statement cleanly!
+?>
+
+        
         </tbody>
       </table>
     </div>

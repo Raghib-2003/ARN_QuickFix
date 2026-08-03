@@ -33,17 +33,23 @@ if ($conn->connect_error) {
 }
 
 // ====================================================================
-// CLIENT NOTIFICATION MEMORY ROUTER (DATA-SAFE INTERLOCK)
+// SEPARATED NOTIFICATION CLEAR ENGINES (FIXED ISOLATION)
 // ====================================================================
+// 1. REPAIR NOTIFICATIONS ONLY: Wipes service requests dispatches/completions alerts
 if (isset($_GET['clear_client_alerts']) && $_GET['clear_client_alerts'] == '1') {
-    // Saves a clear snapshot marker to active session memory instead of altering data rows!
-    $_SESSION['client_muted_until'] = date('Y-m-d H:i:s');
+    $conn->query("UPDATE service_requests SET is_read = 1 WHERE client_email = '$clientEmail'");
     header("Location: client-dashboard.php");
     exit();
 }
 
-// Safely pull the isolation time-marker boundary out of memory
-$clientMuteMarker = $_SESSION['client_muted_until'] ?? '1970-01-01 00:00:00';
+// 2. MAINTENANCE OVERVIEW ONLY: Wipes preventative inspection calendar alerts
+if (isset($_GET['clear_maint_alerts']) && $_GET['clear_maint_alerts'] == '1') {
+    $conn->query("UPDATE maintenance_schedules SET is_read = 1 WHERE client_email = '$clientEmail'");
+    header("Location: client-dashboard.php");
+    exit();
+}
+
+
 
 
 // 3. Form Submission Handling Controller Logic Blocks
@@ -586,50 +592,88 @@ if ($maintQuery) {
         </div>
 
 
-                    <!-- ================= FIXED COMPACT MAINTENANCE OVERVIEW PANEL ================= -->
-        <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold m-0 text-dark" style="font-size: 16px;">Maintenance Overview</h5>
-            <a href="client_maintenance.php" class="btn btn-sm btn-light border fw-bold text-secondary small rounded-pill px-3" style="font-size: 11px; text-decoration: none;">View Maintenance Details</a>
-          </div>
-
-          <?php
-          // Fetch the single latest active or overdue maintenance row matching this specific logged-in client
+                        <!-- ================= REFACTORED MAINTENANCE OVERVIEW HUB WITH QUICK CLEAR ================= -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        
+        <?php
+          // FORCE ACTIVE SYNC: Dynamically pre-calculates unread active/overdue schedule rows
           $activeUserEmail = $_SESSION['email'] ?? '';
-          $maintCheckQuery = $conn->query("SELECT asset_type, asset_id, last_service, next_due, maintenance_type, status FROM maintenance_schedules WHERE client_email = '$activeUserEmail' ORDER BY id DESC LIMIT 1");
+          $liveMaintAlertsCount = 0;
 
-          if ($maintCheckQuery && $maintCheckQuery->num_rows > 0):
-              $maintRow = $maintCheckQuery->fetch_assoc();
-              
-              // Map elegant visual warning states matching your client UI dashboard standards
-              $isOverdue = (strtolower($maintRow['status']) === 'overdue');
-              $alertThemeBg = $isOverdue ? '#FEF2F2' : '#FFFBEB';
-              $alertThemeText = $isOverdue ? '#EF4444' : '#D97706';
-              $alertBadgeBg = $isOverdue ? '#EF4444' : '#F59E0B';
+          $qMaintCount = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules WHERE client_email = '$activeUserEmail' AND is_read = 0");
+          if ($qMaintCount) { 
+              $liveMaintAlertsCount = (int)$qMaintCount->fetch_assoc()['total']; 
+          }
+        ?>
+
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="fw-bold text-dark m-0 d-flex align-items-center gap-1.5" style="font-size: 16px;">
+             Maintenance Overview
+            
+            <?php if ($liveMaintAlertsCount > 0): ?>
+              <!-- Inline Live Indicator Badge - Automatically floats next to title matching design -->
+              <span class="badge rounded-circle text-white d-inline-flex align-items-center justify-content-center p-0 font-monospace fw-bold" 
+                    style="width: 16px; height: 16px; font-size: 9.5px; background-color: #EF4444 !important; line-height: 1; margin-left: 4px; vertical-align: middle;">
+                <?php echo $liveMaintAlertsCount; ?>
+              </span>
+            <?php endif; ?>
+          </h5>
+
+                    <?php if ($liveMaintAlertsCount > 0): ?>
+            <!-- ISOLATED MAINTENANCE CLEAR BUTTON LINK: Clears ONLY the maintenance tracker grid -->
+            <a href="client-dashboard.php?clear_maint_alerts=1" class="text-decoration-none fw-bold ms-2" 
+               style="font-size: 11px; color: #64748B; transition: color 0.2s;"
+               onmouseover="this.style.color='#1E293B';" onmouseout="this.style.color='#64748B';">
+              <i class="fa-solid fa-check-double text-secondary" style="font-size: 10px;"></i> Mark all read
+            </a>
+          <?php endif; ?>
+
+        </div>
+
+        <a href="client_maintenance.php" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" style="font-size: 12px; height: 32px; display: flex; align-items: center; justify-content: center; text-decoration: none;">View Maintenance Details</a>
+      </div>
+
+      <!-- MAINTENANCE FEED BODY LOOP -->
+      <div class="d-flex flex-column gap-2">
+        <?php
+          // Fetch only items that are unread (is_read = 0)
+          $maintListQuery = $conn->query("SELECT asset_id, asset_type, next_due, status FROM maintenance_schedules WHERE client_email = '$activeUserEmail' AND is_read = 0 ORDER BY id DESC");
+          
+          if ($maintListQuery && $maintListQuery->num_rows > 0):
+              while ($mRow = $maintListQuery->fetch_assoc()):
+                  $dbStatus = trim($mRow['status'] ?? 'Active');
+                  $nextDueTarget = $mRow['next_due'] ?? '';
+                  $currentCalendarDay = date('Y-m-d');
+                  
+                  $isOverdue = ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') || (strtolower($dbStatus) === 'overdue');
+                  
+                  $bannerBg = $isOverdue ? '#FEF2F2' : '#F0FDF4';
+                  $bannerBorder = $isOverdue ? '#FEE2E2' : '#DCFCE7';
+                  $bannerTextClass = $isOverdue ? 'text-danger' : 'text-success';
+                  $bannerBadgeText = $isOverdue ? 'OVERDUE' : 'SCHEDULED';
           ?>
-            <!-- Live Active Notification Banner (Renders dynamically ONLY if a real row exists) -->
-            <div class="p-3 border rounded-3 d-flex flex-column gap-1" style="background-color: <?php echo $alertThemeBg; ?>; border-color: rgba(0,0,0,0.02) !important;">
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge text-white px-2 py-1 font-monospace text-uppercase" style="font-size: 10px; background-color: <?php echo $alertBadgeBg; ?>; border: none; border-radius: 4px;">
-                  <?php echo htmlspecialchars($maintRow['status']); ?>
-                </span>
-                <strong style="color: #0F172A; font-size: 14px;">
-                  <?php echo htmlspecialchars($maintRow['asset_id']); ?> (<?php echo htmlspecialchars($maintRow['asset_type']); ?> Unit)
-                </strong>
+            <!-- Dynamic Maintenance Row Alert Box Container -->
+            <div class="p-3 border rounded-3 text-start" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge text-uppercase font-monospace fw-extrabold" style="font-size: 9px; padding: 2px 5px; background-color: <?php echo $isOverdue ? '#EF4444' : '#10B981'; ?>; color: #FFFFFF; font-weight:800; border-radius:4px;"><?php echo $bannerBadgeText; ?></span>
+                <strong class="text-dark" style="font-size: 13.5px;"><?php echo htmlspecialchars($mRow['asset_id'] . " (" . $mRow['asset_type'] . ")"); ?></strong>
               </div>
-              <p class="m-0 font-monospace small mt-1" style="font-size: 12px; color: <?php echo $alertThemeText; ?> !important; opacity: 0.95;">
-                Type: <strong><?php echo htmlspecialchars($maintRow['maintenance_type']); ?> Check</strong> | 
-                Last Check: <?php echo (!empty($maintRow['last_service']) && $maintRow['last_service'] !== '0000-00-00') ? date('d-m-Y', strtotime($maintRow['last_service'])) : 'None'; ?> | 
-                Next Due: <strong class="<?php echo $isOverdue ? 'text-danger' : ''; ?> fw-bold"><?php echo date('d-m-Y', strtotime($maintRow['next_due'])); ?></strong>
-              </p>
+              <div class="text-muted mt-1 small font-monospace" style="font-size: 11.5px;">
+                Target Inspection Window Calibration Date: <strong class="<?php echo $bannerTextClass; ?>"><?php echo date('d-m-Y', strtotime($mRow['next_due'])); ?></strong>
+              </div>
             </div>
-          <?php else: ?>
-            <!-- Fallback design layout placeholder if the manager hasn't pushed any tickets yet -->
+          <?php 
+              endwhile;
+          else: 
+          ?>
+            <!-- Pristine Fallback Panel Canvas Display -->
             <div class="text-center py-4 border rounded-3 bg-light text-muted font-monospace small" style="font-size: 12px; background-color: #F8FAFC !important; border-color: #E2E8F0 !important;">
-              🍃 Safe Status: No active or overdue maintenance intervals logged for your machinery.
+              🍃 Calendar Clear: All preventative inspection maintenance schedules are caught up and reviewed.
             </div>
           <?php endif; ?>
-        </div>
+      </div>
+    </div>
 
 
 
@@ -637,24 +681,22 @@ if ($maintQuery) {
     <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         
-        <?php
-          // FORCE ACTIVE CLIENT SYNC: Only counts notification updates that occurred AFTER the user clicked read all!
+                                <?php
+          // REFACTORED WORKFLOW SYNC: Counts ONLY direct service and delivery updates
           $activeUserEmail = $_SESSION['email'] ?? '';
           $totalLiveAlerts = 0;
 
-                    // Count 1: Processing Dispatches
-          $qCountA = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND created_at > '$clientMuteMarker'");
+          // Count 1: Processing Dispatches
+          $qCountA = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND is_read = 0");
           if ($qCountA) { $totalLiveAlerts += (int)$qCountA->fetch_assoc()['total']; }
 
           // Count 2: Today's Completed Closures
-          $qCountB = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND created_at > '$clientMuteMarker'");
+          $qCountB = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND is_read = 0");
           if ($qCountB) { $totalLiveAlerts += (int)$qCountB->fetch_assoc()['total']; }
-
-          // Count 3: Maintenance Schedule Alerts (FIXED WITH FILTER LOCK)
-          $qCountC = $conn->query("SELECT COUNT(*) as total FROM maintenance_schedules WHERE client_email = '$activeUserEmail' AND next_due > '$clientMuteMarker'");
-          if ($qCountC) { $totalLiveAlerts += (int)$qCountC->fetch_assoc()['total']; }
-
         ?>
+
+
+
 
         <div class="d-flex align-items-center gap-2">
           <h5 class="fw-bold text-dark m-0 d-flex align-items-center gap-1.5" style="font-size: 16px;">
@@ -696,7 +738,7 @@ if ($maintQuery) {
         // LOGIC REPOSITORY A: FETCH ALL TICKETS CURRENTLY IN PROCESSING STATE
         // --------------------------------------------------------------------
         // REMOVED "LIMIT 1" to let ALL active field dispatches populate fluidly inline!
-$dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND created_at > '$clientMuteMarker' ORDER BY id DESC");
+$dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND is_read = 0 ORDER BY id DESC");
         
         if ($dispatchQuery && $dispatchQuery->num_rows > 0):
             while ($dRow = $dispatchQuery->fetch_assoc()):
@@ -721,48 +763,13 @@ $dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM servic
             endwhile;
         endif; 
 
-        // --------------------------------------------------------------------
-        // LOGIC REPOSITORY B: FETCH ALL OUTSTANDING MAINTENANCE CALIBRATIONS
-        // --------------------------------------------------------------------
-        // REMOVED "LIMIT 1" to pull every individual machine scheduling alert live!
-        $maintQuery = $conn->query("SELECT asset_id, asset_type, next_due, status FROM maintenance_schedules WHERE client_email = '$activeUserEmail' ORDER BY id DESC");
-        
-        if ($maintQuery && $maintQuery->num_rows > 0):
-            while ($mRow = $maintQuery->fetch_assoc()):
-                $dbStatus = trim($mRow['status'] ?? 'Active');
-                $nextDueTarget = $mRow['next_due'] ?? '';
-                $currentCalendarDay = date('Y-m-d'); // Today's Date Check
-                
-                // Determine rules logic parameters dynamically for every single item row loop
-                $isOverdue = ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') || (strtolower($dbStatus) === 'overdue');
-                
-                $bannerBg = $isOverdue ? '#FEF2F2' : '#F0FDF4';
-                $bannerBorder = $isOverdue ? '#FEE2E2' : '#DCFCE7';
-                $bannerEmoji = $isOverdue ? '⚠️' : '📅';
-                $bannerTitle = $isOverdue ? 'Delayed Overdue Alert' : 'New Maintenance Scheduled';
-                $bannerText = $isOverdue ? 'Your equipment calibration window is critically delayed.' : 'Manager has added a new preventative inspection cycle.';
-                
-                $hasNotifications = true;
-        ?>
-          <!-- Maintenance Alert Item Badge Grid -->
-          <div class="p-3 border rounded-3 d-flex align-items-start gap-2.5 text-start" style="background-color: <?php echo $bannerBg; ?>; border-color: <?php echo $bannerBorder; ?> !important;">
-            <div class="mt-0.5" style="font-size: 15px;"><?php echo $bannerEmoji; ?></div>
-            <div>
-              <span class="d-block fw-bold text-dark" style="font-size: 13px;"><?php echo $bannerTitle; ?></span>
-              <span class="d-block text-secondary mt-0.5" style="font-size: 11.5px; line-height: 1.45;">
-                <?php echo $bannerText; ?> Next target due date: **<?php echo date('d-m-Y', strtotime($mRow['next_due'])); ?>** for unit **<?php echo htmlspecialchars($mRow['asset_id']); ?>**.
-              </span>
-            </div>
-          </div>
-        <?php 
-            endwhile;
-        endif; 
+         
 
                   // --------------------------------------------------------------------
         // LOGIC REPOSITORY C: FETCH RECENTLY COMPLETED REPAIR TASKS (FIXED)
         // --------------------------------------------------------------------
         // Pulls completed items and automatically resolves base rate fallbacks if empty
-$completedFeedQuery = $conn->query("SELECT asset_id, asset_type, problem_category, allocated_part, part_price, amount FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND created_at > '$clientMuteMarker' ORDER BY id DESC");
+$completedFeedQuery = $conn->query("SELECT asset_id, asset_type, problem_category, allocated_part, part_price, amount FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND is_read = 0 ORDER BY id DESC");
         
         if ($completedFeedQuery && $completedFeedQuery->num_rows > 0):
             while ($cRow = $completedFeedQuery->fetch_assoc()):
