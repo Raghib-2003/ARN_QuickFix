@@ -14,17 +14,13 @@ if ($conn->connect_error) {
 // 2. Wait for Form Submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // Collect and sanitize user input
-    $role = $_POST['role'];
-    // Checks for the lowercase string sent from your updated HTML form
-    $specialization = (isset($_POST['specialization']) && $role === 'technician') ? $_POST['specialization'] : '';
-
-    $first_name = $_POST['first_name'];
-    $second_name = $_POST['second_name'];
-    $fullName = $first_name . " " . $second_name; 
-    $email = $_POST['email'];
-    $pass = $_POST['password'];
-    $confirm_pass = $_POST['confirm_password'];
+    // Collect and sanitize user input strings safely
+    $first_name   = trim($_POST['first_name'] ?? '');
+    $second_name  = trim($_POST['second_name'] ?? '');
+    $fullName     = $first_name . " " . $second_name; 
+    $email        = trim($_POST['email'] ?? '');
+    $pass         = $_POST['password'] ?? '';
+    $confirm_pass = $_POST['confirm_password'] ?? '';
     
     // Check if passwords match
     if ($pass !== $confirm_pass) {
@@ -32,7 +28,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // NEW: Check if email already exists in the database
+    // ====================================================================
+    // INTELLIGENT FIELD ENGINEERING ROLE TOKEN ALLOCATOR (FIXED)
+    // ====================================================================
+    // Read raw values without breaking case-sensitivity early
+    $rawRoleSelection = trim($_POST['role'] ?? 'client');
+    $frontendSpec     = trim($_POST['specialization'] ?? '');
+
+    // Setup defaults
+    $finalRoleToken            = 'client'; 
+    $savedSpecializationString = '';
+
+    // Convert only the role check to lowercase to handle form variations safely
+    if (strtolower($rawRoleSelection) === 'technician') {
+        $savedSpecializationString = $frontendSpec;
+        
+        // Exact case-sensitive match against your HTML option values ("AC", "Generator", "Elevator")
+        if ($frontendSpec === 'AC') { 
+            $finalRoleToken = 'tech_ac'; 
+        } elseif ($frontendSpec === 'Generator') { 
+            $finalRoleToken = 'tech_generator'; 
+        } elseif ($frontendSpec === 'Elevator') { 
+            $finalRoleToken = 'tech_elevator'; 
+        } else {
+            // Safety fallback if choice string is unmapped or unexpected
+            $finalRoleToken = 'tech_ac'; 
+        }
+    } else {
+        // Safe fallback for clients or other roles (forces lowercase for database consistency)
+        $finalRoleToken = strtolower($rawRoleSelection); 
+    }
+
+    // ====================================================================
+    // DATABASE OPERATIONS
+    // ====================================================================
+
+    // Check if email already exists in the database
     $checkEmail = $conn->prepare("SELECT email FROM users WHERE email = ?");
     $checkEmail->bind_param("s", $email);
     $checkEmail->execute();
@@ -49,22 +80,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Securely hash the password
     $hashed_password = password_hash($pass, PASSWORD_DEFAULT);
     
-    // 3. Prepare SQL query
+    // Prepare SQL query (Saves your clean, unified $finalRoleToken straight into the database!)
     $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, role, specialization) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssss", $fullName, $email, $hashed_password, $role, $specialization);
+    $stmt->bind_param("sssss", $fullName, $email, $hashed_password, $finalRoleToken, $savedSpecializationString);
     
     if ($stmt->execute()) {
         $stmt->close();
         $conn->close();
         
-        // 4. Successful signup redirects to login page cleanly
+        // Successful signup redirects to login page cleanly
         header("Location: login.php");
         exit();
     } else {
         echo "Error: " . $stmt->error;
     }
 }
+$conn->close();
 ?>
+
+
 
 
 
@@ -297,9 +331,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="select-wrapper">
           <select id="specialization"  name="specialization">
             <option value="" disabled selected hidden>Select Specialization</option>
-            <option value="Elevators">Elevator</option>
-            <option value="Air Conditioner">AC</option>
-            <option value="Generators">Generator</option>
+            <option value="Elevator">Elevator</option>
+            <option value="AC">AC</option>
+            <option value="Generator">Generator</option>
           </select>
         </div>
       </div>

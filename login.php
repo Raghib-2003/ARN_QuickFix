@@ -14,14 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     $_SESSION = array();
 }
 
-// Your database connectivity configurations and form handlers continue perfectly right underneath:
-$conn = @new mysqli("localhost", "root", "", "arn_quickfix");
-if ($conn->connect_error) {
-    die("Database connectivity node failed to sync: " . $conn->connect_error);
-}
-
-
-// 3. Establish database sync tracking loop
+// 3. Establish database sync tracking loop (UNIFIED TO PREVENT DUPLICATE SO SOCKET CLASHES)
 $conn = @new mysqli("localhost", "root", "", "arn_quickfix");
 if ($conn->connect_error) {
     die("Database connectivity node failed to sync: " . $conn->connect_error);
@@ -46,8 +39,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if (password_verify($password, $user['password_hash'])) {
                 $_SESSION['email'] = $email;
                 $_SESSION['name'] = $user['name'];
+
                 
-                // FIXED INTERLOCK: Forces lower-case comparison to prevent string match typos
+                                // FIXED INTERLOCK: Forces lower-case comparison to prevent string match typos
                 $userRole = strtolower(trim($user['role'] ?? 'client'));
                 $_SESSION['role'] = $userRole;
                 
@@ -55,17 +49,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $conn->close();
                 
                 // ====================================================================
-                // FIXED DYNAMIC ROUTER JUNCTION (ROUTING DRIVEN BY ACCURATE ACCOUNT ROLES)
+                // FIXED DYNAMIC ROUTER JUNCTION (3-WAY TECHNICIAN MULTI-DASHBOARD REDIRECT)
                 // ====================================================================
-                if ($userRole === 'manager') {
-                    // Redirects administrative staff cleanly to the Management Dashboard panel
-                    header("Location: manager-dashboard.php");
-                    exit();
-                } else {
-                    // Redirects regular customer nodes cleanly to the Client Dashboard portal lane
-                    header("Location: client-dashboard.php");
-                    exit();
+                // Seamlessly distributes logins to their exact specialized workspace terminal hubs
+                switch ($userRole) {
+                    case 'manager':
+                        header("Location: manager-dashboard.php");
+                        break;
+                    case 'tech_ac':
+                        header("Location: tech_ac_dashboard.php");
+                        break;
+                    case 'tech_generator':
+                        header("Location: tech_generator_dashboard.php");
+                        break;
+                    case 'tech_elevator':
+                        header("Location: tech_elevator_dashboard.php");
+                        break;
+                    case 'client':
+                    default:
+                        header("Location: client-dashboard.php");
+                        break;
                 }
+                exit();
                 
             } else {
                 echo "<script>alert('Invalid account password credentials! Please try again.'); window.history.back();</script>";
@@ -81,8 +86,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit();
     }
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
