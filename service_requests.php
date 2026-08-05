@@ -146,98 +146,128 @@ $logQuery = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_ca
             </tr>
           </thead>
                    <tbody>
-            <?php
-            // UPDATED QUERY: Selects the amount field string safely
-            $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, status, phone, location, payment_method, amount, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
-            if ($stmt) {
-                $stmt->bind_param("s", $clientEmail);
-                $stmt->execute();
-                $result = $stmt->get_result();
+  <?php
+  // ====================================================================
+  // ✅ FIXED DYNAMIC SQL QUERY: FETCHING WAREHOUSE COMPONENT COLUMNS
+  // ====================================================================
+  // Added 'allocated_part' and 'part_price' right into the SELECT parameters array matrix
+  $stmt = $conn->prepare("SELECT id, asset_id, asset_type, asset_brand, problem_category, allocated_part, part_price, priority, status, phone, location, payment_method, amount, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
+  
+  if ($stmt) {
+      $stmt->bind_param("s", $clientEmail);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      
+      if ($result->num_rows > 0) {
+          $sl = 1;
+          while ($row = $result->fetch_assoc()) {
+              $currentProblem = trim($row['problem_category'] ?? '');
+              $allocatedPart  = trim($row['allocated_part'] ?? '');
+              $partPrice      = (float)($row['part_price'] ?? 0.00);
+              $finalAmount    = (float)($row['amount'] ?? 0.00); 
+
+              // Fetch baseline price guides matching category metrics
+              $baseRateNumeric = 0.00;
+              $priceGuideTag = "";
+              
+              switch ($currentProblem) {
+                  case 'Component Repair':    $priceGuideTag = "৳4,500"; $baseRateNumeric = 4500.00; break;
+                  case 'Part Replacement':     $priceGuideTag = "৳3,000"; $baseRateNumeric = 3000.00; break;
+                  case 'Modernization':        $priceGuideTag = "৳15,000"; $baseRateNumeric = 15000.00; break;
+                  case 'Routine Servicing':    $priceGuideTag = "৳2,000"; $baseRateNumeric = 2000.00; break;
+                  case 'Emergency Breakdown':  $priceGuideTag = "৳5,000"; $baseRateNumeric = 5000.00; break;
+                  case 'Basic Servicing':      $priceGuideTag = "৳600";   $baseRateNumeric = 600.00; break;
+                  case 'Deep Cleaning':        $priceGuideTag = "৳1,200"; $baseRateNumeric = 1200.00; break;
+                  case 'Duct Cleaning':        $priceGuideTag = "৳5,000"; $baseRateNumeric = 5000.00; break;
+                  case 'Gas Refill':           $priceGuideTag = "৳2,500"; $baseRateNumeric = 2500.00; break;
+                  case 'Electrical Repair':    $priceGuideTag = "৳1,500"; $baseRateNumeric = 1500.00; break;
+                  case 'Compressor Repair':    $priceGuideTag = "৳4,000"; $baseRateNumeric = 4000.00; break;
+                  case 'Preventative Inspection': $priceGuideTag = "৳3,500"; $baseRateNumeric = 3500.00; break;
+                  case 'Fault Code Diagnostic':   $priceGuideTag = "৳1,800"; $baseRateNumeric = 1800.00; break;
+                  case 'Engine Rebuild':          $priceGuideTag = "৳25,000"; $baseRateNumeric = 25000.00; break;
+                  case 'Component Repairs':       $priceGuideTag = "৳6,000"; $baseRateNumeric = 6000.00; break;
+                  case 'Advanced Testing':        $priceGuideTag = "৳8,000"; $baseRateNumeric = 8000.00; break;
+                  case 'Fuel Polishing':          $priceGuideTag = "৳4,500"; $baseRateNumeric = 4500.00; break;
+                  default: $priceGuideTag = ""; $baseRateNumeric = 0.00; break;
+              }
+
+              // Generate the inventory badge container variable code string layout
+              $inventoryBadgeHtml = "";
+              if (!empty($allocatedPart)) {
+                  $inventoryBadgeHtml = "<div class='mt-1 font-sans'><span class='badge' style='font-size: 10px; padding: 3px 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block; font-weight: 500;'>📦 Part: " . htmlspecialchars($allocatedPart) . " (+৳" . number_format($partPrice) . ")</span></div>";
+              } else {
+                  if (!empty($priceGuideTag)) {
+                      $inventoryBadgeHtml = "<div class='mt-1 font-sans'><span class='badge' style='font-size: 10px; padding: 3px 6px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; display: inline-block; font-weight: 500;'>Base Rate: " . $priceGuideTag . "</span></div>";
+                  }
+              }
+
+              // Establish priority and status visual parameters styling configurations
+              $ticketPriority = strtolower(trim($row['priority'] ?? 'medium'));
+              $priorityBadgeBg = ($ticketPriority === 'high' || $ticketPriority === 'critical') ? '#FEF2F2' : '#EFF6FF';
+              $priorityBadgeColor = ($ticketPriority === 'high' || $ticketPriority === 'critical') ? '#EF4444' : '#3B82F6';
+
+              $ticketStatus = strtolower(trim($row['status'] ?? 'pending'));
+              $statusBadgeBg = '#F1F5F9'; $statusBadgeColor = '#475569';
+              if ($ticketStatus === 'completed') { $statusBadgeBg = '#D1FAE5'; $statusBadgeColor = '#065F46'; }
+              elseif ($ticketStatus === 'processing') { $statusBadgeBg = '#E0F2FE'; $statusBadgeColor = '#0369A1'; }
+              elseif ($ticketStatus === 'pending') { $statusBadgeBg = '#FEF3C7'; $statusBadgeColor = '#92400E'; }
+              ?>
+              
+              <!-- ================= HTML ROW PRINT LAYOUT MATRIX ================= -->
+              <tr style="border-bottom: 1px solid #F1F5F9;">
+                <td class="align-middle py-3 text-secondary font-monospace"><?php echo $sl++; ?></td>
+                <td class="align-middle fw-bold text-dark font-monospace"><?php echo htmlspecialchars($row['asset_id']); ?></td>
+                <td class="align-middle text-capitalize"><?php echo htmlspecialchars($row['asset_type']); ?></td>
+                <td class="align-middle text-muted"><?php echo htmlspecialchars($row['asset_brand']); ?></td>
                 
-                if ($result->num_rows > 0) {
-    $sl = 1;
-    // SINGLE CLEAN LOOP: Resolves the duplicate row layout issue permanently
-    while ($row = $result->fetch_assoc()) {
-        $currentProblem = trim($row['problem_category'] ?? '');
-        $allocatedPart = trim($row['allocated_part'] ?? '');
-        $partPrice = (float)($row['part_price'] ?? 0.00);
-        $finalAmount = (float)($row['amount'] ?? 0.00); 
+                <td class="align-middle text-start">
+                  <div class="fw-semibold text-dark"><?php echo htmlspecialchars($currentProblem); ?></div>
+                  <div class="text-muted small font-monospace" style="font-size: 11px;">Base: <?php echo !empty($priceGuideTag) ? $priceGuideTag : '৳2,500'; ?></div>
+                </td>
+                
+                <td class="align-middle">
+                  <span class="badge text-uppercase font-monospace" style="font-size: 10px; padding: 4px 8px; background-color: <?php echo $priorityBadgeBg; ?>; color: <?php echo $priorityBadgeColor; ?>;"><?php echo $ticketPriority; ?></span>
+                </td>
+                
+                <td class="align-middle">
+                  <span class="badge text-uppercase" style="font-size: 10px; padding: 4px 8px; background-color: <?php echo $statusBadgeBg; ?>; color: <?php echo $statusBadgeColor; ?>;"><?php echo $ticketStatus; ?></span>
+                </td>
+                
+                <td class="align-middle font-monospace text-muted" style="font-size: 12.5px;"><?php echo htmlspecialchars($row['phone'] ?? 'N/A'); ?></td>
+                <td class="align-middle text-secondary small" style="font-weight: 500; max-width: 180px;"><?php echo htmlspecialchars($row['location'] ?? 'Site Location'); ?></td>
+                <td class="align-middle text-capitalize text-muted small" style="font-weight: 600;"><?php echo htmlspecialchars($row['payment_method'] ?? 'Nagad'); ?></td>
+                
+                <!-- ================= ✅ MOVED DYNAMIC AMOUNT COLUMNS DATA OUTS ================= -->
+                                <!-- ================= DYNAMIC AMOUNT BREAKDOWN COLUMN (FIXED ZERO BASE FALLBACK) ================= -->
+                <td class="align-middle font-monospace text-start" style="font-size: 13.5px; font-weight: 600;">
+                  <?php if ($ticketStatus === 'pending' || $ticketStatus === 'processing'): ?>
+                    <span class="text-muted font-sans small d-block" style="font-style: italic; font-size: 11px;">Pending Work</span>
+                  <?php else: ?>
+                    
+                    <?php 
+                      // ✅ SMART FALLBACK MATRIX: If the database amount is 0 or blank, automatically fall back to the true category base rate calculation!
+                      $displayAmountValue = ($finalAmount > 0) ? $finalAmount : $baseRateNumeric;
+                    ?>
 
-        // Fetch our baseline service pricing parameters matching user selections
-        $baseRateNumeric = 0.00;
-        $priceGuideTag = "";
-        
-        switch ($currentProblem) {
-            case 'Component Repair':    $priceGuideTag = "৳4,500"; $baseRateNumeric = 4500.00; break;
-            case 'Part Replacement':     $priceGuideTag = "৳3,000"; $baseRateNumeric = 3000.00; break;
-            case 'Modernization':        $priceGuideTag = "৳15,000"; $baseRateNumeric = 15000.00; break;
-            case 'Routine Servicing':    $priceGuideTag = "৳2,000"; $baseRateNumeric = 2000.00; break;
-            case 'Emergency Breakdown':  $priceGuideTag = "৳5,000"; $baseRateNumeric = 5000.00; break;
-            case 'Basic Servicing':      $priceGuideTag = "৳600";   $baseRateNumeric = 600.00; break;
-            case 'Deep Cleaning':        $priceGuideTag = "৳1,200"; $baseRateNumeric = 1200.00; break;
-            case 'Duct Cleaning':        $priceGuideTag = "৳5,000"; $baseRateNumeric = 5000.00; break;
-            case 'Gas Refill':           $priceGuideTag = "৳2,500"; $baseRateNumeric = 2500.00; break;
-            case 'Electrical Repair':    $priceGuideTag = "৳1,500"; $baseRateNumeric = 1500.00; break;
-            case 'Compressor Repair':    $priceGuideTag = "৳4,000"; $baseRateNumeric = 4000.00; break;
-            case 'Preventative Inspection': $priceGuideTag = "৳3,500"; $baseRateNumeric = 3500.00; break;
-            case 'Fault Code Diagnostic':   $priceGuideTag = "৳1,800"; $baseRateNumeric = 1800.00; break;
-            case 'Engine Rebuild':          $priceGuideTag = "৳25,000"; $baseRateNumeric = 25000.00; break;
-            case 'Component Repairs':       $priceGuideTag = "৳6,000"; $baseRateNumeric = 6000.00; break;
-            case 'Advanced Testing':        $priceGuideTag = "৳8,000"; $baseRateNumeric = 8000.00; break;
-            case 'Fuel Polishing':          $priceGuideTag = "৳4,500"; $baseRateNumeric = 4500.00; break;
-            default: $priceGuideTag = ""; $baseRateNumeric = 0.00; break;
-        }
+                    <div class="fw-bold text-dark">৳<?php echo number_format($displayAmountValue, 2); ?></div>
+                    <!-- Prints out your formatted parts label box seamlessly right below the total price cell -->
+                    <?php echo $inventoryBadgeHtml; ?>
+                  <?php endif; ?>
+                </td>
 
-        // Generate the dynamic inventory part allocated notice badge array
-        $inventoryBadgeHtml = "";
-        if (!empty($allocatedPart)) {
-            $inventoryBadgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10px; padding: 2px 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block;'>📦 Part: " . htmlspecialchars($allocatedPart) . " (+৳" . number_format($partPrice) . ")</span></div>";
-        } else {
-            if (!empty($priceGuideTag)) {
-                $inventoryBadgeHtml = "<div class='mt-1'><span class='badge font-monospace' style='font-size: 10px; padding: 2px 6px; background-color: #ECFEFF; color: #0891B2; border: 1px solid #CFFAFE; border-radius: 4px; display: inline-block;'>Base Rate: " . $priceGuideTag . "</span></div>";
-            }
-        }
+                <td class="align-middle font-monospace text-muted small" style="font-size: 11.5px;"><?php echo !empty($row['created_at']) ? date('d-m-Y | h:i A', strtotime($row['created_at'])) : 'N/A'; ?></td>
+              </tr>
+              
+              <?php
+          }
+      } else {
+          echo "<tr><td colspan='12' class='text-center py-5 text-muted font-monospace'>No asset request ledgers logged under this profile link node yet.</td></tr>";
+      }
+      $stmt->close();
+  }
+  ?>
+</tbody>
 
-        // Setup status colors cleanly
-        $statusClass = "bg-warning text-dark"; 
-        if ($row['status'] === 'processing') { $statusClass = "bg-primary text-white"; }
-        elseif ($row['status'] === 'completed') { $statusClass = "bg-success text-white"; }
-        elseif ($row['status'] === 'complaint_raised') { $statusClass = "bg-danger text-white"; }
-        
-        echo "<tr style='border-bottom: 1px solid #F1F5F9;'>";
-        echo "<td class='text-secondary fw-semibold'>" . $sl++ . "</td>";
-        echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
-        echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
-        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
-        echo "<td class='fw-semibold text-dark'><div>" . htmlspecialchars($currentProblem) . "</div>" . $inventoryBadgeHtml . "</td>";
-        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['priority']) . "</td>";
-        echo "<td><span class='badge " . $statusClass . " text-capitalize px-3 py-1.5 fw-bold'>" . htmlspecialchars($row['status']) . "</span></td>";
-        echo "<td class='font-monospace text-dark'>" . htmlspecialchars($row['phone']) . "</td>";
-        echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
-        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
-        
-        // DYNAMIC ACCURATE BILLING LOGIC:
-        // If the job is ongoing, display "Pending Work"
-        if ($row['status'] !== 'completed' && $row['status'] !== 'complaint_raised') {
-            echo "<td><span class='text-muted small font-monospace fw-bold' style='color: #94A3B8 !important; font-size:12px;'>Pending Work</span></td>";
-        } else {
-            // SMART FALLBACK: If the column amount is still 0, use the official Base Rate automatic calculation!
-            $displayBill = ($finalAmount > 0.00) ? $finalAmount : $baseRateNumeric;
-            echo "<td class='fw-bold text-dark font-monospace' style='color: #0F172A !important;'>৳" . number_format($displayBill, 2) . "</td>";
-        }
-        
-        echo "<td class='text-muted small fw-medium font-monospace'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
-        echo "</tr>";
-    }
-} else {
-    echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests logs found for this account node.</td></tr>";
-}
-
-                }
-                $stmt->close();
-
-            ?>
-          </tbody>
         </table>
       </div>
     </div>

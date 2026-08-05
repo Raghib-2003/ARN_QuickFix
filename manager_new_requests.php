@@ -32,28 +32,49 @@ if ($conn->connect_error) {
 $actionMessage = "";
 $actionError = "";
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
-    if ($_POST['action_type'] === 'assign_technician') {
-        $ticketId = (int)$_POST['ticket_id'];
-        $technicianName = trim($_POST['technician_name']);
+// ====================================================================
+// UPDATED DISPATCH PROCESSOR ENGINE (COMPOSITE TEXT INJECTION LAYER)
+// ====================================================================
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'assign_technician') {
+    $ticket_id = (int)$_POST['ticket_id'];
+    $selected_tech_name = trim($_POST['technician_name']); // Dynamically captures 'Ajay Devgan', etc.
+
+    if ($ticket_id > 0 && !empty($selected_tech_name)) {
         
-        if (!empty($technicianName)) {
-            // Update ticket status to 'processing' and assign the field crew engineer
-            // (Assumes you have a column named assigned_to or technician inside service_requests)
-            $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'processing', location = CONCAT(location, ' (Assigned to: ', ?, ')') WHERE id = ?");
-            $updateStmt->bind_param("si", $technicianName, $ticketId);
+        // A. FIRST: Pull your original base address string from your cell records safely
+        $addrCheck = $conn->prepare("SELECT location FROM service_requests WHERE id = ?");
+        $addrCheck->bind_param("i", $ticket_id);
+        $addrCheck->execute();
+        $ticketRow = $addrCheck->get_result()->fetch_assoc();
+        $addrCheck->close();
+
+        if ($ticketRow) {
+            $rawBaseAddress = trim($ticketRow['location']);
+            
+            // Clean out old assignment tags if the manager is re-dispatching a ticket to a new tech
+            if (strpos($rawBaseAddress, ' (Assigned to:') !== false) {
+                $parts = explode(' (Assigned to:', $rawBaseAddress);
+                $rawBaseAddress = trim($parts[0]);
+            }
+
+            // B. SECOND: Formulate the exact structural composite string format used by your system!
+            $newCompositeLocationString = $rawBaseAddress . " (Assigned to: " . $selected_tech_name . ")";
+
+            // C. THIRD: Update your row cells. Changes status cleanly to 'processing' and appends data!
+            $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'processing', location = ? WHERE id = ?");
+            $updateStmt->bind_param("si", $newCompositeLocationString, $ticket_id);
             
             if ($updateStmt->execute()) {
-                $actionMessage = "Success! Ticket #{$ticketId} dispatched to {$technicianName} smoothly.";
+                echo "<script>alert('Field crew safely allocated! Ticket dispatched successfully.'); window.location.href='manager_new_requests.php';</script>";
             } else {
-                $actionError = "Execution Error: Could not assign technician to ticket record.";
+                echo "Error executing assignment: " . $updateStmt->error;
             }
             $updateStmt->close();
-        } else {
-            $actionError = "Validation Error: Please select an active field engineer to dispatch.";
+            exit();
         }
     }
 }
+
 
 // 4. Pull Incoming Queue Dataset Rows (Only pending or submitted statuses)
 $query = "SELECT id, client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status FROM service_requests WHERE status IN ('pending', 'submitted') ORDER BY id DESC";
@@ -292,7 +313,7 @@ $result = $conn->query($query);
                     <span class="text-muted small font-monospace d-block mt-0.5" style="font-size: 11px;">Method: <strong><?php echo htmlspecialchars($row['payment_method'] ?? 'Not Set'); ?></strong></span>
                   </td>
                   
-                  <!-- Interactive Field Dispatch Action Selection Menus -->
+                                    <!-- Interactive Field Dispatch Action Selection Menus -->
                   <td>
                     <form action="manager_new_requests.php" method="POST" class="d-flex gap-2">
                       <input type="hidden" name="action_type" value="assign_technician">
@@ -300,10 +321,24 @@ $result = $conn->query($query);
                       
                       <select name="technician_name" class="form-select form-select-sm" style="font-size: 12.5px; height: 34px; background-color: #F8FAFC; border-radius: 6px;" required>
                         <option value="" disabled selected hidden>Select Crew Engineer</option>
-                        <option value="Engineer Rahman">Engineer Rahman (Elevator Expert)</option>
-                        <option value="Technician Karim">Technician Karim (HVAC Specialist)</option>
-                        <option value="Inspector Zaman">Inspector Zaman (Power Grid Crew)</option>
-                        <option value="Mechanic Hasan">Mechanic Hasan (General Servicing)</option>
+                        <?php
+                        // ====================================================================
+                        // LIVE FIELD CREW PARSER MATRIX
+                        // ====================================================================
+                        // Fetches all authentic technicians logged in your primary database users table
+                        $techResult = $conn->query("SELECT name, specialization FROM users WHERE role LIKE 'tech_%' ORDER BY name ASC");
+                        
+                        if ($techResult && $techResult->num_rows > 0) {
+                            while ($tech = $techResult->fetch_assoc()) {
+                                $specText = !empty($tech['specialization']) ? $tech['specialization'] : 'Field Engineer';
+                                
+                                // Emits clean options using their exact database recorded strings
+                                echo "<option value='" . htmlspecialchars($tech['name']) . "'>" . htmlspecialchars($tech['name']) . " (" . htmlspecialchars($specText) . ")</option>";
+                            }
+                        } else {
+                            echo "<option value='' disabled>No Active Technicians Registered</option>";
+                        }
+                        ?>
                       </select>
                       
                       <button type="submit" class="btn btn-dispatch d-flex align-items-center justify-content-center fw-bold" style="height: 34px; padding: 0 16px; font-size: 12px; background-color: var(--primary-cyan); color: #FFFFFF; border: none; border-radius: 6px; transition: all 0.2s;">
@@ -311,6 +346,7 @@ $result = $conn->query($query);
                       </button>
                     </form>
                   </td>
+
                 </tr>
               <?php 
               endwhile; // Closes the while loop cleanly

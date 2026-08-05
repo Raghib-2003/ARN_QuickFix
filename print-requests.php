@@ -88,7 +88,11 @@ $result = $conn->query($queryStr);
         </thead>
         <tbody>
           <?php
-          $stmt = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_category, priority, phone, location, payment_method, amount, status, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
+// ====================================================================
+// ✅ FIXED PRINT DATA ENGINE: FETCHING PARTS FOR LEDGER SUMMARY
+// ====================================================================
+// Pulls warehouse component strings to prevent column values coming up blank
+$stmt = $conn->prepare("SELECT id, asset_id, asset_type, asset_brand, problem_category, allocated_part, part_price, priority, status, phone, location, payment_method, amount, created_at FROM service_requests WHERE client_email = ? ORDER BY id DESC");
           if ($stmt) 
               $stmt->bind_param("s", $clientEmail);
               $stmt->execute();
@@ -97,95 +101,118 @@ $result = $conn->query($queryStr);
               if ($result->num_rows > 0) {
     $sl = 1;
     // SINGLE UNIFIED LOOP: Fixes pricing calculation logic variables and removes broken code blocks
+        $sl = 1;
+    // SINGLE AIRTIGHT LOOP CONTROL: Cleans duplicate rows and eliminates layout leaks completely
     while ($row = $result->fetch_assoc()) {
-        $currentProblem = trim($row['problem_category'] ?? '');
-        $allocatedPart = trim($row['allocated_part'] ?? '');
-        $partPrice = (float)($row['part_price'] ?? 0.00);
-        $finalAmount = (float)($row['amount'] ?? 0.00);
+        $currentProblem   = trim($row['problem_category'] ?? '');
+        $allocatedPart    = trim($row['allocated_part'] ?? '');
+        $partPrice        = (float)($row['part_price'] ?? 0.00);
+        $finalAmount      = (float)($row['amount'] ?? 0.00);
+        $ticketStatus     = strtolower(trim($row['status'] ?? 'pending'));
 
-        // Fetch our baseline service pricing parameters matching user selections
-        $baseRateNumeric = 0.00;
+        // 1. COMPUTE SYSTEM BASE RATE MATRIX DEFINITIONS
+        $baseRateNumeric = 2500.00; // Standard fallback default
         switch ($currentProblem) {
-            case 'Component Repair':          $baseRateNumeric = 4500.00; break;
-            case 'Part Replacement':           $baseRateNumeric = 3000.00; break;
-            case 'Modernization':              $baseRateNumeric = 15000.00; break;
-            case 'Routine Servicing':          $baseRateNumeric = 2000.00; break;
-            case 'Emergency Breakdown':        $baseRateNumeric = 5000.00; break;
-            case 'Basic Servicing':            $baseRateNumeric = 600.00; break;
-            case 'Deep Cleaning':              $baseRateNumeric = 1200.00; break;
-            case 'Duct Cleaning':              $baseRateNumeric = 5000.00; break;
-            case 'Gas Refill':                 $baseRateNumeric = 2500.00; break;
-            case 'Electrical Repair':          $baseRateNumeric = 1500.00; break;
-            case 'Compressor Repair':          $baseRateNumeric = 4000.00; break;
-            case 'Preventative Inspection':    $baseRateNumeric = 3500.00; break;
-            case 'Fault Code Diagnostic':         $baseRateNumeric = 1800.00; break;
-            case 'Engine Rebuild':                $baseRateNumeric = 25000.00; break;
-            case 'Component Repairs':             $baseRateNumeric = 6000.00; break;
-            case 'Advanced Testing':              $baseRateNumeric = 8000.00; break;
-            case 'Fuel Polishing':                $baseRateNumeric = 4500.00; break;
-            default:                              $baseRateNumeric = 0.00; break;
+            case 'Component Repair': case 'Component Repairs': $baseRateNumeric = 4500.00; break;
+            case 'Part Replacement':     $baseRateNumeric = 3000.00; break;
+            case 'Modernization':        $baseRateNumeric = 15000.00; break;
+            case 'Routine Servicing':    $baseRateNumeric = 2000.00; break;
+            case 'Emergency Breakdown':  $baseRateNumeric = 5000.00; break;
+            case 'Basic Servicing':      $baseRateNumeric = 600.00; break;
+            case 'Deep Cleaning':        $baseRateNumeric = 1200.00; break;
+            case 'Duct Cleaning':        $baseRateNumeric = 5000.00; break;
+            case 'Gas Refill':           $baseRateNumeric = 2500.00; break;
+            case 'Electrical Repair':    $baseRateNumeric = 1500.00; break;
+            case 'Compressor Repair':    $baseRateNumeric = 4000.00; break;
+            case 'Preventative Inspection': $baseRateNumeric = 3500.00; break;
+            case 'Fault Code Diagnostic':   $baseRateNumeric = 1800.00; break;
+            case 'Engine Rebuild':          $baseRateNumeric = 25000.00; break;
+            case 'Advanced Testing':        $baseRateNumeric = 8000.00; break;
+            case 'Fuel Polishing':          $baseRateNumeric = 4500.00; break;
         }
 
-        echo "<tr>";
-        echo "<td class='text-secondary font-monospace fw-bold'>" . $sl++ . "</td>";
-        echo "<td class='fw-bold text-dark'>#" . htmlspecialchars($row['asset_id']) . "</td>";
-        echo "<td class='fw-bold text-dark'>" . htmlspecialchars($row['asset_type']) . "</td>";
-        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['asset_brand']) . "</td>";
-        echo "<td class='fw-medium text-dark'>" . htmlspecialchars($row['problem_category']) . "</td>";
-        echo "<td class='fw-semibold'>" . htmlspecialchars($row['priority']) . "</td>";
-        echo "<td class='font-monospace text-dark fw-semibold'>" . htmlspecialchars($row['phone']) . "</td>";
-        echo "<td class='fw-semibold text-dark'>" . htmlspecialchars($row['location']) . "</td>";
-        echo "<td class='fw-semibold text-secondary'>" . htmlspecialchars($row['payment_method']) . "</td>";
-        
-                // ====================================================================
-        // DYNAMIC AMOUNT PRINT CELL (FIXED COMPOSITE INTERLOCK)
-        // ====================================================================
-        if ($row['status'] !== 'completed' && $row['status'] !== 'complaint_raised') {
-            echo "<td><span class='text-muted small font-monospace fw-bold'>Pending Work</span></td>";
-        } else {
-            // If the final column is empty, automatically add Base Labor Fee + Installed Part Price!
-            $displayBillNumeric = ($finalAmount > 0.00) ? $finalAmount : ($baseRateNumeric + $partPrice);
-            echo "<td class='fw-bold text-dark font-monospace'>৳" . number_format($displayBillNumeric, 2) . "</td>";
-        }
-        
-        // ====================================================================
-        // FIXED DYNAMIC COLOR STATUS COLUMN (CLEAN INLINE INTERLOCK)
-        // ====================================================================
-        $currentStatusText = strtolower(trim($row['status'] ?? 'pending'));
-        $printStatusLabel = ucfirst($currentStatusText);
-        $statusTextHexColor = "#D97706"; // Default Golden Amber for Pending
+        // 2. COMPILE AIRTIGHT ACCOUNTING BALANCES WITH ZERO BASE FALLBACKS
+        $displayAmountValue = ($finalAmount > 0) ? $finalAmount : $baseRateNumeric;
 
-        if ($currentStatusText === 'completed') {
-            $statusTextHexColor = "#10B981"; // Fresh Emerald Green
-        } elseif ($currentStatusText === 'processing') {
-            $statusTextHexColor = "#3B82F6"; // Clear Operations Blue
-        } elseif ($currentStatusText === 'complaint_raised') {
-            $statusTextHexColor = "#EF4444"; // Bold Crimson Red
-            $printStatusLabel = "Complaint";
+        // 3. GENERATE INTEGRATED IMAGE / BADGE COMPOSITE MARKUP TAG STRINGS
+        $inventoryBadgeHtml = "";
+        if (!empty($allocatedPart)) {
+            $inventoryBadgeHtml = "<div style='margin-top: 3px;'><span style='font-size: 10px; padding: 2px 6px; background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; border-radius: 4px; display: inline-block; font-family: system-ui, sans-serif;'>📦 Part: " . htmlspecialchars($allocatedPart) . " (+৳" . number_format($partPrice) . ")</span></div>";
         }
 
-        // Output your status column using your custom hexadecimal color assignments seamlessly
-        echo "<td class='text-capitalize fw-bold' style='color: {$statusTextHexColor} !important;'>";
-        echo htmlspecialchars($printStatusLabel);
-        echo "</td>";
+        // 4. SYNCHRONIZE COLOR AND TEXT SPECIFICATION DICTIONARIES PER THE FIGMA TRACKERS
+        $statusTextHexColor = '#475569'; // Default Gray
+        $printStatusLabel   = 'Pending';
+
+        if ($ticketStatus === 'completed') {
+            $statusTextHexColor = '#10B981'; // Emerald Green
+            $printStatusLabel   = 'Completed';
+        } elseif ($ticketStatus === 'processing') {
+            $statusTextHexColor = '#0EA5E9'; // Sky Blue
+            $printStatusLabel   = 'Processing';
+        } elseif ($ticketStatus === 'pending') {
+            $statusTextHexColor = '#F59E0B'; // Amber Orange
+            $printStatusLabel   = 'Pending';
+        }
+        ?>
         
-        echo "<td class='font-monospace small text-muted'>" . date('Y-m-d H:i:s', strtotime($row['created_at'])) . "</td>";
-        echo "</tr>";
+        <!-- ================= PRINT LEDGER ROW MATRIX GENERATOR ================= -->
+        <tr style="border-bottom: 1px solid #E2E8F0;">
+          <td style="padding: 12px 8px; font-family: monospace; color: #64748B; font-weight: bold;"><?php echo $sl++; ?></td>
+          <td style="padding: 12px 8px; font-weight: bold; color: #0F172A; font-family: monospace;">#<?php echo htmlspecialchars($row['asset_id']); ?></td>
+          <td style="padding: 12px 8px; text-transform: capitalize; color: #1E293B; font-weight: 500;"><?php echo htmlspecialchars($row['asset_type']); ?></td>
+          <td style="padding: 12px 8px; color: #475569; font-weight: 500;"><?php echo htmlspecialchars($row['asset_brand']); ?></td>
+          <!-- PROBLEM CATEGORY DATA COLUMN CELL (UPDATED WITH BASE RATE SUBTEXT) -->
+          <td style="padding: 12px 8px; text-align: left;">
+            <div style="color: #0F172A; font-weight: 600; font-size: 13.5px;"><?php echo htmlspecialchars($currentProblem); ?></div>
+            
+            <!-- ✅ FIXED: Formats a clean, high-contrast base rate label right underneath your problem text string -->
+            <div style="font-size: 11px; color: #64748B; font-family: monospace; margin-top: 2px; font-weight: 500;">
+              Base: ৳<?php echo number_format($baseRateNumeric); ?>
+            </div>
+          </td>
+          <td style="padding: 12px 8px; color: #475569; font-weight: 600; font-family: monospace; font-size:12.5px;"><?php echo htmlspecialchars($row['priority']); ?></td>
+          <td style="padding: 12px 8px; font-family: monospace; color: #334155; font-size:12.5px;"><?php echo htmlspecialchars($row['phone']); ?></td>
+          <td style="padding: 12px 8px; color: #475569; font-size: 12px; max-width: 220px; word-wrap: break-word; font-weight: 500;"><?php echo htmlspecialchars($row['location']); ?></td>
+          <td style="padding: 12px 8px; color: #64748B; font-weight: 600; font-size:12.5px;"><?php echo htmlspecialchars($row['payment_method']); ?></td>
+          
+          <!-- AMOUNT BREAKDOWN DATA COLUMN CELL -->
+          <td style="padding: 12px 8px; font-family: monospace; text-align: left; font-weight: bold; font-size: 13.5px;">
+            <?php if ($ticketStatus === 'pending' || $ticketStatus === 'processing'): ?>
+              <span style="color: #64748B; font-family: system-ui, sans-serif; font-style: italic; font-size: 11.5px; font-weight: 500;">Pending Work</span>
+            <?php else: ?>
+              <span style="color: #0F172A;">৳<?php echo number_format($displayAmountValue, 2); ?></span>
+              <?php echo $inventoryBadgeHtml; ?>
+            <?php endif; ?>
+          </td>
+          
+          <!-- STATUS ASSIGNMENT CELL CONTAINER -->
+          <td style="padding: 12px 8px; text-transform: uppercase; font-weight: 800; font-size: 11.5px; color: <?php echo $statusTextHexColor; ?> !important;">
+            <?php echo htmlspecialchars($printStatusLabel); ?>
+          </td>
+          
+          <td style="padding: 12px 8px; font-family: monospace; color: #64748B; font-size: 11px;">
+            <?php echo !empty($row['created_at']) ? date('d-m-Y | h:i A', strtotime($row['created_at'])) : 'N/A'; ?>
+          </td>
+        </tr>
+        
+        <?php
     }
 } else {
-    echo "<tr><td colspan='12' class='text-center text-muted py-4 fw-bold font-monospace'>No active service tracking requests history logged under this profile.</td></tr>";
+    echo "<tr><td colspan='12' style='text-align: center; color: #64748B; padding: 40px 10px; font-family: monospace; font-weight: bold;'>No active service tracking requests history logged under this profile.</td></tr>";
 }
-
-// FIXED: Removed the broken crashing $stmt->close() statement cleanly!
+$stmt->close();
 ?>
-
-        
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
-    
-  </div>
+  </div> <!-- Close Master Canvas Layout Container Wrapper -->
 
 </body>
 </html>
-<?php $conn->close(); ?>
+<?php 
+if (isset($conn)) { 
+    $conn->close(); 
+} 
+?>

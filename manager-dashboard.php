@@ -88,12 +88,16 @@ if ($qOverdue) {
     $overdueAlertsCount = (int)($qOverdue->fetch_assoc()['total'] ?? 0); 
 }
 
-// Count Technician Updates (FIXED: Counts all active processing jobs on technician terminals)
+// ====================================================================
+// REAL-TIME TECHNICIAN UNREAD CHAT COUNT CALCULATOR (UPDATED & ALIGNED)
+// ====================================================================
+// ✅ FIXED: Counts only the actual typed text messages that have NOT been read by the manager yet (is_read = 0)
 $techUpdatesCount = 0;
-$qTech = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'processing'");
+$qTech = $conn->query("SELECT COUNT(*) as total FROM technician_notes WHERE is_read = 0");
 if ($qTech) { 
     $techUpdatesCount = $qTech->fetch_assoc()['total'] ?? 0; 
 }
+
 // Count Total Completed Reports Statements 
 $reportsCount = 0;
 $qRep = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'completed'");
@@ -104,6 +108,7 @@ $complaintsCount = 0;
 $qComp = $conn->query("SELECT COUNT(*) as total FROM complaints");
 if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -365,23 +370,21 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
         <p class="text-muted m-0 small fw-medium mt-1">Review operational incoming traffic metrics, assign engineers, and manage catalog pipelines.</p>
       </div>
       
-      <!-- Premium Quick Action Buttons (Pill Shaped With Hover Transition Effects) -->
-              <!-- ================= DYNAMIC TECH UPDATES LINK MATRIX (WITH EMBEDDED DBLCLICK CLEAR) ================= -->
-            <!-- ================= DYNAMIC TECH UPDATES LINK MATRIX (FIXED SYMMETRY) ================= -->
+              <!-- Premium Quick Action Buttons (Pill Shaped With Hover Transition Effects) -->
         <div class="d-flex align-items-center gap-2">
-        <!-- ================= DYNAMIC TECH UPDATES LINK MATRIX (WITH EMBEDDED DBLCLICK CLEAR) ================= -->
-                <!-- ================= TECH UPDATES BUTTON: WITH HYBRID SINGLE/DOUBLE CLICK INTERLOCK ================= -->
+        <!-- ================= TECH UPDATES BUTTON: WITH HYBRID SINGLE/DOUBLE CLICK INTERLOCK ================= -->
         <?php
+          // ✅ FIXED: Counts only the actual typed text messages that have NOT been read by the manager yet (is_read = 0)
           $liveTechUpdatesCount = 0;
-          $techCountQuery = $conn->query("SELECT COUNT(*) as active_updates FROM service_requests WHERE status = 'processing' OR (status = 'completed' AND DATE(created_at) = CURDATE())");
+          $techCountQuery = $conn->query("SELECT COUNT(*) as active_updates FROM technician_notes WHERE is_read = 0");
           if ($techCountQuery) {
               $techCountData = $techCountQuery->fetch_assoc();
               $liveTechUpdatesCount = (int)($techCountData['active_updates'] ?? 0);
           }
         ?>
         
-        <!-- THE INTELLIGENT ROUTER LINK: Bypasses standard href redirect blocks to allow double-clicks to execute perfectly -->
-        <a href="javascript:void(0);" 
+        <!-- THE INTELLIGENT ROUTER LINK -->
+        <a href="manager-tech-updates.php" 
            id="techUpdatesPillButton"
            title="Click once to view updates. Double-click to Mark All Read."
            class="btn btn-sm px-3 fw-bold text-uppercase rounded-pill d-inline-flex align-items-center justify-content-center gap-1.5" 
@@ -393,13 +396,14 @@ if ($qComp) { $complaintsCount = $qComp->fetch_assoc()['total'] ?? 0; }
           
           <?php if ($liveTechUpdatesCount > 0): ?>
             <span class="badge rounded-circle text-white d-flex align-items-center justify-content-center p-0 font-monospace" 
-                  style="width: 15px; height: 15px; font-size: 9px; background-color: #06B6D4 !important; line-height: 1;">
+                  style="width: 15px; height: 15px; font-size: 9px; background-color: #06B6D4 !important; line-height: 1; padding: 4px 7px;">
               <?php echo $liveTechUpdatesCount; ?>
             </span>
           <?php else: ?>
             <span style="width: 5px; height: 5px; background-color: #94A3B8;" class="rounded-circle d-inline-block"></span>
           <?php endif; ?>
         </a>
+
 
         <!-- CLICK MATRIX INTERFERENCE LOCK SCRIPTS -->
         <script>

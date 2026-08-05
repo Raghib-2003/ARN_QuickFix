@@ -215,16 +215,22 @@ if ($countQuery) {
 }
 
 // Pull dynamic manager notification updates records
-$notifQuery = $conn->prepare("SELECT message, created_at FROM manager_notifications WHERE client_email = ? ORDER BY id DESC LIMIT 5");
-if ($notifQuery) {
-    $notifQuery->bind_param("s", $clientEmail);
-    $notifQuery->execute();
-    $notifResult = $notifQuery->get_result();
-    while ($row = $notifResult->fetch_assoc()) {
-        $notifications[] = $row;
-    }
-    $notifQuery->close();
+// ====================================================================
+// MASTER FULL-STACK NOTIFICATION PIPELINE LAYER (EXPANDED FOR COMPLETED JOBS)
+// ====================================================================
+// ✅ FIXED: Expands the status condition array to explicitly fetch BOTH field actions
+$notificationQuery = $conn->prepare("SELECT id, asset_id, asset_type, asset_brand, problem_category, status, is_read, created_at 
+                                     FROM service_requests 
+                                     WHERE client_email = ? 
+                                     AND status IN ('processing', 'completed') 
+                                     ORDER BY is_read ASC, id DESC LIMIT 5");
+
+if ($notificationQuery) {
+    $notificationQuery->bind_param("s", $clientEmail);
+    $notificationQuery->execute();
+    $notificationsResult = $notificationQuery->get_result();
 }
+
 
 // Check maintenance schedules to calculate overdue count status
 $maintQuery = $conn->prepare("SELECT COUNT(*) as overdue FROM maintenance_schedules WHERE client_email = ? AND status = 'Overdue'");
@@ -697,12 +703,12 @@ if ($maintQuery) {
 
 
 
-                                   <!-- ================= REFACTORED NOTIFICATIONS HUB WITH MARK READ MATRIX ================= -->
+<!-- ================= REFACTORED NOTIFICATIONS HUB WITH MARK READ MATRIX ================= -->
     <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white p-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         
-                                <?php
-          // REFACTORED WORKFLOW SYNC: Counts ONLY direct service and delivery updates
+        <?php
+          // REFACTORED WORKFLOW SYNC: Counts ALL unread service updates (is_read = 0)
           $activeUserEmail = $_SESSION['email'] ?? '';
           $totalLiveAlerts = 0;
 
@@ -710,13 +716,11 @@ if ($maintQuery) {
           $qCountA = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND is_read = 0");
           if ($qCountA) { $totalLiveAlerts += (int)$qCountA->fetch_assoc()['total']; }
 
-          // Count 2: Today's Completed Closures
-          $qCountB = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND is_read = 0");
+          // Count 2: Completed Closures (FIXED: Removed restrictive DATE filter lock!)
+          // ✅ This ensures any job finished by a tech instantly triggers an alert badge!
+          $qCountB = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND is_read = 0");
           if ($qCountB) { $totalLiveAlerts += (int)$qCountB->fetch_assoc()['total']; }
         ?>
-
-
-
 
         <div class="d-flex align-items-center gap-2">
           <h5 class="fw-bold text-dark m-0 d-flex align-items-center gap-1.5" style="font-size: 16px;">
@@ -749,6 +753,7 @@ if ($maintQuery) {
 
       
       <!-- SCROLL CONTAINER HOOK: Height capped at 245px with an invisible responsive scroll track -->
+      <!-- SCROLL CONTAINER HOOK: Height capped at 245px with an invisible responsive scroll track -->
       <div class="d-flex flex-column gap-2.5" style="max-height: 245px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; -ms-overflow-style: none;">
         <?php
         $activeUserEmail = $_SESSION['email'] ?? '';
@@ -757,8 +762,7 @@ if ($maintQuery) {
         // --------------------------------------------------------------------
         // LOGIC REPOSITORY A: FETCH ALL TICKETS CURRENTLY IN PROCESSING STATE
         // --------------------------------------------------------------------
-        // REMOVED "LIMIT 1" to let ALL active field dispatches populate fluidly inline!
-$dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND is_read = 0 ORDER BY id DESC");
+        $dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'processing' AND is_read = 0 ORDER BY id DESC");
         
         if ($dispatchQuery && $dispatchQuery->num_rows > 0):
             while ($dRow = $dispatchQuery->fetch_assoc()):
@@ -783,13 +787,11 @@ $dispatchQuery = $conn->query("SELECT asset_id, asset_type, location FROM servic
             endwhile;
         endif; 
 
-         
-
-                  // --------------------------------------------------------------------
+        // --------------------------------------------------------------------
         // LOGIC REPOSITORY C: FETCH RECENTLY COMPLETED REPAIR TASKS (FIXED)
         // --------------------------------------------------------------------
-        // Pulls completed items and automatically resolves base rate fallbacks if empty
-$completedFeedQuery = $conn->query("SELECT asset_id, asset_type, problem_category, allocated_part, part_price, amount FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND DATE(created_at) = CURDATE() AND is_read = 0 ORDER BY id DESC");
+        // ✅ FIXED: Completely removed 'AND DATE(created_at) = CURDATE()' restriction lock!
+        $completedFeedQuery = $conn->query("SELECT asset_id, asset_type, problem_category, allocated_part, part_price, amount FROM service_requests WHERE client_email = '$activeUserEmail' AND status = 'completed' AND is_read = 0 ORDER BY id DESC");
         
         if ($completedFeedQuery && $completedFeedQuery->num_rows > 0):
             while ($cRow = $completedFeedQuery->fetch_assoc()):
@@ -799,62 +801,57 @@ $completedFeedQuery = $conn->query("SELECT asset_id, asset_type, problem_categor
                 $finalAmount = (float)($cRow['amount'] ?? 0.00);
                 $currentProblem = trim($cRow['problem_category'] ?? '');
 
-                // Match labor fees exactly to calculate fallback baseline rates for every single row item
+                // Fallback math calculation layer to prevent display glitches on old legacy rows
                 $baseRateNumeric = 0.00;
                 switch ($currentProblem) {
-                    case 'Component Repair':          $baseRateNumeric = 4500.00; break;
-                    case 'Part Replacement':           $baseRateNumeric = 3000.00; break;
-                    case 'Modernization':              $baseRateNumeric = 15000.00; break;
-                    case 'Routine Servicing':          $baseRateNumeric = 2000.00; break;
-                    case 'Emergency Breakdown':        $baseRateNumeric = 5000.00; break;
-                    case 'Basic Servicing':            $baseRateNumeric = 600.00; break;
-                    case 'Deep Cleaning':              $baseRateNumeric = 1200.00; break;
-                    case 'Duct Cleaning':              $baseRateNumeric = 5000.00; break;
-                    case 'Gas Refill':                 $baseRateNumeric = 2500.00; break;
-                    case 'Electrical Repair':          $baseRateNumeric = 1500.00; break;
-                    case 'Compressor Repair':          $baseRateNumeric = 4000.00; break;
-                    case 'Preventative Inspection':    $baseRateNumeric = 3500.00; break;
-                    case 'Fault Code Diagnostic':         $baseRateNumeric = 1800.00; break;
-                    case 'Engine Rebuild':                $baseRateNumeric = 25000.00; break;
-                    case 'Component Repairs':             $baseRateNumeric = 6000.00; break;
-                    case 'Advanced Testing':              $baseRateNumeric = 8000.00; break;
-                    case 'Fuel Polishing':                $baseRateNumeric = 4500.00; break;
-                    default:                              $baseRateNumeric = 0.00; break;
+                    case 'Component Repair': case 'Component Repairs': $baseRateNumeric = 4500.00; break;
+                    case 'Part Replacement':     $baseRateNumeric = 3000.00; break;
+                    case 'Modernization':        $baseRateNumeric = 15000.00; break;
+                    case 'Routine Servicing':    $baseRateNumeric = 2000.00; break;
+                    case 'Emergency Breakdown':  $baseRateNumeric = 5000.00; break;
+                    case 'Basic Servicing':      $baseRateNumeric = 600.00; break;
+                    case 'Deep Cleaning':        $baseRateNumeric = 1200.00; break;
+                    case 'Duct Cleaning':        $baseRateNumeric = 5000.00; break;
+                    case 'Gas Refill':           $baseRateNumeric = 2500.00; break;
+                    case 'Electrical Repair':    $baseRateNumeric = 1500.00; break;
+                    case 'Compressor Repair':    $baseRateNumeric = 4000.00; break;
+                    case 'Preventative Inspection': $baseRateNumeric = 3500.00; break;
+                    case 'Fault Code Diagnostic':   $baseRateNumeric = 1800.00; break;
+                    case 'Engine Rebuild':          $baseRateNumeric = 25000.00; break;
+                    case 'Advanced Testing':        $baseRateNumeric = 8000.00; break;
+                    case 'Fuel Polishing':          $baseRateNumeric = 4500.00; break;
                 }
-
-                // SMART FALLBACK COMPILER: If database amount is empty, calculate Base Labor + Part Price automatically!
-                $displayBill = ($finalAmount > 0.00) ? $finalAmount : ($baseRateNumeric + $partPrice);
+                $displayBillAmount = ($finalAmount > 0) ? $finalAmount : ($baseRateNumeric + $partPrice);
         ?>
-          <!-- Completed Task Notification Item Badge Card -->
+          <!-- ✅ COMPLETED TASK NOTIFICATION ITEM DESIGN BADGE -->
           <div class="p-3 border rounded-3 d-flex align-items-start gap-2.5 text-start animate-fade-in" style="background-color: #F0FDF4; border-color: #DCFCE7 !important; transition: all 0.2s;">
-            <div class="mt-0.5" style="font-size: 15px;">✅</div>
+            <div class="mt-0.5" style="font-size: 15px;">🎉</div>
             <div>
-              <span class="d-block fw-bold text-success" style="font-size: 13px;">Servicing Completed Successfully!</span>
+              <span class="d-block fw-bold text-success" style="font-size: 13px;">Service Maintenance Complete!</span>
               <span class="d-block text-secondary mt-0.5" style="font-size: 11.5px; line-height: 1.45;">
-                Your request for unit **<?php echo htmlspecialchars($cRow['asset_id']); ?>** (<?php echo htmlspecialchars($cRow['asset_type']); ?>) has been closed by the field engineer. 
-                <strong>Invoice Total:</strong> ৳<?php echo number_format($displayBill, 2); ?> <?php echo !empty($usedPart) ? "(Warehouse part allocated: " . htmlspecialchars($usedPart) . ")" : ""; ?>.
+                Your request for **<?php echo htmlspecialchars($cRow['asset_id']); ?>** (<?php echo htmlspecialchars($cRow['asset_type']); ?>) has been successfully finalized. 
+                Total Invoice Statement settled to **৳<?php echo number_format($displayBillAmount, 2); ?>**.
               </span>
+              <?php if(!empty($usedPart)): ?>
+                <span class="d-inline-block mt-1 font-monospace small px-2 py-0.5 rounded text-secondary" style="background-color: #FFFFFF; border: 1px solid #E2E8F0; font-size: 10.5px;">
+                  📦 Component Drawn: <?php echo htmlspecialchars($usedPart); ?>
+                </span>
+              <?php endif; ?>
             </div>
           </div>
         <?php 
             endwhile;
         endif; 
 
-
-
-        // --------------------------------------------------------------------
-        // FALLBACK CONTAINER: RENDERS ONLY IF MATRIX SUM RECOVERY IS COMPLETELY ZERO
-        // --------------------------------------------------------------------
-        if (!$hasNotifications): 
+        // If both query outputs find zero unread tickets, display the fallback empty state
+        if (!$hasNotifications):
         ?>
-          <div class="text-center py-4 border rounded-3 bg-light text-muted font-monospace small" style="font-size: 12px; background-color: #F8FAFC !important; border-color: #E2E8F0 !important;">
-            🍃 Pristine Canvas: No new operational alerts or dispatches received from management.
+          <div class="text-center py-4 text-muted font-monospace small" style="font-style: italic;">
+            📭 Notifications feed clear. No new field action alerts logs.
           </div>
         <?php endif; ?>
-      </div>
-    </div>
-
-
+      </div> <!-- Close Scroll Container Hook -->
+        </div>
 
 
 

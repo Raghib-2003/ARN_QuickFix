@@ -81,16 +81,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt = $conn->prepare("INSERT INTO users (name, email, password_hash, role, specialization) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("sssss", $fullName, $email, $hashed_password, $finalRoleToken, $savedSpecializationString);
     
-    if ($stmt->execute()) {
+       if ($stmt->execute()) {
         $stmt->close();
         $conn->close();
         
-        // 4. Successful signup redirects to login page cleanly
-        echo "<script>alert('Account created successfully!'); window.location.href='login.php';</script>";
+        // SUCCESS HOOK: Stash a success flag parameter inside your session memory
+        $_SESSION['registration_success_trigger'] = true;
+        
+        header("Location: login.php");
         exit();
     } else {
         echo "Error: " . $stmt->error;
     }
+
 }
 ?>
 

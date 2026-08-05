@@ -5,12 +5,22 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ====================================================================
-// CRITICAL FIX: EXPLICITLY RESET CACHED SESSION VALUES ON INITIAL LAND
+// CRITICAL FIX: RESET CACHED LOGIN TOKENS BUT PRESERVE REGISTRATION FLAG
 // ====================================================================
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    // Save our custom trigger variable before wiping the session arrays!
+    $alertIsActive = $_SESSION['registration_success_trigger'] ?? false;
+    
+    // Clear out old active account access tokens safely
     session_unset();
     $_SESSION = array();
+    
+    // Restore the success alert flag back to session memory cleanly!
+    if ($alertIsActive) {
+        $_SESSION['registration_success_trigger'] = true;
+    }
 }
+
 
 // Establish database sync connection
 $conn = @new mysqli("localhost", "root", "", "arn_quickfix");
@@ -87,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | ARN QuickFix Ltd.</title>
   <link href="css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cloudflare.com" rel="stylesheet">
+  <!-- <link href="https://cloudflare.com" rel="stylesheet"> -->
 
   <style>
     body { 
@@ -231,6 +241,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       box-shadow: 0 4px 12px rgba(0, 194, 203, 0.25);
     }
   </style>
+    <!-- SweetAlert2 Style Design Tokens Layer -->
+  <!-- <link rel="stylesheet" href="https://jsdelivr.net"> -->
+
 </head>
 <body>
 
@@ -293,7 +306,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     passwordField.setAttribute('type', isPassword ? 'text' : 'password');
     
-    // Smoothly switches the visual icon path shape between Open Eye and Slash Eye
     if (isPassword) {
       eyeSvg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
     } else {
@@ -301,5 +313,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
   });
 </script>
+
+<!-- ================= 100% OFFLINE NATIVE ALERT INTERACTIVE SYSTEM ================= -->
+<?php if (isset($_SESSION['registration_success_trigger'])): ?>
+  <!-- Backdrop Blur Mask Overlay -->
+  <div id="customAlertOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 999999; animation: alertFadeIn 0.25s ease-out forwards;">
+    
+    <!-- Premium Interactive Modal Box Container -->
+    <div style="background: #FFFFFF; width: 100%; max-width: 440px; padding: 35px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); text-align: center; border: 1px solid #E2E8F0; transform: scale(0.9); animation: alertPopUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;">
+      
+      <!-- Premium Animated Vector Success Check Checkmark -->
+      <div style="width: 64px; height: 64px; background: #ECEFF1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00C2CB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <h4 style="font-weight: 800; color: #0F172A; font-size: 19px; margin-bottom: 8px; letter-spacing: -0.3px;">Account Created Successfully!</h4>
+      <p style="color: #64748B; font-size: 13.5px; line-height: 1.5; margin-bottom: 25px; padding: 0 10px;">Welcome to ARN QuickFix Ltd. Your specialized engineering profile has been logged. You can now log into your terminal gateway securely.</p>
+      
+      <button type="button" onclick="closeCustomAlert()" style="width: 100%; height: 44px; background: #00C2CB; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: background 0.2s;">
+        Proceed to Terminal
+      </button>
+    </div>
+  </div>
+
+  <!-- Embedded Native Keyframe Animation Rules -->
+  <style>
+    @keyframes alertFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes alertPopUp { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  </style>
+
+  <script>
+    function closeCustomAlert() {
+      const overlay = document.getElementById('customAlertOverlay');
+      if (overlay) { overlay.style.display = 'none'; }
+    }
+  </script>
+<?php 
+  unset($_SESSION['registration_success_trigger']); 
+  endif; 
+?>
+
 </body>
 </html>
