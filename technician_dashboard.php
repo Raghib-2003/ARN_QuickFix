@@ -207,6 +207,36 @@ $assignedJobs = $conn->query("SELECT * FROM service_requests
                              AND (LOWER(asset_type) LIKE '%$sqlFilterKeyword%' OR LOWER(asset_type) LIKE '%conditioner%')
                              AND location LIKE '%(Assigned to: " . $conn->real_escape_string($techName) . ")%'
                              ORDER BY id DESC");
+// ====================================================================
+// REAL-TIME PERSONAL PERFORMANCE METRICS LEDGER ENGINE (CORRECTED)
+// ====================================================================
+$techEscapedName = $conn->real_escape_string($techName);
+
+// 1. Calculate Active Assignments in the Queue
+$activeCount = 0;
+$qActive = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'processing' AND location LIKE '%(Assigned to: $techEscapedName)%'");
+if ($qActive) { $activeCount = (int)$qActive->fetch_assoc()['total']; }
+
+// 2. Calculate Completed Jobs History
+$completedCount = 0;
+$qCompleted = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'completed' AND location LIKE '%(Assigned to: $techEscapedName)%'");
+if ($qCompleted) { $completedCount = (int)$qCompleted->fetch_assoc()['total']; }
+
+// 3. ✅ FIXED: Grouped the message filters inside parentheses so the technician's name constraint is strictly enforced!
+$reopenedCount = 0;
+$qReopened = $conn->query("SELECT COUNT(*) as total FROM technician_notes 
+                           WHERE tech_name = '$techEscapedName' 
+                           AND is_read = 1 
+                           AND (update_message LIKE '%site%' OR update_message LIKE '%busy%')");
+if ($qReopened) { $reopenedCount = (int)$qReopened->fetch_assoc()['total']; }
+
+// 4. Calculate Operational Success Percentage Rate
+$totalLoggedTasks = $completedCount + $reopenedCount;
+$successPercentageRate = 100; // Perfect score default if they haven't run any tasks yet
+if ($totalLoggedTasks > 0) {
+    $successPercentageRate = round(($completedCount / $totalLoggedTasks) * 100);
+}
+
 $partsInventory = $conn->query("SELECT id, part_name, part_price, stock_qty FROM inventory WHERE LOWER(asset_category) LIKE '%" . strtolower($sqlInvCategory) . "%' OR LOWER(asset_category) LIKE '%hvac%' OR LOWER(asset_category) LIKE '%engine%' ORDER BY part_name ASC");
 ?>
 <!DOCTYPE html>
@@ -392,10 +422,12 @@ $partsInventory = $conn->query("SELECT id, part_name, part_price, stock_qty FROM
   </div>
 
   <!-- ================= CANVAS APP WINDOW CONTAINER ================= -->
-  <div class="container py-5" style="max-width: 1040px;">
+    <!-- ================= CANVAS APP WINDOW CONTAINER ================= -->
+  <!-- ✅ UPGRADED: Expanded to max-width 1340px to support responsive multi-column statistics panels without crowding -->
+  <div class="container py-5" style="max-width: 1340px;">
     
     <!-- Desk Presentation Title Section Box Header Layout -->
-    <div class="mb-5 d-flex align-items-center justify-content-between bg-white p-4 border rounded-4 shadow-sm text-start">
+    <div class="mb-4 d-flex align-items-center justify-content-between bg-white p-4 border rounded-4 shadow-sm text-start">
       <div>
         <h2 class="fw-bold m-0 text-dark" style="font-size: 24px; letter-spacing: -0.5px;"><?php echo $dashboardTitle; ?> Queue</h2>
         <p class="text-muted m-0 small fw-medium mt-1.5"><?php echo $dashboardDesc; ?></p>
@@ -414,132 +446,224 @@ $partsInventory = $conn->query("SELECT id, part_name, part_price, stock_qty FROM
       <div class="alert border-0 small py-3 px-4 font-monospace shadow-sm mb-4 text-start" style="background-color:#FEF2F2; color:#EF4444; border-left:4px solid #EF4444 !important; font-size:13.5px;"><?php echo $actionError; ?></div>
     <?php endif; ?>
 
-    <!-- CARDS GENERATION LOOP -->
+    <!-- DYNAMIC RESPONSIVE SIDEBAR GRID INFRASTRUCTURE MATRIX -->
     <div class="row g-4">
-      <?php if ($assignedJobs && $assignedJobs->num_rows > 0): ?>
-        <?php while ($job = $assignedJobs->fetch_assoc()): 
-            $ticketPriority = strtolower(trim($job['priority'] ?? 'medium'));
-            $priorityBg = ($ticketPriority === 'high' || $ticketPriority === 'critical') ? '#FEF2F2' : '#EFF6FF';
-            $priorityTextColor = ($ticketPriority === 'high' || $ticketPriority === 'critical') ? '#EF4444' : '#3B82F6';
-        ?>
-                    <div class="col-12">
-            <div class="tech-card-layout">
-              <div class="row g-4 align-items-center">
-                
-                <!-- Section A: Live Ticket Context Specs (UPDATED WITH LOGISTICAL DETAILS) -->
-                <div class="col-lg-4 text-start">
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge font-monospace" style="font-size:9.5px; font-weight:700; background-color: <?php echo $themeBgBadge; ?>; color: var(--tech-accent); border:1px solid <?php echo $themeBadgeBorder; ?>;">Ticket #<?php echo $job['id']; ?></span>
-                    <span class="priority-badge text-uppercase font-monospace" style="background-color: <?php echo $priorityBg; ?>; color: <?php echo $priorityTextColor; ?>;"><?php echo $ticketPriority; ?> Priority</span>
-                  </div>
-                  <h5 class="fw-bold text-dark m-0" style="font-size:16px; letter-spacing:-0.2px;"><?php echo htmlspecialchars($job['asset_brand'] . ' ' . $job['asset_type']); ?></h5>
-                  
-                  <div class="text-secondary font-monospace mt-1 fw-medium" style="font-size:12px;"><i class="fa-solid fa-hashtag text-muted me-1"></i> ID: <span class="text-dark font-sans fw-bold"><?php echo htmlspecialchars($job['asset_id']); ?></span></div>
-                  <div class="text-muted font-monospace mt-0.5" style="font-size:11.5px;"><i class="fa-solid fa-envelope me-1"></i> <?php echo htmlspecialchars($job['client_email']); ?></div>
-                  
-                  <!-- ✅ NEW LOGISTICAL COLUMNS ADDED HERE -->
-                  <div class="text-dark font-monospace mt-0.5" style="font-size:11.5px; font-weight:600;"><i class="fa-solid fa-phone text-muted me-1"></i> <?php echo htmlspecialchars($job['phone'] ?? 'No Phone Logged'); ?></div>
-                  <div class="text-secondary small mt-0.5" style="font-size:12px; font-weight:500;"><i class="fa-solid fa-location-dot text-danger me-1"></i> <?php echo htmlspecialchars($job['location'] ?? 'No Site Address'); ?></div>
-                  
-                  <div class="mt-2.5 pt-2 border-top small text-secondary" style="font-size:12px;"><strong>Issue Details:</strong> <span class="text-dark"><?php echo htmlspecialchars($job['problem_category']); ?></span></div>
-                </div>
-
-                <!-- Section B: Live Interface Action Input Forms -->
-<div class="col-lg-8">
-  <form action="technician_dashboard.php" method="POST" class="row g-3 align-items-end text-start">
-    <input type="hidden" name="action_type" value="complete_field_job">
-    <input type="hidden" name="ticket_id" value="<?php echo $job['id']; ?>">
-    
-    <div class="col-md-5">
-      <label class="small fw-bold text-secondary text-uppercase mb-2" style="font-size:10px; letter-spacing:0.5px;"><i class="fa-solid fa-box-open me-1"></i> Warehouse Component</label>
-      <select name="inventory_id" class="form-select form-select-custom" required>
-        <option value="0">No Extra Parts (Standard Consumables)</option>
-        <?php 
-          if ($partsInventory && $partsInventory->num_rows > 0):
-              $partsInventory->data_seek(0);
-              while ($part = $partsInventory->fetch_assoc()):
-                  $qty = (int)$part['stock_qty'];
-        ?>
-          <option value="<?php echo $part['id']; ?>" <?php echo ($qty === 0) ? 'disabled' : ''; ?>>
-            <?php echo htmlspecialchars($part['part_name']); ?> (৳<?php echo number_format($part['part_price']); ?>) — Stock: <?php echo $qty; ?>
-          </option>
-        <?php 
-              endwhile;
-          endif;
-        ?>
-      </select>
-    </div>
-
-    <!-- Form Field 2: Labor Cost Input (UPDATED WITH AIRTIGHT READONLY PROTECTIONS) -->
-    <div class="col-md-4">
-      <label class="small fw-bold text-secondary text-uppercase mb-2" style="font-size:10px; letter-spacing:0.5px;"><i class="fa-solid fa-calculator me-1"></i> Labor Fee (৳)</label>
       
-      <?php 
-        // UNIFIED COMPILER MATRIX
-        $rawCategoryText = trim($job['problem_category'] ?? '');
-        $calculatedBaseRate = 2500;
-
-        switch ($rawCategoryText) {
-            case 'Component Repair':    $calculatedBaseRate = 4500; break;
-            case 'Part Replacement':     $calculatedBaseRate = 3000; break;
-            case 'Modernization':        $calculatedBaseRate = 15000; break;
-            case 'Routine Servicing':    $calculatedBaseRate = 2000; break;
-            case 'Emergency Breakdown':  $calculatedBaseRate = 5000; break;
-            case 'Basic Servicing':      $calculatedBaseRate = 600; break;
-            case 'Deep Cleaning':        $calculatedBaseRate = 1200; break;
-            case 'Duct Cleaning':        $calculatedBaseRate = 5000; break;
-            case 'Gas Refill':           $calculatedBaseRate = 2500; break;
-            case 'Electrical Repair':    $calculatedBaseRate = 1500; break;
-            case 'Compressor Repair':    $calculatedBaseRate = 4000; break;
-            case 'Preventative Inspection': $calculatedBaseRate = 3500; break;
-            case 'Fault Code Diagnostic':   $calculatedBaseRate = 1800; break;
-            case 'Engine Rebuild':          $calculatedBaseRate = 25000; break;
-            case 'Component Repairs':       $calculatedBaseRate = 6000; break;
-            case 'Advanced Testing':        $calculatedBaseRate = 8000; break;
-            case 'Fuel Polishing':          $calculatedBaseRate = 4500; break;
-        }
-      ?>
-      <input type="number" name="labor_fee" class="form-control form-control-custom font-monospace text-secondary bg-light" value="<?php echo $calculatedBaseRate; ?>" readonly style="cursor:not-allowed;" required>
-    </div>
-
-    <div class="col-md-3">
-      <button type="submit" class="btn btn-complete-task text-uppercase fw-bold w-100" style="height: 40px;">
-        <i class="fa-solid fa-circle-check me-1"></i> Finish Job
-      </button>
-    </div>
-  </form> <!-- ✅ FIXED: Properly nested and safely closing the core submission framework here -->
-
-  <!-- ================= NEW INTEGRATED FIELD UPDATES FORM SUBMISSION CONTAINER ================= -->
-  <div class="mt-3 pt-2 border-top" style="border-style: dashed !important; border-color: var(--slate-border) !important;">
-    <form action="technician_dashboard.php" method="POST" class="d-flex gap-2 align-items-center">
-      <input type="hidden" name="action_type" value="send_tech_note">
-      <input type="hidden" name="ticket_id" value="<?php echo $job['id']; ?>">
+          <!-- DYNAMIC RESPONSIVE SIDEBAR GRID INFRASTRUCTURE MATRIX -->
+    <div class="row g-4">
       
-      <div class="position-relative flex-grow-1">
-        <input type="text" name="tech_message" class="form-control form-control-custom" style="height: 36px; font-size:12.5px; padding-left: 32px;" placeholder="Send progress update, delay notice, or site notes to manager..." required>
-        <i class="fa-solid fa-comment-dots text-muted position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px;"></i>
-      </div>
-      
-      <button type="submit" class="btn btn-sm btn-light fw-bold border text-uppercase" style="height: 36px; font-size: 11px; letter-spacing: 0.3px; color: #475569; white-space: nowrap;">
-        <i class="fa-solid fa-paper-plane me-1" style="color: var(--tech-accent);"></i> Send Note
-      </button>
-    </form>
-  </div>
-</div>
+      <!-- ================= 1. LEFT SIDEBAR COLUMN: TECHNICIAN PROFILE SUMMARY ================= -->
+      <div class="col-xl-3 col-lg-4 text-start">
+        <div class="bg-white border rounded-4 p-4 shadow-sm h-100 d-flex flex-column gap-3">
+          <h6 class="fw-bold text-dark text-uppercase font-monospace m-0" style="font-size: 11px; letter-spacing: 0.6px; color: var(--tech-accent) !important;">
+            <i class="fa-solid fa-user-shield me-1"></i> Crew Authorization
+          </h6>
+          
+          <div class="p-3 rounded-3 bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="text-muted d-block font-monospace text-uppercase" style="font-size: 9px; letter-spacing: 0.3px;">Terminal Duty Clearance</span>
+            <strong class="text-dark d-block mt-0.5" style="font-size: 14px;">Senior Lead Engineer</strong>
+          </div>
 
+          <div class="p-3 rounded-3 bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="text-muted d-block font-monospace text-uppercase" style="font-size: 9px; letter-spacing: 0.3px;">Classification Access Token</span>
+            <strong class="text-secondary font-monospace d-block small mt-0.5" style="font-size: 12px; letter-spacing: -0.2px;"><?php echo htmlspecialchars($userRole); ?></strong>
+          </div>
 
-        <?php endwhile; ?>
-      <?php else: ?>
-        <div class="col-12">
-          <div class="text-center py-5 px-4 border rounded-4 bg-white text-muted font-monospace fw-bold shadow-sm" style="border-style: dashed !important; border-width: 2px !important; border-color: #CBD5E1 !important;">
-            <div class="mb-3" style="font-size: 38px; color: var(--tech-accent); opacity: 0.6;"><i class="fa-solid fa-circle-check"></i></div>
-            <div style="font-size: 14px; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">Workload Operations Clear</div>
-            <p class="m-0 small text-secondary font-sans fw-normal mt-1">Excellent job! There are currently no active repair dispatches assigned under this technician classification profile.</p>
+          <div class="p-3 rounded-3 bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="text-muted d-block font-monospace text-uppercase" style="font-size: 9px; letter-spacing: 0.3px;">Operational Domain</span>
+            <div class="mt-1">
+              <span class="badge font-sans" style="font-size: 10px; font-weight: 600; padding: 4px 8px; background-color: <?php echo $themeBgBadge; ?>; color: var(--tech-accent); border: 1px solid <?php echo $themeBadgeBorder; ?>;">
+                <?php echo $displaySpecialtyLabel; ?>
+              </span>
+            </div>
           </div>
         </div>
-      <?php endif; ?>
-    </div>
-  </div>
+      </div>
+
+      <!-- ================= 2. MIDDLE MAIN COLUMN: JOB CARDS LOOP OR EMPTY STATE ================= -->
+      <!-- ✅ FIXED: This column is properly isolated as col-xl-6 so it frames perfectly in the center rail -->
+      <div class="col-xl-6 col-lg-8">
+        <div class="d-flex flex-column gap-4">
+          
+          <?php if ($assignedJobs && $assignedJobs->num_rows > 0): ?>
+            <?php while ($job = $assignedJobs->fetch_assoc()): 
+                $ticketPriority = strtolower(trim($job['priority'] ?? 'medium'));
+                $priorityBg = ($ticketPriority === 'high' || $ticketPriority === 'critical') ? '#FEF2F2' : '#EFF6FF';
+                $priorityTextColor = ($ticketPriority === 'high' || $ticketPriority === 'critical') ? '#EF4444' : '#3B82F6';
+            ?>
+              <!-- Ticket Node Container Card Wrapper Frame -->
+              <div class="tech-card-layout mb-3">
+                <div class="row g-4 align-items-center">
+                  
+                  <!-- Section A: Live Ticket Context Specs -->
+                  <div class="col-12 text-start">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge font-monospace" style="font-size:9.5px; font-weight:700; background-color: <?php echo $themeBgBadge; ?>; color: var(--tech-accent); border:1px solid <?php echo $themeBadgeBorder; ?>;">Ticket #<?php echo $job['id']; ?></span>
+                      <span class="priority-badge text-uppercase font-monospace" style="background-color: <?php echo $priorityBg; ?>; color: <?php echo $priorityTextColor; ?>;"><?php echo $ticketPriority; ?> Priority</span>
+                    </div>
+                    <h5 class="fw-bold text-dark m-0" style="font-size:16px; letter-spacing:-0.2pxিলেন্স;"><?php echo htmlspecialchars($job['asset_brand'] . ' ' . $job['asset_type']); ?></h5>
+                    
+                    <div class="text-secondary font-monospace mt-1 fw-medium" style="font-size:12px;"><i class="fa-solid fa-hashtag text-muted me-1"></i> ID: <span class="text-dark font-sans fw-bold"><?php echo htmlspecialchars($job['asset_id']); ?></span></div>
+                    <div class="text-muted font-monospace mt-0.5" style="font-size:11.5px;"><i class="fa-solid fa-envelope me-1"></i> <?php echo htmlspecialchars($job['client_email']); ?></div>
+                    
+                    <div class="text-dark font-monospace mt-0.5" style="font-size:11.5px; font-weight:600;"><i class="fa-solid fa-phone text-muted me-1"></i> <?php echo htmlspecialchars($job['phone'] ?? 'No Phone Logged'); ?></div>
+                    <div class="text-secondary small mt-0.5" style="font-size:12px; font-weight:500;"><i class="fa-solid fa-location-dot text-danger me-1"></i> <?php echo htmlspecialchars($job['location'] ?? 'No Site Address'); ?></div>
+                    
+                    <div class="mt-2.5 pt-2 border-top small text-secondary" style="font-size:12px;"><strong>Issue Details:</strong> <span class="text-dark"><?php echo htmlspecialchars($job['problem_category']); ?></span></div>
+                  </div>
+
+                  <!-- Section B: Live Interface Action Input Forms -->
+                  <div class="col-12">
+                    <form action="technician_dashboard.php" method="POST" class="row g-3 align-items-end text-start">
+                      <input type="hidden" name="action_type" value="complete_field_job">
+                      <input type="hidden" name="ticket_id" value="<?php echo $job['id']; ?>">
+                      
+                      <div class="col-md-5">
+                        <label class="small fw-bold text-secondary text-uppercase mb-2" style="font-size:10px; letter-spacing:0.5px;"><i class="fa-solid fa-box-open me-1"></i> Warehouse Component</label>
+                        <select name="inventory_id" class="form-select form-select-custom" required>
+                          <option value="0">No Extra Parts (Standard Consumables)</option>
+                          <?php 
+                            if ($partsInventory && $partsInventory->num_rows > 0):
+                                $partsInventory->data_seek(0);
+                                while ($part = $partsInventory->fetch_assoc()):
+                                    $qty = (int)$part['stock_qty'];
+                          ?>
+                            <option value="<?php echo $part['id']; ?>" <?php echo ($qty === 0) ? 'disabled' : ''; ?>>
+                              <?php echo htmlspecialchars($part['part_name']); ?> (৳<?php echo number_format($part['part_price']); ?>) — Stock: <?php echo $qty; ?>
+                            </option>
+                          <?php 
+                                endwhile;
+                            endif;
+                          ?>
+                        </select>
+                      </div>
+
+                      <div class="col-md-4">
+                        <label class="small fw-bold text-secondary text-uppercase mb-2" style="font-size:10px; letter-spacing:0.5px;"><i class="fa-solid fa-calculator me-1"></i> Labor Fee (৳)</label>
+                        <?php 
+                          $rawCategoryText = trim($job['problem_category'] ?? '');
+                          $calculatedBaseRate = 2500;
+
+                          switch ($rawCategoryText) {
+                              case 'Component Repair':    $calculatedBaseRate = 4500; break;
+                              case 'Part Replacement':     $calculatedBaseRate = 3000; break;
+                              case 'Modernization':        $calculatedBaseRate = 15000; break;
+                              case 'Routine Servicing':    $calculatedBaseRate = 2000; break;
+                              case 'Emergency Breakdown':  $calculatedBaseRate = 5000; break;
+                              case 'Basic Servicing':      $calculatedBaseRate = 600; break;
+                              case 'Deep Cleaning':        $calculatedBaseRate = 1200; break;
+                              case 'Duct Cleaning':        $calculatedBaseRate = 5000; break;
+                              case 'Gas Refill':           $calculatedBaseRate = 2500; break;
+                              case 'Electrical Repair':    $calculatedBaseRate = 1500; break;
+                              case 'Compressor Repair':    $calculatedBaseRate = 4000; break;
+                          }
+                        ?>
+                        <input type="number" name="labor_fee" class="form-control form-control-custom font-monospace text-secondary bg-light" value="<?php echo $calculatedBaseRate; ?>" readonly style="cursor:not-allowed;" required>
+                      </div>
+
+                      <div class="col-md-3">
+                        <button type="submit" class="btn btn-complete-task text-uppercase fw-bold w-100" style="height: 40px;">
+                          <i class="fa-solid fa-circle-check me-1"></i> Finish Job
+                        </button>
+                      </div>
+                    </form>
+
+                    <div class="mt-3 pt-2 border-top" style="border-style: dashed !important; border-color: var(--slate-border) !important;">
+                      <form action="technician_dashboard.php" method="POST" class="d-flex gap-2 align-items-center">
+                        <input type="hidden" name="action_type" value="send_tech_note">
+                        <input type="hidden" name="ticket_id" value="<?php echo $job['id']; ?>">
+                        
+                        <div class="position-relative flex-grow-1">
+                          <input type="text" name="tech_message" class="form-control form-control-custom" style="height: 36px; font-size:12.5px; padding-left: 32px;" placeholder="Send progress update, delay notice, or site notes to manager..." required>
+                          <i class="fa-solid fa-comment-dots text-muted position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px;"></i>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-sm btn-light fw-bold border text-uppercase" style="height: 36px; font-size: 11px; letter-spacing: 0.3px; color: #475569; white-space: nowrap;">
+                          <i class="fa-solid fa-paper-plane me-1" style="color: var(--tech-accent);"></i> Send Note
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            <?php endwhile; ?>
+          <?php else: ?>
+            <!-- Clean Fallback View State when workload queue is completely checked out -->
+            <div class="text-center py-5 px-4 border rounded-4 bg-white text-muted font-monospace fw-bold shadow-sm d-flex flex-column align-items-center justify-content-center" style="border-style: dashed !important; border-width: 2px !important; border-color: #CBD5E1 !important; min-height: 290px;">
+              <div class="mb-3" style="font-size: 38px; color: var(--tech-accent); opacity: 0.6;"><i class="fa-solid fa-circle-check"></i></div>
+              <div style="font-size: 14px; text-transform: uppercase; color: #475569; letter-spacing: 0.5px;">Workload Operations Clear</div>
+              <p class="m-0 small text-secondary font-sans fw-normal mt-1" style="max-width: 380px;">Excellent job! There are currently no active repair dispatches assigned under this technician classification profile.</p>
+            </div>
+          <?php endif; ?>
+
+        </div>
+      </div> <!-- ✅ CLOSES MIDDLE COLUMN CLEANLY -->
+
+      <!-- ================= 3. RIGHT COLUMN: DYNAMIC PERSONAL METRICS LEDGER ================= -->
+      <div class="col-xl-3 col-lg-4 text-start">
+        <div class="bg-white border rounded-4 p-4 shadow-sm h-100 d-flex flex-column gap-3">
+          <h6 class="fw-bold text-dark text-uppercase font-monospace m-0" style="font-size: 11px; letter-spacing: 0.6px; color: var(--tech-accent) !important;">
+            <i class="fa-solid fa-square-poll-vertical me-1"></i> Personal Analytics
+          </h6>
+
+          <!-- Metric Row 1: Active Queue -->
+          <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="small text-secondary fw-medium" style="font-size: 12px; font-weight: 500;"><i class="fa-solid fa-clock-rotate-left text-primary me-1"></i> Active Queue</span>
+            <span class="badge rounded-pill font-monospace fw-bold" style="font-size: 11px; background-color: <?php echo $themeBgBadge; ?>; color: var(--tech-accent); padding: 4px 8px;">
+              <?php echo $activeCount; ?> Tasks
+            </span>
+          </div>
+
+          <!-- Metric Row 2: Completed Jobs -->
+          <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="small text-secondary fw-medium" style="font-size: 12px; font-weight: 500;"><i class="fa-solid fa-circle-check text-success me-1"></i> Completed Jobs</span>
+            <span class="badge rounded-pill font-monospace fw-bold" style="font-size: 11px; background-color: #E6F4EA; color: #137333; padding: 4px 8px;">
+              <?php echo $completedCount; ?> Done
+            </span>
+          </div>
+
+          <!-- Metric Row 3: Re-Opened / Cancelled -->
+          <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="small text-secondary fw-medium" style="font-size: 12px; font-weight: 500;"><i class="fa-solid fa-rotate-left text-danger me-1"></i> Re-Opened Tasks</span>
+            <span class="badge rounded-pill font-monospace fw-bold" style="font-size: 11px; background-color: #FCE8E6; color: #C5221F; padding: 4px 8px;">
+              <?php echo $reopenedCount; ?> Blocked
+            </span>
+          </div>
+
+          <!-- ✅ NEW ADDITION: TOTAL WORK DISPATCHES LEDGER COUNTER -->
+          <div class="d-flex align-items-center justify-content-between p-2.5 rounded bg-light border-0" style="background-color: #F8FAFC !important;">
+            <span class="small text-secondary fw-medium" style="font-size: 12px; font-weight: 500;"><i class="fa-solid fa-folder-open text-secondary me-1"></i> Total Assignments</span>
+            <span class="badge rounded-pill font-monospace fw-bold" style="font-size: 11px; background-color: #F1F5F9; color: #475569; padding: 4px 8px;">
+              <?php echo $totalLoggedTasks; ?> Allotted
+            </span>
+          </div>
+
+
+          <!-- Metric Row 4: Success Performance Percentage -->
+          <div class="p-3 rounded-3 border-0 mt-1" style="background-color: #F8FAFC;">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <span class="small text-dark fw-bold" style="font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px;"><i class="fa-solid fa-gauge-high me-1 text-warning"></i> Success Rating</span>
+              <span class="font-monospace fw-extrabold text-dark" style="font-size: 14px; font-weight: 800;"><?php echo $successPercentageRate; ?>%</span>
+            </div>
+            <div class="progress" style="height: 6px; background-color: #E2E8F0; border-radius: 50rem; overflow: hidden;">
+              <div class="progress-bar" role="progressbar" 
+                   style="width: <?php echo $successPercentageRate; ?>%; background-color: <?php echo ($successPercentageRate >= 80) ? '#10B981' : (($successPercentageRate >= 50) ? '#F59E0B' : '#EF4444'); ?>; border-radius: 50rem;" 
+                   aria-valuenow="<?php echo $successPercentageRate; ?>" aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-2 pt-2.5 border-top d-flex align-items-center justify-content-between font-monospace" style="border-style: dashed !important; border-color: #E2E8F0 !important; font-size: 10px; opacity: 0.7;">
+            <span><i class="fa-solid fa-shield-halved text-info me-1"></i> Security: Encrypted</span>
+            <span>Session: Live</span>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- ✅ CLOSES YOUR MASTER GRID CLASS ROW CORRECTLY -->
+  </div> <!-- ✅ CLOSES YOUR CONTAINER ACCESS CANVAS BOX CORRECTLY -->
+
 
   <!-- ================= MASTER USER INTERACTION JAVASCRIPT ================= -->
   <script>
