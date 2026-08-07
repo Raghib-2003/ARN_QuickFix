@@ -60,6 +60,27 @@ if (!empty($managerData['manager_id']) && $managerData['manager_id'] !== 'MGR-10
     $updateIdStmt->close();
 }
 
+ // IMAGE HANDLING: Interactive local file storage pipeline integration
+        $imagePath = null;
+        if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $_FILES['profile_pic']['tmp_name'];
+            $fileName = $_FILES['profile_pic']['name'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+            if (in_array($fileExtension, $allowedExtensions)) {
+                if (!is_dir('img/uploads')) {
+                    mkdir('img/uploads', 0777, true);
+                }
+                $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+                $dest_path = 'img/uploads/' . $newFileName;
+                
+                if (move_uploaded_file($fileTmpPath, $dest_path)) {
+                    $imagePath = $dest_path;
+                }
+            }
+        }
+
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $form_name = trim($_POST['full_name']);

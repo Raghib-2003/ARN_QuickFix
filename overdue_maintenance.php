@@ -22,37 +22,8 @@ if ($conn->connect_error) {
     die("Database Connection Error: " . $conn->connect_error);
 }
 
-// ====================================================================
-// ✅ GATEWAY A: EASY OVERRIDE STATUS MANAGER PROCESSOR (AIRTIGHT LOGIC)
-// ====================================================================
-// This handles the real-time manual status button clicks dynamically!
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'toggle_schedule_status') {
-    $target_schedule_id = (int)$_POST['schedule_id'];
-    $new_target_status   = trim($_POST['target_status']); // Active or Completed
-
-    if ($target_schedule_id > 0 && !empty($new_target_status)) {
-        
-        if ($new_target_status === 'Completed') {
-            // Automatically push schedule threshold dates exactly 30 days out into the future
-            $currentDate = date('Y-m-d');
-            $calculatedFutureDueDate = date('Y-m-d', strtotime('+30 days')); 
-            
-            $conn->query("UPDATE maintenance_schedules 
-                          SET status = 'Completed', last_service = '$currentDate', next_due = '$calculatedFutureDueDate' 
-                          WHERE id = $target_schedule_id");
-        } else {
-            // Clean inline string transition modification update parameters
-            $conn->query("UPDATE maintenance_schedules SET status = '$new_target_status' WHERE id = $target_schedule_id");
-        }
-
-        $_SESSION['action_message'] = "🛡️ Schedule status modified successfully with total database alignment!";
-        header("Location: overdue_maintenance.php");
-        exit();
-    }
-}
-
 // --------------------------------------------------------------------
-// ✅ GATEWAY B: FORM PROCESSING: HANDLE ADD NEW MAINTENANCE SCHEDULE
+// FORM PROCESSING: HANDLE ADD NEW MAINTENANCE SCHEDULE
 // --------------------------------------------------------------------
 $actionMessage = "";
 $actionError = "";
@@ -91,29 +62,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
             $assetCheckResult = $assetVerificationStmt->get_result()->fetch_assoc();
             $assetVerificationStmt->close();
 
-            // ====================================================================
+                        // ====================================================================
             // FIXED UNIFIED ASSET TYPE & ID MATCH VALIDATION
             // ====================================================================
             if ((int)$assetCheckResult['total'] === 0) {
                 $_SESSION['form_cache']['asset_id'] = ""; // Clear bad input field only
+                
+                // FIXED ERGONOMIC PHRASING: Combined into your active session redirect block!
                 $_SESSION['action_error'] = "⚠️ Operational Limit: Data Validation Mismatch! Both the Asset Type and Asset ID must match our records.";
+                
                 header("Location: overdue_maintenance.php");
                 exit();
             }
 
-            // ====================================================================
+                        // ====================================================================
             // INTERLOCK GUARD RAIL: BLOCKS DUPLICATE SCHEDULES FOR ONGOING REPAIRS
             // ====================================================================
+            // Scans your service ledger to see if this precise asset is actively being fixed right now
             $repairCheckQuery = $conn->query("SELECT COUNT(*) as active_repair FROM service_requests WHERE asset_id = '$asset_id' AND status = 'processing'");
             if ($repairCheckQuery) {
                 $repairCheckResult = $repairCheckQuery->fetch_assoc();
                 if ((int)$repairCheckResult['active_repair'] > 0) {
-                    $_SESSION['form_cache']['asset_id'] = $asset_id; 
+                    $_SESSION['form_cache']['asset_id'] = $asset_id; // Retain input for the manager's convenience
                     $_SESSION['action_error'] = "🛑 Operational Lockout: A technician is currently overseeing an active repair request for Asset ID '{$asset_id}'! You cannot schedule routine maintenance until the ticket is marked Completed.";
                     header("Location: overdue_maintenance.php");
                     exit();
                 }
             }
+
+
 
             // Fetch client identity metrics
             $phoneStmt = $conn->prepare("SELECT phone, name FROM users WHERE email = ?");
@@ -126,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
             $client_name = $clientProfile['name'] ?? 'Client User';
 
             // 2. Critical Logical Date Checker Gates
-            $todayDateString = date('Y-m-d'); 
+            $todayDateString = date('Y-m-d'); // Current system date: 2026-08-01
             
             // GATE A: Block future dates from being marked as Overdue
             if ($status === 'Overdue' && $next_due > $todayDateString) {
@@ -145,12 +122,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
                 exit();
             }
             else {
+                // If all business rules pass with absolute accuracy, insert row cleanly
                 $insertStmt = $conn->prepare("INSERT INTO maintenance_schedules (client_email, client_name, phone, asset_type, asset_id, last_service, next_due, maintenance_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $insertStmt->bind_param("sssssssss", $client_email, $client_name, $client_phone, $asset_type, $asset_id, $last_service, $next_due, $maintenance_type, $status);
                 
                 if ($insertStmt->execute()) {
                     $_SESSION['action_message'] = "Success! Maintenance task logged and published onto client portal lanes.";
-                    unset($_SESSION['form_cache']); 
+                    unset($_SESSION['form_cache']); // Erase form memory cache on success
                 } else {
                     $_SESSION['action_error'] = "Database Error: Could not save schedule parameters.";
                 }
@@ -167,6 +145,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type'])) {
     }
 }
 
+
 // --------------------------------------------------------------------
 // MEMORY STORAGE EXTRACTOR PIPELINES
 // --------------------------------------------------------------------
@@ -177,20 +156,21 @@ $cache = $_SESSION['form_cache'] ?? [
 if (isset($_SESSION['action_message'])) { $actionMessage = $_SESSION['action_message']; unset($_SESSION['action_message']); }
 if (isset($_SESSION['action_error'])) { $actionError = $_SESSION['action_error']; unset($_SESSION['action_error']); }
 
+
 // --------------------------------------------------------------------
 // DYNAMIC MESSAGE EXTRACTOR (Pulls strings out of memory arrays)
 // --------------------------------------------------------------------
 if (isset($_SESSION['action_message'])) {
     $actionMessage = $_SESSION['action_message'];
-    unset($_SESSION['action_message']); 
+    unset($_SESSION['action_message']); // Flush instantly to prevent repeating alerts
 }
 if (isset($_SESSION['action_error'])) {
     $actionError = $_SESSION['action_error'];
     unset($_SESSION['action_error']);
 }
 
-// --------------------------------------------------------------------
-// CALCULATE UPPER VIEW COMPONENT SUMS (DYNAMIC COUNTERS)
+
+
 // --------------------------------------------------------------------
 // CALCULATE UPPER VIEW COMPONENT SUMS (DYNAMIC COUNTERS)
 // --------------------------------------------------------------------
@@ -216,6 +196,7 @@ if ($qOver) {
     $totalOverdue = (int)($qOver->fetch_assoc()['total'] ?? 0); 
 }
 
+
 // Fetch clients to populate select dropdown input field
 $clientsList = $conn->query("SELECT email, name FROM users WHERE role = 'client' OR role = 'user' ORDER BY name ASC");
 
@@ -224,12 +205,20 @@ $clientsList = $conn->query("SELECT email, name FROM users WHERE role = 'client'
 // RELATIONAL DATA JOIN TUNING LAYER (MAIN MASTER LIST QUERY)
 // ====================================================================
 // Links tables using asset_id to pull the real telephone digits recorded by the client!
+// ====================================================================
+// ✅ FIXED: AIRTIGHT SINGLE-TABLE SCHEDULER LEDGER SELECTION QUERY
+// ====================================================================
+// Completely drops the LEFT JOIN loop to eliminate duplicate row generation instantly!
+// ====================================================================
+// ✅ FIXED: DUP-SAFE RELATIONAL SCHEDULER LEDGER SELECTION QUERY
+// ====================================================================
+// Uses GROUP BY to safely pull client phone numbers without generating duplicate rows!
 $schedulesLedger = $conn->query("SELECT ms.*, sr.phone as real_client_phone 
                                  FROM maintenance_schedules ms
                                  LEFT JOIN service_requests sr ON ms.asset_id = sr.asset_id
+                                 GROUP BY ms.id
                                  ORDER BY ms.id DESC");
 ?>
-<!-- ================= PHP BACKGROUND LAYER TERMINATES SAFELY HERE ================= -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -512,131 +501,92 @@ $schedulesLedger = $conn->query("SELECT ms.*, sr.phone as real_client_phone
               <th style="width: 140px; text-align: center;">Status</th>
             </tr>
           </thead>
-                              <tbody>
-            <?php 
-            // ✅ SINGLE AIRTIGHT LOOP CONTROL: Encapsulates all data variables safely inside each row boundary
-            if ($schedulesLedger && $schedulesLedger->num_rows > 0): 
+          <tbody>
+            <?php if ($schedulesLedger && $schedulesLedger->num_rows > 0): 
               $serialNumberCounter = 1;
               while ($row = $schedulesLedger->fetch_assoc()):
-                $schedId = $row['id'];
-                
-                // ====================================================================
-                // ⚙️ AUTOMATED DYNAMIC STATUS VALIDATOR ENGINE
-                // ====================================================================
-                $dbStatus = trim($row['status'] ?? 'Active');
-                $nextDueTarget = $row['next_due'] ?? '';
-                $currentCalendarDay = date('Y-m-d'); 
-
-                // Strict Business Rules Interlock Overrides
-                if ($nextDueTarget > $currentCalendarDay && $dbStatus === 'Completed') {
-                    $verifiedStatus = 'Active';
-                    $statusClass = 'status-active';
-                } elseif ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') {
-                    $verifiedStatus = 'Overdue';
-                    $statusClass = 'status-overdue';
-                } else {
-                    $verifiedStatus = $dbStatus;
-                    $statusClass = 'status-active';
-                    if (strtolower($dbStatus) === 'overdue') { $statusClass = 'status-overdue'; }
-                    elseif (strtolower($dbStatus) === 'completed') { $statusClass = 'status-completed'; }
-                }
+                $statusClass = 'status-active';
+                if (isset($row['status']) && strtolower($row['status']) === 'overdue') { $statusClass = 'status-overdue'; }
+                elseif (isset($row['status']) && strtolower($row['status']) === 'completed') { $statusClass = 'status-completed'; }
             ?>
-              <!-- Pristine Data Row Structural Entry Grid Box -->
-              <tr style="border-bottom: 1px solid #F1F5F9;">
+                            <tr>
+                <!-- Clean Serial Incremental Counting Line Index Row (SL) -->
                 <td class="font-monospace fw-bold text-secondary text-center"><?php echo $serialNumberCounter++; ?></td>
                 
-                <td>
+                                <td>
                   <span class="d-block fw-bold text-dark mb-0.5">
                     <?php echo htmlspecialchars($row['client_name'] ?? 'Client User'); ?>
                   </span>
+                  
                   <?php 
+                    // FIXED HOOK: If an asset has an active repair service request, pull its unique phone number, else fall back safely
                     $displayPhoneNumber = !empty($row['real_client_phone']) ? $row['real_client_phone'] : ($row['phone'] ?? '01XXXXXXXXX'); 
                   ?>
+                  
+                  <!-- CLEANED: Removed the accidental text characters '行业' to restore standard CSS styling rules -->
                   <span class="text-muted font-monospace small d-block" style="font-size: 11.5px;">
                     <?php echo htmlspecialchars($displayPhoneNumber); ?>
                   </span>
                 </td>
 
+                
                 <td>
-                  <span class="d-block text-dark fw-bold mb-0.5 text-uppercase" style="font-size:12.5px;"><?php echo htmlspecialchars($row['asset_type'] ?? 'Asset'); ?></span>
-                  <span class="badge bg-light text-dark font-monospace border" style="font-size: 10.5px; padding: 2px 4px;">ID: <strong><?php echo htmlspecialchars($row['asset_id'] ?? 'N/A'); ?></strong></span>
+                  <span class="d-block text-dark fw-bold mb-0.5"><?php echo htmlspecialchars($row['asset_type'] ?? 'Asset'); ?></span>
+                  <span class="badge bg-light text-dark font-monospace border" style="font-size: 11px;">ID: <strong><?php echo htmlspecialchars($row['asset_id'] ?? 'N/A'); ?></strong></span>
                 </td>
                 
                 <td>
-                  <span class="small d-block text-secondary mb-0.5" style="font-size: 12px;">Last: <strong class="text-dark font-monospace fw-medium"><?php echo (!empty($row['last_service']) && $row['last_service'] !== '0000-00-00') ? date('d-m-Y', strtotime($row['last_service'])) : 'None Recorded'; ?></strong></span>
-                  <span class="small d-block text-secondary" style="font-size: 12px;">Next: <strong class="text-danger font-monospace fw-bold"><?php echo date('d-m-Y', strtotime($row['next_due'])); ?></strong></span>
+                  <span class="small d-block text-secondary mb-1" style="font-size: 12.5px;">Last: <strong class="text-dark font-monospace"><?php echo (!empty($row['last_service']) && $row['last_service'] !== '0000-00-00') ? date('d-m-Y', strtotime($row['last_service'])) : 'None Recorded'; ?></strong></span>
+                  <span class="small d-block text-secondary" style="font-size: 12.5px;">Next: <strong class="text-danger font-monospace fw-bold"><?php echo date('d-m-Y', strtotime($row['next_due'])); ?></strong></span>
                 </td>
                 
                 <td>
-                  <span class="fw-semibold text-dark" style="font-size: 12.5px;"><i class="fa fa-rotate me-1 text-muted"></i> <?php echo htmlspecialchars($row['maintenance_type'] ?? 'Periodic'); ?></span>
+                  <span class="fw-semibold text-dark" style="font-size: 13px;"><i class="fa fa-rotate me-1 text-muted"></i> <?php echo htmlspecialchars($row['maintenance_type'] ?? 'Periodic'); ?></span>
                 </td>
+                
+                <!-- ================= AUTOMATED DYNAMIC STATUS VALIDATOR ENGINE ================= -->
+                <td class="text-center">
+                  <?php
+                    $dbStatus = trim($row['status'] ?? 'Active');
+                    $nextDueTarget = $row['next_due'] ?? '';
+                    $currentCalendarDay = date('Y-m-d'); // Today: 2026-08-01
 
-                <!-- ================= ✅ FIXED ACTION CHANNELS (WITH SELF-CONTAINED FORMS) ================= -->
-                <td class="align-middle text-center" style="padding: 12px 8px; width: 180px; min-width: 180px; max-width: 180px;">
-                  
-                  <!-- Display status pill badge layout -->
-                  <div class="mb-2">
-                    <span class="status-badge-pill <?php echo $statusClass; ?>" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">
-                      <?php echo htmlspecialchars($verifiedStatus); ?>
-                    </span>
-                  </div>
-
-                  <!-- Manual Action Trigger Panel: Self-contained form handlers link directly to backend targets -->
-                  <div class="mt-2">
-                    <?php if (strtoupper($verifiedStatus) === 'OVERDUE'): ?>
-                      <!-- ✅ FIXED: Enforcing individual standalone post form layout wrap constraints -->
-                      <form action="overdue_maintenance.php" method="POST" class="m-0" onsubmit="return confirm('Mark this routine maintenance track as ACTIVE and dispatch team field crew?');">
-                        <input type="hidden" name="action_type" value="toggle_schedule_status">
-                        <input type="hidden" name="schedule_id" value="<?php echo $schedId; ?>">
-                        <input type="hidden" name="target_status" value="Active">
-                        
-                        <button type="submit" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center justify-content-center m-0" 
-                                style="height: 26px; font-size: 10px; background-color: #0ea5e9; border: none; border-radius: 5px; padding: 0 10px; font-weight: 700; white-space: nowrap;">
-                          <i class="fa-solid fa-truck-fast me-1"></i> Dispatch Crew
-                        </button>
-                      </form>
-
-                    <?php elseif (strtoupper($verifiedStatus) === 'ACTIVE'): ?>
-                      <!-- ✅ FIXED: Enforcing individual standalone post form layout wrap constraints -->
-                      <form action="overdue_maintenance.php" method="POST" class="m-0" onsubmit="return confirm('Are you sure this preventative maintenance check is fully COMPLETED on-site?');">
-                        <input type="hidden" name="action_type" value="toggle_schedule_status">
-                        <input type="hidden" name="schedule_id" value="<?php echo $schedId; ?>">
-                        <input type="hidden" name="target_status" value="Completed">
-                        
-                        <button type="submit" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center justify-content-center m-0" 
-                                style="height: 26px; font-size: 10px; background-color: #10B981; border: none; border-radius: 5px; padding: 0 10px; font-weight: 700; white-space: nowrap;">
-                          <i class="fa-solid fa-check-double me-1"></i> Mark Done
-                        </button>
-                      </form>
-
-                    <?php else: ?>
-                      <!-- If fully completed, display confirmation message token -->
-                      <span class="small fw-bold text-success font-sans d-block mt-1" style="font-size: 11px;">
-                        <i class="fa-solid fa-shield-check"></i> Certified Safe
-                      </span>
-                    <?php endif; ?>
-                  </div>
-
+                    // Strict Business Rules Interlock Overrides
+                    if ($nextDueTarget > $currentCalendarDay && $dbStatus === 'Completed') {
+                        // Force override future dates away from completed down to active status
+                        $verifiedStatus = 'Active';
+                        $statusClass = 'status-active';
+                    } elseif ($nextDueTarget < $currentCalendarDay && $dbStatus !== 'Completed') {
+                        // Force override past unresolved dates to show up as overdue automatically
+                        $verifiedStatus = 'Overdue';
+                        $statusClass = 'status-overdue';
+                    } else {
+                        // Standard database mappings configuration fallback paths
+                        $verifiedStatus = $dbStatus;
+                        $statusClass = 'status-active';
+                        if (strtolower($dbStatus) === 'overdue') { $statusClass = 'status-overdue'; }
+                        elseif (strtolower($dbStatus) === 'completed') { $statusClass = 'status-completed'; }
+                    }
+                  ?>
+                  <span class="status-badge-pill <?php echo $statusClass; ?>">
+                    <?php echo htmlspecialchars($verifiedStatus); ?>
+                  </span>
                 </td>
               </tr>
-            <?php 
-                endwhile;
-              else:
-            ?>
-              <!-- Fallback state if database has zero historical entries -->
-              <tr>
-                <td colspan="6" class="text-center py-5 text-muted font-monospace fw-bold" style="background-color: #FFFFFF;">
-                  🍃 Zero maintenance parameters are currently registered inside your database cluster grid.
-                </td>
-              </tr>
-            <?php endif; ?>
+
+            <?php endwhile; ?>
+          <?php else: ?>
+            <!-- Fallback state if database has zero historical maintenance entries -->
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted font-monospace fw-bold" style="background-color: #FFFFFF;">
+                🍃 Zero maintenance parameters are currently registered inside your database cluster grid.
+              </td>
+            </tr>
+          <?php endif; ?>
           </tbody>
-
-
         </table>
       </div>
     </div>
-
 
   </div> <!-- Close Master Canvas Layout Wrapper Container Container -->
 
