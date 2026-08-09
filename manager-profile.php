@@ -60,7 +60,7 @@ if (!empty($managerData['manager_id']) && $managerData['manager_id'] !== 'MGR-10
     $updateIdStmt->close();
 }
 
- // IMAGE HANDLING: Interactive local file storage pipeline integration
+              // IMAGE HANDLING: Interactive local file storage pipeline integration
         $imagePath = null;
         if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
             $fileTmpPath = $_FILES['profile_pic']['tmp_name'];
@@ -69,6 +69,7 @@ if (!empty($managerData['manager_id']) && $managerData['manager_id'] !== 'MGR-10
             
             $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
             if (in_array($fileExtension, $allowedExtensions)) {
+                // Ensure local folder destination clearances are active
                 if (!is_dir('img/uploads')) {
                     mkdir('img/uploads', 0777, true);
                 }
@@ -76,10 +77,14 @@ if (!empty($managerData['manager_id']) && $managerData['manager_id'] !== 'MGR-10
                 $dest_path = 'img/uploads/' . $newFileName;
                 
                 if (move_uploaded_file($fileTmpPath, $dest_path)) {
+                    // ✅ FIXED VALUE: Saves the exact 'img/uploads/filename.png' string layout string inside the column 
+                    // This matches your client structure profile flawlessly!
                     $imagePath = $dest_path;
                 }
             }
         }
+
+
 
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -273,7 +278,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 
-  <!-- ================= TOP NAVIGATION BAR (MATCHES FIGMA LAYOUT) ================= -->
+    <!-- ================= TOP NAVIGATION BAR (MATCHES FIGMA LAYOUT) ================= -->
   <nav class="navbar profile-navbar d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-2">
       <a href="manager_dashboard.php" class="brand-accent d-flex align-items-center gap-2">
@@ -322,45 +327,70 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       <div class="figma-gradient-banner"></div>
 
       
-                    <!-- ================= FIGMA SYNCED PROFILE PICTURE PANEL ================= -->
-        <div class="col-lg-4 col-md-12 mb-4">
-          <div class="p-4 bg-white border rounded-4 text-center h-100 d-flex flex-column align-items-center justify-content-center py-5" style="border-color: var(--border-light) !important;">
-            <div class="fw-bold mb-3 w-100 text-dark" style="font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Profile Picture</div>
-            
-            <!-- Live Picture Box Container Screen Layout -->
-            <div class="position-relative mb-4">
-              <?php if (!empty($currentImagePath) && file_exists($currentImagePath)): ?>
-                <img src="<?php echo $currentImagePath; ?>" class="rounded-circle border shadow-sm" id="avatarView" alt="Manager Picture" style="width: 100px; height: 100px; object-fit: cover;">
-              <?php else: ?>
-                <div class="rounded-circle border d-flex align-items-center justify-content-center bg-light shadow-sm" id="avatarPlaceholder" style="width: 100px; height: 100px; background-color: #F8FAFC !important;">
-                  <span style="font-size: 44px;">👤</span>
-                </div>
-              <?php endif; ?>
+         <!-- ✅ FIXED STRUCTURE: Opened at the top with design-safe container layouts and multi-part media locks -->
+<form action="manager-profile.php" method="POST" enctype="multipart/form-data" class="w-100 m-0 p-0">
+  <div class="row m-0 p-0">
+
+       <div class="col-lg-4 col-md-12 mb-4">
+      <div class="p-4 bg-white border rounded-4 text-center h-100 d-flex flex-column align-items-center justify-content-center py-5" style="border-color: var(--border-light) !important;">
+        <div class="fw-bold mb-3 w-100 text-dark" style="font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Profile Picture</div>
+        
+        <!-- Live Picture Box Container Screen Layout -->
+        <div class="position-relative mb-4">
+          <?php 
+            // 1. Extract the raw name pointer from your manager's row cell
+            $dbImagePointer = trim($userRecord['image_path'] ?? '');
+            $finalImageSrcPath = "";
+
+            if (!empty($dbImagePointer)) {
+                // If it contains a prefix like 'img/uploads/', extract just the file name
+                $pureFileName = basename($dbImagePointer);
+
+                // 2. Map directly to your manager uploads destination folder track!
+                if (file_exists("uploads/profile_pics/" . $pureFileName)) {
+                    $finalImageSrcPath = "uploads/profile_pics/" . $pureFileName;
+                } elseif (file_exists("uploads/" . $pureFileName)) {
+                    $finalImageSrcPath = "uploads/" . $pureFileName;
+                } elseif (file_exists("img/uploads/" . $pureFileName)) {
+                    $finalImageSrcPath = "img/uploads/" . $pureFileName;
+                }
+            }
+          ?>
+
+          <?php if (!empty($finalImageSrcPath)): ?>
+            <!-- ✅ FIXED: Displays your real uploaded manager photo file layout smoothly -->
+            <img src="<?php echo htmlspecialchars($finalImageSrcPath); ?>?v=<?php echo time(); ?>" class="rounded-circle border shadow-sm" id="avatarView" alt="Manager Picture" style="width: 100px; height: 100px; object-fit: cover;">
+          <?php else: ?>
+            <!-- Fallback generic user placeholder avatar -->
+            <div class="rounded-circle border d-flex align-items-center justify-content-center bg-light shadow-sm" id="avatarPlaceholder" style="width: 100px; height: 100px; background-color: #F8FAFC !important;">
+              <span style="font-size: 44px;">👤</span>
             </div>
-            
-            <p class="text-muted small mb-4 px-2" style="font-size: 12.5px;">Manage your account display picture (.png, .jpg, .jpeg)</p>
-            
-            <!-- Hidden input controllers that connect seamlessly to your form submission fields -->
-            <input type="file" name="profile_pic" id="fileSelector" class="form-control d-none" accept="image/*" onchange="previewAvatar(event)">
-            <input type="hidden" name="remove_avatar_flag" id="removeAvatarFlag" value="0">
-            
-            <!-- Action control triggers button array grid -->
-            <div class="d-flex flex-column gap-2 w-100 px-4">
-              <button type="button" class="btn btn-sm btn-light border py-2 fw-bold rounded-pill text-secondary" style="font-size: 13px; background-color: #FFFFFF;" onclick="document.getElementById('fileSelector').click();">Choose Picture</button>
-              <button type="button" class="btn btn-sm btn-outline-danger py-2 fw-bold rounded-pill" id="removePhotoBtn" style="font-size: 13px;" onclick="removeProfilePhoto()">Remove Photo</button>
-            </div>
-          </div>
+          <?php endif; ?>
         </div>
+        
+        <p class="text-muted small mb-4 px-2" style="font-size: 12.5px;">Manage your account display picture (.png, .jpg, .jpeg)</p>
+        
+        <!-- Hidden input controllers that connect seamlessly to your form submission fields -->
+        <input type="file" name="profile_pic" id="fileSelector" class="form-control d-none" accept="image/*" onchange="previewAvatar(event)">
+        <input type="hidden" name="remove_avatar_flag" id="removeAvatarFlag" value="0">
+        
+        <!-- Action control triggers button array grid -->
+        <div class="d-flex flex-column gap-2 w-100 px-4">
+          <button type="button" class="btn btn-sm btn-light border py-2 fw-bold rounded-pill text-secondary" style="font-size: 13px; background-color: #FFFFFF;" onclick="document.getElementById('fileSelector').click();">Choose Picture</button>
+          <button type="button" class="btn btn-sm btn-outline-danger py-2 fw-bold rounded-pill" id="removePhotoBtn" style="font-size: 13px;" onclick="removeProfilePhoto()">Remove Photo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Interactive Parameter Master Entry Form Sheet -->
+    <div class="col-lg-8 col-md-12 mb-4">
+      <div class="row g-4 m-0 p-0">
+        
+        <!-- Column Box 1: Full Name Input -->
+        <div class="col-xl-6 col-lg-6 col-md-12">
+          <label class="form-label form-label-custom">Full Name</label>
 
 
-
-      <!-- Dynamic Interactive Parameter Master Entry Form Sheet -->
-      <form action="manager-profile.php" method="POST">
-        <div class="row g-4">
-          
-                    <!-- Column Box 1: Full Name Input -->
-          <div class="col-xl-6 col-lg-6 col-md-12">
-            <label class="form-label form-label-custom">Full Name</label>
             <!-- UPDATED PLACEHOLDER -->
             <input type="text" name="full_name" class="form-control form-control-custom" placeholder="Enter full name" value="<?php echo htmlspecialchars($managername ?? ''); ?>" required>
           </div>
@@ -444,51 +474,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   </div> <!-- Close Main Layout Body Canvas Container -->
 
     <!-- ================= MODULE REFACTOR: UNIFIED INTERFACE HANDLERS ================= -->
-  <script>
-    // ====================================================================
-    // MODULE A: PASSWORD VISIBILITY INTERLOCK CONTROLLER
-    // ====================================================================
-    /**
-     * Toggles input fields dynamically between hidden stars and clear readable text.
-     * @param {string} fieldId - Target input element node link.
-     * @param {HTMLElement} actionButton - Self reference indicator click trigger.
-     */
-    function togglePasswordVisibility(fieldId, actionButton) {
-        const passwordField = document.getElementById(fieldId);
-        if (passwordField) {
-            if (passwordField.type === "password") {
-                passwordField.type = "text";
-                actionButton.textContent = "🙈"; // Shifts to hidden view mask layout
-                actionButton.style.color = "var(--primary-cyan)";
-            } else {
-                passwordField.type = "password";
-                actionButton.textContent = "👁️"; // Shifts back to reveal state symbol
-                actionButton.style.color = "#64748B";
-            }
-        }
-    }
-
-    // ====================================================================
-    // MODULE B: REFACTORED PROFILE IMAGE COMPONENT SYSTEM
-    // ====================================================================
-    /**
-     * Captures file upload event variables and loads live binary data streams.
-     * @param {Event} event - Native device image upload file path stream.
-     */
-        /**
-     * Captures file upload event variables and loads live binary data streams with strict constraints.
-     * @param {Event} event - Native device image upload file path stream.
-     */
+ <script>
     function previewAvatar(event) {
         const reader = new FileReader();
         reader.onload = function() {
             let view = document.getElementById('avatarView');
-            if (!view) {
+            if(!view) {
                 const placeholder = document.getElementById('avatarPlaceholder');
                 const img = document.createElement('img');
                 img.id = 'avatarView';
                 
-                // FIXED BOUNDING CONSTRAINTS: Forces your selected photo to match the 100px circular thumbnail frame perfectly
+                // ✅ FIXED CSS STYLING: Ensures your local preview matches your pristine 100px circle layout framework perfectly
                 img.className = 'rounded-circle border shadow-sm';
                 img.style.width = '100px';
                 img.style.height = '100px';
@@ -504,17 +500,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             const flag = document.getElementById('removeAvatarFlag');
             if (flag) { flag.value = "0"; }
         }
+        
+        // ✅ FIXED FILE OBJECT REFERENCE ARRAY BINDING KEY INDEX [0]
         if (event.target.files && event.target.files[0]) {
             reader.readAsDataURL(event.target.files[0]);
         }
     }
 
-
     /**
      * Purges profile image display nodes and reverts elements to generic icon placeholders.
      */
     function removeProfilePhoto() {
-        if (confirm("Are you sure you want to remove your profile display picture?")) {
+        if(confirm("Are you sure you want to remove your profile display picture?")) {
             const flag = document.getElementById('removeAvatarFlag');
             if (flag) { flag.value = "1"; }
             
@@ -522,8 +519,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if (currentImg) {
                 const placeholder = document.createElement('div');
                 placeholder.id = 'avatarPlaceholder';
-                placeholder.className = 'avatar-preview-box d-flex align-items-center justify-content-center';
-                placeholder.innerHTML = '<span style="font-size: 40px;">👤</span>';
+                placeholder.className = 'rounded-circle border d-flex align-items-center justify-content-center bg-light shadow-sm';
+                placeholder.style.width = '100px';
+                placeholder.style.height = '100px';
+                placeholder.style.backgroundColor = '#F8FAFC';
+                placeholder.innerHTML = '<span style="font-size: 44px;">👤</span>';
                 currentImg.replaceWith(placeholder);
             }
             
@@ -531,10 +531,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if (selector) { selector.value = ""; }
         }
     }
-  </script>
-  
-  <!-- Core Bootstrap Engine compiled package (Loads perfectly right at the end) -->
-  <script src="https://jsdelivr.net"></script>
 
+
+    function togglePasswordVisibility(inputId, eyeId) {
+        const passInput = document.getElementById(inputId);
+        const eyeIcon = document.getElementById(eyeId);
+        if (passInput.type === "password") {
+            passInput.type = "text";
+            eyeIcon.innerText = "🙈";
+        } else {
+            passInput.type = "password";
+            eyeIcon.innerText = "👁️";
+        }
+    }
+  </script>
 </body>
 </html>
+<?php if (isset($conn)) { $conn->close(); } ?>
