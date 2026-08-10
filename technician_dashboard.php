@@ -20,89 +20,152 @@ if ($conn->connect_error) {
 }
 
 // ====================================================================
-// LIVE FORM PROCESSING: UPDATE PROFILE METADATA CONSOLE CELLS
+// ✅ FIXED: DYNAMIC TECHNICIAN SIDE-DRAWER PROFILE CONTROLLER ENGINE
 // ====================================================================
-// ====================================================================
-// JOB PROCESSING HANDLERS & INVENTORY MANAGEMENT ENGINE (AIRTIGHT FIX)
-// ====================================================================
-$actionSuccess = ""; $actionError = "";
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'complete_field_job') {
-    $ticket_id = (int)($_POST['ticket_id'] ?? 0); 
-    $inventory_id = (int)($_POST['inventory_id'] ?? 0); 
-    $labor_fee = (float)($_POST['labor_fee'] ?? 0.00);
+// Catches your sliding drawer form action inputs dynamically!
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'update_tech_profile') {
+    
+    $imagePathValue = null;
 
-    // FIXED ENVIRONMENT CONNECTION ROUTING NODES
-    $fixedConn = new mysqli("localhost", "root", "", "arn_quickfix");
-    if ($fixedConn->connect_error) {
-        die("Connection Mismatch Error: " . $fixedConn->connect_error);
-    }
-
-    if ($ticket_id > 0 && $labor_fee > 0) {
-        $part_name = ""; $part_price = 0.00;
-        if ($inventory_id > 0) {
-            $invCheck = $fixedConn->prepare("SELECT part_name, part_price, stock_qty FROM inventory WHERE id = ?");
-            $invCheck->bind_param("i", $inventory_id); 
-            $invCheck->execute(); 
-            $invItem = $invCheck->get_result()->fetch_assoc(); 
-            $invCheck->close();
+    // A. Parse Multipart Form Stream Arrays for Binary Image Data
+    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+        $fileTmpPath = $_FILES['profile_pic']['tmp_name'];
+        $fileName = $_FILES['profile_pic']['name'];
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+        if (in_array($fileExtension, $allowedExtensions)) {
+            if (!is_dir('img/uploads')) {
+                mkdir('img/uploads', 0777, true);
+            }
+            $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+            $dest_path = 'img/uploads/' . $newFileName;
             
-            if ($invItem) {
-                if ((int)$invItem['stock_qty'] > 0) {
-                    $part_name = $invItem['part_name']; 
-                    $part_price = (float)$invItem['part_price'];
-                    $fixedConn->query("UPDATE inventory SET stock_qty = stock_qty - 1 WHERE id = $inventory_id");
-                } else { 
-                    $_SESSION['tech_err'] = "Stock Lockout: Part sold out!"; 
-                    $fixedConn->close();
-                    header("Location: technician_dashboard.php"); 
-                    exit(); 
-                }
+            if (move_uploaded_file($fileTmpPath, $dest_path)) {
+                // Stores 'img/uploads/filename.png' cleanly to keep things matched up
+                $imagePathValue = $dest_path;
             }
         }
-        $finalTotalAmount = $labor_fee + $part_price;
-        
-        // CRITICAL INTERLOCK: Changes status to 'completed' and triggers live updates across dashboards
-        $updateStmt = $fixedConn->prepare("UPDATE service_requests SET status = 'completed', allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
-        $updateStmt->bind_param("sddi", $part_name, $part_price, $finalTotalAmount, $ticket_id);
-        
-        if ($updateStmt->execute()) { 
-            $_SESSION['tech_msg'] = "🎉 Success! Ticket #{$ticket_id} marked Completed."; 
-        } else { 
-            // ALERT HOOK: Injects an alert catch if your MySQL engine encounters a resource lock constraint
-            echo "<script>alert('SQL Write Execution Error: " . addslashes($updateStmt->error) . "'); window.history.back();</script>";
-            exit();
-        }
-        $updateStmt->close();
     }
-    $fixedConn->close();
-    header("Location: technician_dashboard.php"); 
+
+   // ====================================================================
+    // ✅ FIXED: DRAWER PROFILE CONTROLLER ENGINE (COLUMN-MATCHED)
+    // ====================================================================
+    // Capture sliding drawer input parameters safely from form payloads
+    $formFirstName  = trim($_POST['first_name'] ?? '');
+    $formSecondName = trim($_POST['second_name'] ?? '');
+    $formPhone      = trim($_POST['phone'] ?? '');
+    $formGender     = $_POST['gender'] ?? 'Male';
+    $formCountry    = $_POST['country'] ?? 'Bangladesh';
+    $formLanguage   = trim($_POST['language'] ?? 'English');
+    $formPassword   = $_POST['new_password'] ?? '';
+
+    // Re-combine first and second name for unified main database 'name' column mapping
+    $fullNameCombined = trim($formFirstName . ' ' . $formSecondName);
+
+    // B. Build the Dynamic Database Update Query Loops (Removing non-existent column traps!)
+    if (!empty($formPassword)) {
+        $newHash = password_hash($formPassword, PASSWORD_BCRYPT);
+        if ($imagePathValue !== null) {
+            $stmt = $conn->prepare("UPDATE users SET name = ?, phone = ?, gender = ?, country = ?, language = ?, password_hash = ?, image_path = ? WHERE email = ?");
+            $stmt->bind_param("ssssssss", $fullNameCombined, $formPhone, $formGender, $formCountry, $formLanguage, $newHash, $imagePathValue, $techEmail);
+        } else {
+            $stmt = $conn->prepare("UPDATE users SET name = ?, phone = ?, gender = ?, country = ?, language = ?, password_hash = ? WHERE email = ?");
+            $stmt->bind_param("sssssss", $fullNameCombined, $formPhone, $formGender, $formCountry, $formLanguage, $newHash, $techEmail);
+        }
+    } else {
+        if ($imagePathValue !== null) {
+            $stmt = $conn->prepare("UPDATE users SET name = ?, phone = ?, gender = ?, country = ?, language = ?, image_path = ? WHERE email = ?");
+            $stmt->bind_param("sssssss", $fullNameCombined, $formPhone, $formGender, $formCountry, $formLanguage, $imagePathValue, $techEmail);
+        } else {
+            $stmt = $conn->prepare("UPDATE users SET name = ?, phone = ?, gender = ?, country = ?, language = ? WHERE email = ?");
+            $stmt->bind_param("ssssss", $fullNameCombined, $formPhone, $formGender, $formCountry, $formLanguage, $techEmail);
+        }
+    }
+
+    if ($stmt->execute()) {
+        $_SESSION['name'] = $fullNameCombined;
+        $_SESSION['prof_msg'] = "🎉 Profile credentials and parameters updated successfully!";
+    } else {
+        $_SESSION['prof_err'] = "❌ Database Error: Failed writing profile updates.";
+    }
+    $stmt->close();
+
+    header("Location: technician_dashboard.php");
     exit();
 }
 
+// ====================================================================
+// JOB PROCESSING HANDLERS & INVENTORY MANAGEMENT ENGINE
+// ====================================================================
+$actionSuccess = ""; $actionError = "";
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'complete_field_job') {
+    $ticket_id = (int)($_POST['ticket_id'] ?? 0); $inventory_id = (int)($_POST['inventory_id'] ?? 0); $labor_fee = (float)($_POST['labor_fee'] ?? 0.00);
+    if ($ticket_id > 0 && $labor_fee > 0) {
+        $part_name = ""; $part_price = 0.00;
+        if ($inventory_id > 0) {
+            $invCheck = $conn->prepare("SELECT part_name, part_price, stock_qty FROM inventory WHERE id = ?");
+            $invCheck->bind_param("i", $inventory_id); $invCheck->execute(); $invItem = $invCheck->get_result()->fetch_assoc(); $invCheck->close();
+            if ($invItem) {
+                if ((int)$invItem['stock_qty'] > 0) {
+                    $part_name = $invItem['part_name']; $part_price = (float)$invItem['part_price'];
+                    $conn->query("UPDATE inventory SET stock_qty = stock_qty - 1 WHERE id = $inventory_id");
+                } else { $_SESSION['tech_err'] = "Stock Lockout: Part sold out!"; header("Location: technician_dashboard.php"); exit(); }
+            }
+        }
+        $finalTotalAmount = $labor_fee + $part_price;
+        $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
+        $updateStmt->bind_param("sddi", $part_name, $part_price, $finalTotalAmount, $ticket_id);
+        if ($updateStmt->execute()) { $_SESSION['tech_msg'] = "🎉 Success! Ticket #{$ticket_id} marked Completed."; } else { $_SESSION['tech_err'] = "Query Failure."; }
+        $updateStmt->close();
+    }
+    header("Location: technician_dashboard.php"); exit();
+}
 
+// ====================================================================
+// ✅ FORM PROCESSING: TRANSMIT ON-SITE LOGISTICAL NOTES TO MANAGER
+// ====================================================================
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'send_tech_note') {
+    $note_ticket_id = (int)$_POST['ticket_id'];
+    $note_message = trim($_POST['tech_message'] ?? '');
 
+    if ($note_ticket_id > 0 && !empty($note_message)) {
+        $noteStmt = $conn->prepare("INSERT INTO technician_notes (ticket_id, tech_email, tech_name, update_message) VALUES (?, ?, ?, ?)");
+        $noteStmt->bind_param("isss", $note_ticket_id, $techEmail, $techName, $note_message);
+        
+        if ($noteStmt->execute()) {
+            $_SESSION['tech_msg'] = "🚀 Note has been dispatched seamlessly! The manager has been alerted.";
+        } else {
+            $_SESSION['tech_err'] = "Database Fault: Failed transmitting logistical update.";
+        }
+        $noteStmt->close();
+    }
+    header("Location: technician_dashboard.php"); exit();
+}
+
+if (isset($_SESSION['tech_msg'])) { $actionSuccess = $_SESSION['tech_msg']; unset($_SESSION['tech_msg']); }
+if (isset($_SESSION['tech_err'])) { $actionError = $_SESSION['tech_err']; unset($_SESSION['tech_err']); }
 
 if (isset($_SESSION['prof_msg'])) { $profileSuccess = $_SESSION['prof_msg']; unset($_SESSION['prof_msg']); }
 if (isset($_SESSION['prof_err'])) { $profileError = $_SESSION['prof_err']; unset($_SESSION['prof_err']); }
 
-/// --------------------------------------------------------------------
-// FETCH EXISTING PROFILE ATTRIBUTES (UPDATED WITH PHONE CELL MAPPINGS)
 // --------------------------------------------------------------------
-// ✅ ADDED: 'phone' column added to your database select filter string
-$profileQuery = $conn->query("SELECT name, phone, gender, country, language, created_at FROM users WHERE email = '$techEmail'");
+// FETCH EXISTING PROFILE ATTRIBUTES (DYNAMIC LIVE SYNCHRONIZATION)
+// --------------------------------------------------------------------
+// ✅ FIXED: Completely drops non-existent columns from SELECT query limits
+$profileQuery = $conn->query("SELECT name, phone, gender, country, language, image_path, created_at FROM users WHERE email = '$techEmail'");
 $dbUser = $profileQuery ? $profileQuery->fetch_assoc() : [];
 
+// Automatically parsing your single full name column value string out for dual input fields safely!
 $splitNames = explode(" ", ($dbUser['name'] ?? $techName), 2);
 $currentFirst = $splitNames[0] ?? '';
 $currentSecond = $splitNames[1] ?? '';
 
-// ✅ ADDED: Capture your live phone string parameter safely into a local variable
-$currentPhone = $dbUser['phone'] ?? '';
-
-$currentGender = $dbUser['gender'] ?? '';
-$currentCountry = $dbUser['country'] ?? 'Bangladesh';
+$currentPhone    = $dbUser['phone'] ?? '';
+$currentGender   = $dbUser['gender'] ?? '';
+$currentCountry  = $dbUser['country'] ?? 'Bangladesh';
 $currentLanguage = $dbUser['language'] ?? 'English';
-
+$currentImagePath = trim($dbUser['image_path'] ?? '');
 
 // ====================================================================
 // MASTER ADAPTIVE COCKPIT REPOSITORY CONFIGURATOR
@@ -143,70 +206,15 @@ if ($userRole === 'tech_generator') {
 }
 
 // ====================================================================
-// JOB PROCESSING HANDLERS & INVENTORY MANAGEMENT ENGINE
-// ====================================================================
-$actionSuccess = ""; $actionError = "";
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'complete_field_job') {
-    $ticket_id = (int)($_POST['ticket_id'] ?? 0); $inventory_id = (int)($_POST['inventory_id'] ?? 0); $labor_fee = (float)($_POST['labor_fee'] ?? 0.00);
-    if ($ticket_id > 0 && $labor_fee > 0) {
-        $part_name = ""; $part_price = 0.00;
-        if ($inventory_id > 0) {
-            $invCheck = $conn->prepare("SELECT part_name, part_price, stock_qty FROM inventory WHERE id = ?");
-            $invCheck->bind_param("i", $inventory_id); $invCheck->execute(); $invItem = $invCheck->get_result()->fetch_assoc(); $invCheck->close();
-            if ($invItem) {
-                if ((int)$invItem['stock_qty'] > 0) {
-                    $part_name = $invItem['part_name']; $part_price = (float)$invItem['part_price'];
-                    $conn->query("UPDATE inventory SET stock_qty = stock_qty - 1 WHERE id = $inventory_id");
-                } else { $_SESSION['tech_err'] = "Stock Lockout: Part sold out!"; header("Location: technician_dashboard.php"); exit(); }
-            }
-        }
-        $finalTotalAmount = $labor_fee + $part_price;
-        $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
-        $updateStmt->bind_param("sddi", $part_name, $part_price, $finalTotalAmount, $ticket_id);
-        if ($updateStmt->execute()) { $_SESSION['tech_msg'] = "🎉 Success! Ticket #{$ticket_id} marked Completed."; } else { $_SESSION['tech_err'] = "Query Failure."; }
-        $updateStmt->close();
-    }
-    header("Location: technician_dashboard.php"); exit();
-}
-
-// ====================================================================
-// ✅ NEW FORM PROCESSING: TRANSMIT ON-SITE LOGISTICAL NOTES TO MANAGER
-// ====================================================================
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'send_tech_note') {
-    $note_ticket_id = (int)$_POST['ticket_id'];
-    $note_message = trim($_POST['tech_message'] ?? '');
-
-    if ($note_ticket_id > 0 && !empty($note_message)) {
-        $noteStmt = $conn->prepare("INSERT INTO technician_notes (ticket_id, tech_email, tech_name, update_message) VALUES (?, ?, ?, ?)");
-        $noteStmt->bind_param("isss", $note_ticket_id, $techEmail, $techName, $note_message);
-        
-        if ($noteStmt->execute()) {
-            $_SESSION['tech_msg'] = "🚀 Note has been dispatched seamlessly! The manager has been alerted.";
-        } else {
-            $_SESSION['tech_err'] = "Database Fault: Failed transmitting logistical update.";
-        }
-        $noteStmt->close();
-    }
-    header("Location: technician_dashboard.php"); exit();
-}
-
-if (isset($_SESSION['tech_msg'])) { $actionSuccess = $_SESSION['tech_msg']; unset($_SESSION['tech_msg']); }
-if (isset($_SESSION['tech_err'])) { $actionError = $_SESSION['tech_err']; unset($_SESSION['tech_err']); }
-
-
-// ====================================================================
 // ISOLATED WORKLOAD QUERY LAYER (MASTER PIPELINE)
 // ====================================================================
 // Fetches active jobs for this specific technician specialty tracking dashboard
-// ====================================================================
-// AIRTIGHT SPECIALIST OPERATIONAL ISOLATION QUERY MATRIX
-// ====================================================================
-// ✅ FIXED: Checks the location string dynamically to ONLY display tickets assigned to the logged-in tech name!
 $assignedJobs = $conn->query("SELECT * FROM service_requests 
                              WHERE status = 'processing' 
                              AND (LOWER(asset_type) LIKE '%$sqlFilterKeyword%' OR LOWER(asset_type) LIKE '%conditioner%')
                              AND location LIKE '%(Assigned to: " . $conn->real_escape_string($techName) . ")%'
                              ORDER BY id DESC");
+
 // ====================================================================
 // REAL-TIME PERSONAL PERFORMANCE METRICS LEDGER ENGINE (CORRECTED)
 // ====================================================================
@@ -222,7 +230,7 @@ $completedCount = 0;
 $qCompleted = $conn->query("SELECT COUNT(*) as total FROM service_requests WHERE status = 'completed' AND location LIKE '%(Assigned to: $techEscapedName)%'");
 if ($qCompleted) { $completedCount = (int)$qCompleted->fetch_assoc()['total']; }
 
-// 3. ✅ FIXED: Grouped the message filters inside parentheses so the technician's name constraint is strictly enforced!
+// 3. Grouped message filters enforce strict technician name constraints
 $reopenedCount = 0;
 $qReopened = $conn->query("SELECT COUNT(*) as total FROM technician_notes 
                            WHERE tech_name = '$techEscapedName' 
@@ -232,13 +240,14 @@ if ($qReopened) { $reopenedCount = (int)$qReopened->fetch_assoc()['total']; }
 
 // 4. Calculate Operational Success Percentage Rate
 $totalLoggedTasks = $completedCount + $reopenedCount;
-$successPercentageRate = 100; // Perfect score default if they haven't run any tasks yet
+$successPercentageRate = 100; // Perfect score default if no tasks are logged yet
 if ($totalLoggedTasks > 0) {
     $successPercentageRate = round(($completedCount / $totalLoggedTasks) * 100);
 }
 
 $partsInventory = $conn->query("SELECT id, part_name, part_price, stock_qty FROM inventory WHERE LOWER(asset_category) LIKE '%" . strtolower($sqlInvCategory) . "%' OR LOWER(asset_category) LIKE '%hvac%' OR LOWER(asset_category) LIKE '%engine%' ORDER BY part_name ASC");
 ?>
+<!-- ================= PHP CONFIGURATOR SECTION ENDS SAFELY HERE ================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -336,12 +345,23 @@ $partsInventory = $conn->query("SELECT id, part_name, part_price, stock_qty FROM
       <input type="hidden" name="action_type" value="update_tech_profile">
 
 
-      <!-- Interactive Picture Frame Element Slot -->
-      <div class="avatar-upload-frame" onclick="document.getElementById('avatarFileInput').click()">
-        <img id="avatarImgElement" class="avatar-preview-img" alt="Profile Preview">
-        <div id="avatarTextElement" class="avatar-placeholder-text"><i class="fa-solid fa-camera mb-1 d-block" style="font-size:14px;"></i>Insert Pic</div>
+                  <!-- Interactive Picture Frame Element Slot -->
+      <div class="avatar-upload-frame d-flex align-items-center justify-content-center mx-auto mb-3" onclick="document.getElementById('avatarFileInput').click()" style="cursor: pointer; width: 100px; height: 100px; border: 2px dashed #CBD5E1; border-radius: 50%; overflow: hidden; position: relative; background-color: #F8FAFC;">
+        
+        <?php if (!empty($currentImagePath) && file_exists($currentImagePath)): ?>
+          <!-- ✅ FIXED: Inline dimensional constraints lock the photo inside the 100px circular bounds flawlessly -->
+          <img id="avatarImgElement" src="<?php echo htmlspecialchars($currentImagePath); ?>?v=<?php echo time(); ?>" alt="Profile Preview" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;">
+        <?php else: ?>
+          <!-- Fallback layout when no image path pointer string exists in your database table cell -->
+          <img id="avatarImgElement" class="d-none" alt="Profile Preview" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;">
+          <div id="avatarTextElement" class="avatar-placeholder-text text-center text-muted" style="font-size: 11px; font-weight: 600;">
+            <i class="fa-solid fa-camera mb-1 d-block" style="font-size:14px;"></i>Insert Pic
+          </div>
+        <?php endif; ?>
+
       </div>
       <input type="file" id="avatarFileInput" name="profile_pic" accept="image/*" style="display:none;" onchange="previewProfileImageFiles(event)">
+
 
       <div class="row g-2">
         <div class="col-6 panel-group-box">
