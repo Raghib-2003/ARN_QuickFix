@@ -147,7 +147,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
         
         // ... (your existing validation checks and database INSERT logic remain exactly underneath here) ...
 
-        // --- BACKEND VERIFICATION SHIELD 1: Strict Prefix Structural Mismatch Validation ---
+                // --- BACKEND VERIFICATION SHIELD 1: Strict Prefix Structural Mismatch Validation ---
         if ($assetType === 'Elevator' && !str_starts_with($assetId, 'ELV')) {
             $toastTriggerMsg = "<i class='fa fa-exclamation-triangle me-1'></i> Validation Failure: Elevator Asset ID must start with 'ELV' (e.g., ELV-101)!";
         } elseif ($assetType === 'AC' && !str_starts_with($assetId, 'AC')) {
@@ -160,27 +160,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
             $toastTriggerMsg = "<i class='fa fa-phone me-1'></i> Validation Failure: Contact Phone Number must contain exactly 11 numeric digits (e.g., 01712345678)!";
         }
         else {
-            // --- BACKEND VERIFICATION SHIELD 3: Database Database Uniqueness Duplication Checks ---
-            $checkAsset = $conn->prepare("SELECT id FROM service_requests WHERE asset_id = ?");
+            // --- BACKEND VERIFICATION SHIELD 3: Database Uniqueness Duplication Checks (Phone Check Removed) ---
+            // ✅ STAYS LOCKED: Enforces absolute system-wide uniqueness on all active Asset IDs
+            $checkAsset = $conn->prepare("SELECT id FROM service_requests WHERE asset_id = ? AND status != 'completed'");
             $checkAsset->bind_param("s", $assetId);
             $checkAsset->execute();
             $checkAsset->store_result();
             $assetDuplicatesCount = $checkAsset->num_rows;
             $checkAsset->close();
             
-            $checkPhone = $conn->prepare("SELECT id FROM service_requests WHERE phone = ?");
-            $checkPhone->bind_param("s", $phone);
-            $checkPhone->execute();
-            $checkPhone->store_result();
-            $phoneDuplicatesCount = $checkPhone->num_rows;
-            $checkPhone->close();
-            
             if ($assetDuplicatesCount > 0) {
                 $toastTriggerMsg = "<i class='fa fa-database me-1'></i> Duplicate Error: This Asset ID is already linked to an active request ticket!";
-            } elseif ($phoneDuplicatesCount > 0) {
-                $toastTriggerMsg = "<i class='fa fa-phone-slash me-1'></i> Duplicate Error: This Phone Number is already linked to an active ticket row!";
             } else {
-                // If every single verification rule passes successfully, commit the record data cleanly
+                // ✅ UNLOCKED PATH: Phone tracking is completely bypassed. Commit the record data cleanly.
                 $insertStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NULL)");
                 $insertStmt->bind_param("sssssssss", $clientEmail, $assetType, $assetBrand, $assetId, $problemCategory, $priority, $phone, $location, $paymentMethod);
                 
@@ -194,7 +186,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']))
                 $insertStmt->close();
             }
         }
-    }
+}
     // ... your remaining complaint code handles rest underneath ...
 
 

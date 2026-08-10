@@ -684,6 +684,97 @@ $partsInventory = $conn->query("SELECT id, part_name, part_price, stock_qty FROM
     </div> <!-- ✅ CLOSES YOUR MASTER GRID CLASS ROW CORRECTLY -->
   </div> <!-- ✅ CLOSES YOUR CONTAINER ACCESS CANVAS BOX CORRECTLY -->
 
+    <!-- ==================================================================== -->
+  <!-- ✅ NEW COMPONENT: COMPLETED OPERATIONS PERFORMANCE LEDGER -->
+  <!-- ==================================================================== -->
+  <div class="row mt-4 m-0 p-0 w-100">
+    <div class="col-12 p-0">
+      <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #E2E8F0 !important;">
+        
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+          <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: var(--themeBgBadge, <?php echo $themeBgBadge; ?>);">
+              <i class="fa-solid fa-clock-rotate-left" style="color: <?php echo $themePrimaryColor; ?>; font-size: 14px;"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold m-0 text-dark" style="font-size: 16px; letter-spacing: -0.3px;">Completed Operations Ledger</h5>
+              <p class="text-muted m-0 p-0" style="font-size: 11px;">Archived operational records closed by Specialist: <?php echo htmlspecialchars($techName); ?></p>
+            </div>
+          </div>
+          <span class="badge font-monospace border px-2 py-1 bg-light text-dark" style="font-size: 11px; font-weight: 600;">Secure Node Identity Locked</span>
+        </div>
+
+        <?php
+          // Fetch historical records closed strictly by this logged-in technician name
+          $techEscapedSearch = $conn->real_escape_string($techName);
+          $historyLogQuery = $conn->query("SELECT * FROM service_requests 
+                                           WHERE status = 'completed' 
+                                           AND location LIKE '%(Assigned to: $techEscapedSearch)%' 
+                                           ORDER BY id DESC");
+        ?>
+
+        <?php if ($historyLogQuery && $historyLogQuery->num_rows > 0): ?>
+          <div class="table-responsive w-100" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-hover align-middle m-0" style="font-size: 12.5px;">
+              <thead class="table-light sticky-top" style="z-index: 5; background-color: #F8FAFC;">
+                <tr class="text-secondary border-bottom" style="font-size: 11px; text-transform: uppercase; font-weight: 700;">
+                  <th scope="col" class="ps-3 py-2" style="width: 80px;">Ticket</th>
+                  <th scope="col" style="width: 140px;">Client Node</th>
+                  <th scope="col" style="width: 110px;">Asset ID</th>
+                  <th scope="col">Operational Fault Category & Logistical Notes</th>
+                  <th scope="col" style="width: 130px;">Allocated Component</th>
+                  <th scope="col" class="pe-3 text-end" style="width: 110px;">Settled Fee</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php while ($logRow = $historyLogQuery->fetch_assoc()): ?>
+                  <tr class="border-bottom" style="transition: background-color 0.2s ease;">
+                    <td class="ps-3 font-monospace fw-bold text-dark">#<?php echo $logRow['id']; ?></td>
+                    <td>
+                      <div class="fw-bold text-dark"><?php echo htmlspecialchars($logRow['client_email']); ?></div>
+                      <div class="text-muted font-monospace" style="font-size: 11px;"><i class="fa fa-phone me-1"></i><?php echo htmlspecialchars($logRow['phone']); ?></div>
+                    </td>
+                    <td>
+                      <span class="badge border font-monospace text-dark px-2 py-1 bg-white shadow-sm" style="border-radius: 5px;">
+                        <?php echo htmlspecialchars($logRow['asset_id']); ?>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="fw-bold" style="color: <?php echo $themePrimaryColor; ?>;"><?php echo htmlspecialchars($logRow['problem_category']); ?></div>
+                      <div class="text-secondary mt-0.5 pe-3" style="font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        <i class="fa-solid fa-location-dot me-1 text-muted" style="font-size: 10px;"></i><?php echo htmlspecialchars($logRow['location']); ?>
+                      </div>
+                    </td>
+                    <td>
+                      <?php if (!empty($logRow['allocated_part'])): ?>
+                        <div class="fw-bold text-dark" style="font-size: 12px;"><i class="fa fa-gears me-1 text-muted"></i><?php echo htmlspecialchars($logRow['allocated_part']); ?></div>
+                        <div class="text-muted font-monospace" style="font-size: 11px;">Part: BDT <?php echo number_format($logRow['part_price'], 2); ?></div>
+                      <?php else: ?>
+                        <span class="text-muted font-sans italic" style="font-size: 11.5px;">No Component Replaced</span>
+                      <?php endif; ?>
+                    </td>
+                    <td class="pe-3 text-end font-monospace fw-bold text-success" style="font-size: 13px;">
+                      BDT <?php echo number_format($logRow['amount'] ?? 0.00, 2); ?>
+                    </td>
+                  </tr>
+                <?php endwhile; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php else: ?>
+          <!-- Clean empty placeholder if they haven't compiled a job history yet -->
+          <div class="text-center py-4 border rounded-3 bg-light" style="border-style: dashed !important; background-color: #F8FAFC !important;">
+            <div class="text-muted mb-1" style="font-size: 24px;">📁</div>
+            <div class="small fw-bold text-secondary">Historical Ledger Dormant</div>
+            <div class="text-muted" style="font-size: 11px;">No completed operational tickets archived under this specialist profile track.</div>
+          </div>
+        <?php endif; ?>
+
+      </div>
+    </div>
+  </div>
+
+
 
   <!-- ================= MASTER USER INTERACTION JAVASCRIPT ================= -->
   <script>
