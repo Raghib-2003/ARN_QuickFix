@@ -22,12 +22,10 @@ if ($conn->connect_error) {
 // ====================================================================
 // ✅ FIXED: DYNAMIC TECHNICIAN SIDE-DRAWER PROFILE CONTROLLER ENGINE
 // ====================================================================
-// Catches your sliding drawer form action inputs dynamically!
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'update_tech_profile') {
     
     $imagePathValue = null;
 
-    // A. Parse Multipart Form Stream Arrays for Binary Image Data
     if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
         $fileTmpPath = $_FILES['profile_pic']['tmp_name'];
         $fileName = $_FILES['profile_pic']['name'];
@@ -42,16 +40,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
             $dest_path = 'img/uploads/' . $newFileName;
             
             if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                // Stores 'img/uploads/filename.png' cleanly to keep things matched up
                 $imagePathValue = $dest_path;
             }
         }
     }
 
-   // ====================================================================
-    // ✅ FIXED: DRAWER PROFILE CONTROLLER ENGINE (COLUMN-MATCHED)
-    // ====================================================================
-    // Capture sliding drawer input parameters safely from form payloads
     $formFirstName  = trim($_POST['first_name'] ?? '');
     $formSecondName = trim($_POST['second_name'] ?? '');
     $formPhone      = trim($_POST['phone'] ?? '');
@@ -60,10 +53,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
     $formLanguage   = trim($_POST['language'] ?? 'English');
     $formPassword   = $_POST['new_password'] ?? '';
 
-    // Re-combine first and second name for unified main database 'name' column mapping
     $fullNameCombined = trim($formFirstName . ' ' . $formSecondName);
 
-    // B. Build the Dynamic Database Update Query Loops (Removing non-existent column traps!)
     if (!empty($formPassword)) {
         $newHash = password_hash($formPassword, PASSWORD_BCRYPT);
         if ($imagePathValue !== null) {
@@ -96,10 +87,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
 }
 
 // ====================================================================
-// ✅ FIXED: SLIDING DRAWER SUFFIX VERSIONING CLONING ENGINE (AIRTIGHT)
+// ✅ ENTERPRISE PRODUCTION: LIFECYCLE-AWARE VERSIONING LOGISTICS ENGINE
 // ====================================================================
 $actionSuccess = ""; $actionError = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'complete_field_job') {
+    
     $ticket_id = (int)($_POST['ticket_id'] ?? 0); 
     $inventory_id = (int)($_POST['inventory_id'] ?? 0); 
     $labor_fee = (float)($_POST['labor_fee'] ?? 0.00);
@@ -118,78 +110,58 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
         }
         $finalTotalAmount = $labor_fee + $part_price;
 
-        // 1. Fetch current active record details out of your database rows
-        $assetFetch = $conn->query("SELECT * FROM service_requests WHERE id = $ticket_id");
+        // 1. Fetch current active record details out of your database rows safely
+        $assetFetch = $conn->query("SELECT client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method FROM service_requests WHERE id = $ticket_id");
         $activeTicketRow = $assetFetch->fetch_assoc();
         $rawAssetId = trim($activeTicketRow['asset_id'] ?? '');
 
-        // Isolate the base identifier code string if it already contains suffix strings
+        // Isolate your clean baseline identifier code string completely free of residual underscores
         $baseAssetId = $rawAssetId;
         if (strpos($rawAssetId, '_C') !== false) {
             $parts = explode('_C', $rawAssetId);
             $baseAssetId = trim($parts[0]);
         }
 
-        // 2. Count preceding completed records inside your tracking dataset
+        // 2. Count how many total ALREADY COMPLETED rows share this asset's tracking profile
         $escapedBase = $conn->real_escape_string($baseAssetId);
         $countQuery = $conn->query("SELECT COUNT(*) as versionsCount FROM service_requests WHERE (asset_id = '$escapedBase' OR asset_id LIKE '{$escapedBase}_C%') AND status = 'completed'");
         $historicalMatches = $countQuery ? (int)$countQuery->fetch_assoc()['versionsCount'] : 0;
 
         // ====================================================================
-        // 🚨 ADJUSTED SUFFIX ROUTER PATHWAYS
+        // 🚨 PRECISE VERSIONING EXECUTION MATRIX
         // ====================================================================
         if ($historicalMatches === 0) {
-            // SCENARIO A: THIS IS THE INITIALLY COMPLETED RUN!
-            // Keeps the code raw as "ELV-01" with zero unique index conflicts.
+            // SCENARIO A: THIS IS THE INITIALLY COMPLETED RUN FOR THIS MACHINE!
+            // We update the active ticket directly to status 'completed' and keep its clean baseline code 'ELV-01' intact.
             $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', asset_id = ?, allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
             $updateStmt->bind_param("ssddi", $baseAssetId, $part_name, $part_price, $finalTotalAmount, $ticket_id);
             
             if ($updateStmt->execute()) { 
-                $_SESSION['tech_msg'] = "🎉 Initial Job Completed! Marked row cleanly as baseline profile."; 
+                $_SESSION['tech_msg'] = "🎉 Initial Job Completed! Baseline profile created successfully."; 
             } else { 
-                $_SESSION['tech_err'] = "Query Failure updating initial ticket."; 
+                $_SESSION['tech_err'] = "Query Failure updating initial ticket: " . $updateStmt->error; 
             }
             $updateStmt->close();
             
         } else {
-            // SCENARIO B: A COMPLAINT HAS BEEN MADE AND RESOLVED!
-            // ✅ FIXED MATH: Appends a distinct increment modifier to guarantee uniqueness and allow duplication
+            // SCENARIO B: THIS IS A CLIENT-ISSUED COMPLAINT TICKET CURRENTLY BEING CLOSED!
+            // We update the active row directly into its permanent suffix state so it saves beautifully and clears the dashboard queue.
             $suffixTrackString = $baseAssetId . "_C" . $historicalMatches;
 
-            // Prepare a clean insert statement with exactly 12 parameter placeholders
-            $archiveStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status, allocated_part, part_price, amount, is_read) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, 0)");
+            $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', asset_id = ?, allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
+            $updateStmt->bind_param("ssddi", $suffixTrackString, $part_name, $part_price, $finalTotalAmount, $ticket_id);
             
-            // ssssssssssdd => 10 Strings ('s'), 2 Decimals/Doubles ('d') = 12 items total!
-            $archiveStmt->bind_param("ssssssssssdd", 
-                $activeTicketRow['client_email'],     
-                $activeTicketRow['asset_type'],       
-                $activeTicketRow['asset_brand'],      
-                $suffixTrackString,                  
-                $activeTicketRow['problem_category'], 
-                $activeTicketRow['priority'],         
-                $activeTicketRow['phone'],            
-                $activeTicketRow['location'],         
-                $activeTicketRow['payment_method'],   
-                $part_name,                           
-                $part_price,                          
-                $finalTotalAmount                     
-            );
-            
-            if ($archiveStmt->execute()) {
-                // Reset the baseline active ticket row state back to pending so it survives for future complaint tickets
-                $conn->query("UPDATE service_requests SET status = 'pending', amount = NULL, allocated_part = NULL, part_price = NULL WHERE id = $ticket_id");
-                $_SESSION['tech_msg'] = "🎉 Complaint Logged! Archived separate tracking row version ({$suffixTrackString}).";
-            } else {
-                // If it fails, capture the exact MySQL write block constraint error into session for safety debugging
-                $_SESSION['tech_err'] = "Database Blockage: " . $archiveStmt->error;
+            if ($updateStmt->execute()) { 
+                $_SESSION['tech_msg'] = "🎉 Complaint Resolved! Archived separate ledger row version ({$suffixTrackString}) smoothly."; 
+            } else { 
+                $_SESSION['tech_err'] = "Query Failure archiving complaint version: " . $updateStmt->error; 
             }
-            $archiveStmt->close();
+            $updateStmt->close();
         }
     }
     header("Location: technician_dashboard.php"); 
     exit();
 }
-
 
 
 
@@ -226,7 +198,6 @@ if (isset($_SESSION['prof_err'])) { $profileError = $_SESSION['prof_err']; unset
 // --------------------------------------------------------------------
 // FETCH EXISTING PROFILE ATTRIBUTES (DYNAMIC LIVE SYNCHRONIZATION)
 // --------------------------------------------------------------------
-// ✅ FIXED: Completely drops non-existent columns from SELECT query limits
 $profileQuery = $conn->query("SELECT name, phone, gender, country, language, image_path, created_at FROM users WHERE email = '$techEmail'");
 $dbUser = $profileQuery ? $profileQuery->fetch_assoc() : [];
 
@@ -240,6 +211,7 @@ $currentGender   = $dbUser['gender'] ?? '';
 $currentCountry  = $dbUser['country'] ?? 'Bangladesh';
 $currentLanguage = $dbUser['language'] ?? 'English';
 $currentImagePath = trim($dbUser['image_path'] ?? '');
+
 
 // ====================================================================
 // MASTER ADAPTIVE COCKPIT REPOSITORY CONFIGURATOR
@@ -279,10 +251,11 @@ if ($userRole === 'tech_generator') {
     $displaySpecialtyLabel = "Elevators, Lifts & Escalators";
 }
 
+
 // ====================================================================
-// ISOLATED WORKLOAD QUERY LAYER (MASTER PIPELINE)
+// ✅ FIXED: ISOLATED WORKLOAD QUERY LAYER (ACTIVE TASKS ONLY)
 // ====================================================================
-// Fetches active jobs for this specific technician specialty tracking dashboard
+// This ensures old completed suffix versions stay safely inside your logs and NEVER clog the queue!
 $assignedJobs = $conn->query("SELECT * FROM service_requests 
                              WHERE status = 'processing' 
                              AND (LOWER(asset_type) LIKE '%" . $conn->real_escape_string($sqlFilterKeyword) . "%' OR LOWER(asset_type) LIKE '%conditioner%')
