@@ -87,7 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
 }
 
 // ====================================================================
-// ✅ ENTERPRISE PRODUCTION: LIFECYCLE-AWARE VERSIONING LOGISTICS ENGINE
+// ✅ FIXED PRO: MAX-SUFFIX INCREMENTOR ENGINE (ELIMINATES COLLISION TRAPS)
 // ====================================================================
 $actionSuccess = ""; $actionError = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'complete_field_job') {
@@ -111,28 +111,44 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
         $finalTotalAmount = $labor_fee + $part_price;
 
         // 1. Fetch current active record details out of your database rows safely
-        $assetFetch = $conn->query("SELECT client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method FROM service_requests WHERE id = $ticket_id");
+        $assetFetch = $conn->query("SELECT * FROM service_requests WHERE id = $ticket_id");
+        if (!$assetFetch) { die("Data Extraction Connection Error: " . $conn->error); }
         $activeTicketRow = $assetFetch->fetch_assoc();
         $rawAssetId = trim($activeTicketRow['asset_id'] ?? '');
 
-        // Isolate your clean baseline identifier code string completely free of residual underscores
+        // Isolate the base identifier code string completely free of residual underscores
         $baseAssetId = $rawAssetId;
         if (strpos($rawAssetId, '_C') !== false) {
             $parts = explode('_C', $rawAssetId);
             $baseAssetId = trim($parts[0]);
         }
 
-        // 2. Count how many total ALREADY COMPLETED rows share this asset's tracking profile
+        // 2. ✅ FIXED LOGIC: Scan the table to find the HIGHEST existing suffix version number instead of counting items!
         $escapedBase = $conn->real_escape_string($baseAssetId);
-        $countQuery = $conn->query("SELECT COUNT(*) as versionsCount FROM service_requests WHERE (asset_id = '$escapedBase' OR asset_id LIKE '{$escapedBase}_C%') AND status = 'completed'");
-        $historicalMatches = $countQuery ? (int)$countQuery->fetch_assoc()['versionsCount'] : 0;
+        $maxSuffixQuery = $conn->query("SELECT asset_id FROM service_requests WHERE asset_id LIKE '{$escapedBase}_C%' AND status = 'completed'");
+        
+        $highestVersionFound = 0;
+        if ($maxSuffixQuery) {
+            while ($versionRow = $maxSuffixQuery->fetch_assoc()) {
+                $existingString = $versionRow['asset_id'];
+                $parts = explode('_C', $existingString);
+                $versionNum = isset($parts[1]) ? (int)$parts[1] : 0;
+                if ($versionNum > $highestVersionFound) {
+                    $highestVersionFound = $versionNum;
+                }
+            }
+        }
+
+        // Check if a baseline clean completion record already exists in the table logs
+        $baseCheck = $conn->query("SELECT id FROM service_requests WHERE asset_id = '$escapedBase' AND status = 'completed'");
+        $baseExists = ($baseCheck && $baseCheck->num_rows > 0) ? true : false;
 
         // ====================================================================
-        // 🚨 PRECISE VERSIONING EXECUTION MATRIX
+        // 🚨 COLLISION-PROOF ROUTER PATHWAYS
         // ====================================================================
-        if ($historicalMatches === 0) {
+        if (!$baseExists && $highestVersionFound === 0) {
             // SCENARIO A: THIS IS THE INITIALLY COMPLETED RUN FOR THIS MACHINE!
-            // We update the active ticket directly to status 'completed' and keep its clean baseline code 'ELV-01' intact.
+            // Keeps the code raw as "AC-01" inside the table cell with zero suffix codes
             $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', asset_id = ?, allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
             $updateStmt->bind_param("ssddi", $baseAssetId, $part_name, $part_price, $finalTotalAmount, $ticket_id);
             
@@ -144,24 +160,61 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
             $updateStmt->close();
             
         } else {
-            // SCENARIO B: THIS IS A CLIENT-ISSUED COMPLAINT TICKET CURRENTLY BEING CLOSED!
-            // We update the active row directly into its permanent suffix state so it saves beautifully and clears the dashboard queue.
-            $suffixTrackString = $baseAssetId . "_C" . $historicalMatches;
+            // SCENARIO B: A MANUALLY ISSUED COMPLAINT TICKET IS BEING CLOSED!
+            // ✅ AIRTIGHT MATH: Automatically takes the highest found suffix number and adds 1 to it!
+            // This guarantees the string shifts forward (e.g., if _C2 exists, it builds _C3) completely avoiding index traps!
+            $nextAvailableVersion = ($highestVersionFound === 0) ? 1 : $highestVersionFound + 1;
+            $suffixTrackString = $baseAssetId . "_C" . $nextAvailableVersion;
 
-            $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', asset_id = ?, allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
-            $updateStmt->bind_param("ssddi", $suffixTrackString, $part_name, $part_price, $finalTotalAmount, $ticket_id);
-            
-            if ($updateStmt->execute()) { 
-                $_SESSION['tech_msg'] = "🎉 Complaint Resolved! Archived separate ledger row version ({$suffixTrackString}) smoothly."; 
-            } else { 
-                $_SESSION['tech_err'] = "Query Failure archiving complaint version: " . $updateStmt->error; 
+            // Double check to make sure that no other hidden row shares this newly compiled asset string name
+            while (true) {
+                $escapedSuffix = $conn->real_escape_string($suffixTrackString);
+                $duplicateCheck = $conn->query("SELECT id FROM service_requests WHERE asset_id = '$escapedSuffix'");
+                if ($duplicateCheck && $duplicateCheck->num_rows > 0) {
+                    $nextAvailableVersion++;
+                    $suffixTrackString = $baseAssetId . "_C" . $nextAvailableVersion;
+                } else {
+                    break;
+                }
             }
-            $updateStmt->close();
+
+            // Prepare a clean insert statement with exactly 13 parameter placeholders
+            $archiveStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status, allocated_part, part_price, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($archiveStmt === false) { die("SQL Preparation Defect: " . $conn->error); }
+            
+            $statusString = 'completed';
+            
+            // sssssssssssdd => 11 Strings ('s'), 2 Decimals/Doubles ('d') = Exactly 13 variables bound safely!
+            $archiveStmt->bind_param("sssssssssssdd", 
+                $activeTicketRow['client_email'],     // 1. s
+                $activeTicketRow['asset_type'],       // 2. s
+                $activeTicketRow['asset_brand'],      // 3. s
+                $suffixTrackString,                  // 4. s
+                $activeTicketRow['problem_category'], // 5. s
+                $activeTicketRow['priority'],         // 6. s
+                $activeTicketRow['phone'],            // 7. s
+                $activeTicketRow['location'],         // 8. s
+                $activeTicketRow['payment_method'],   // 9. s
+                $statusString,                        // 10. s
+                $part_name,                           // 11. s
+                $part_price,                          // 12. d
+                $finalTotalAmount                     // 13. d
+            );
+            
+            if ($archiveStmt->execute()) {
+                // Clear the active fields on the original row back to pending so it survives for future complaints
+                $conn->query("UPDATE service_requests SET status = 'pending', amount = NULL, allocated_part = NULL, part_price = NULL WHERE id = $ticket_id");
+                $_SESSION['tech_msg'] = "🎉 Complaint Resolved! Archived separate tracking row version ({$suffixTrackString}) smoothly.";
+            } else {
+                $_SESSION['tech_err'] = "Write Fault Blocked: " . $archiveStmt->error;
+            }
+            $archiveStmt->close();
         }
     }
     header("Location: technician_dashboard.php"); 
     exit();
 }
+
 
 
 
