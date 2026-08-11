@@ -96,11 +96,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
 }
 
 // ====================================================================
-// JOB PROCESSING HANDLERS & INVENTORY MANAGEMENT ENGINE
+// ✅ FIXED: SLIDING DRAWER SUFFIX VERSIONING CLONING ENGINE (AIRTIGHT)
 // ====================================================================
 $actionSuccess = ""; $actionError = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_POST['action_type'] === 'complete_field_job') {
-    $ticket_id = (int)($_POST['ticket_id'] ?? 0); $inventory_id = (int)($_POST['inventory_id'] ?? 0); $labor_fee = (float)($_POST['labor_fee'] ?? 0.00);
+    $ticket_id = (int)($_POST['ticket_id'] ?? 0); 
+    $inventory_id = (int)($_POST['inventory_id'] ?? 0); 
+    $labor_fee = (float)($_POST['labor_fee'] ?? 0.00);
+    
     if ($ticket_id > 0 && $labor_fee > 0) {
         $part_name = ""; $part_price = 0.00;
         if ($inventory_id > 0) {
@@ -114,13 +117,84 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action_type']) && $_P
             }
         }
         $finalTotalAmount = $labor_fee + $part_price;
-        $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
-        $updateStmt->bind_param("sddi", $part_name, $part_price, $finalTotalAmount, $ticket_id);
-        if ($updateStmt->execute()) { $_SESSION['tech_msg'] = "🎉 Success! Ticket #{$ticket_id} marked Completed."; } else { $_SESSION['tech_err'] = "Query Failure."; }
-        $updateStmt->close();
+
+        // 1. Fetch current active record details out of your database rows
+        $assetFetch = $conn->query("SELECT * FROM service_requests WHERE id = $ticket_id");
+        $activeTicketRow = $assetFetch->fetch_assoc();
+        $rawAssetId = trim($activeTicketRow['asset_id'] ?? '');
+
+        // Isolate the base identifier code string if it already contains suffix strings
+        $baseAssetId = $rawAssetId;
+        if (strpos($rawAssetId, '_C') !== false) {
+            $parts = explode('_C', $rawAssetId);
+            $baseAssetId = trim($parts[0]);
+        }
+
+        // 2. Count preceding completed records inside your tracking dataset
+        $escapedBase = $conn->real_escape_string($baseAssetId);
+        $countQuery = $conn->query("SELECT COUNT(*) as versionsCount FROM service_requests WHERE (asset_id = '$escapedBase' OR asset_id LIKE '{$escapedBase}_C%') AND status = 'completed'");
+        $historicalMatches = $countQuery ? (int)$countQuery->fetch_assoc()['versionsCount'] : 0;
+
+        // ====================================================================
+        // 🚨 ADJUSTED SUFFIX ROUTER PATHWAYS
+        // ====================================================================
+        if ($historicalMatches === 0) {
+            // SCENARIO A: THIS IS THE INITIALLY COMPLETED RUN!
+            // Keeps the code raw as "ELV-01" with zero unique index conflicts.
+            $updateStmt = $conn->prepare("UPDATE service_requests SET status = 'completed', asset_id = ?, allocated_part = ?, part_price = ?, amount = ?, is_read = 0 WHERE id = ?");
+            $updateStmt->bind_param("ssddi", $baseAssetId, $part_name, $part_price, $finalTotalAmount, $ticket_id);
+            
+            if ($updateStmt->execute()) { 
+                $_SESSION['tech_msg'] = "🎉 Initial Job Completed! Marked row cleanly as baseline profile."; 
+            } else { 
+                $_SESSION['tech_err'] = "Query Failure updating initial ticket."; 
+            }
+            $updateStmt->close();
+            
+        } else {
+            // SCENARIO B: A COMPLAINT HAS BEEN MADE AND RESOLVED!
+            // ✅ FIXED MATH: Appends a distinct increment modifier to guarantee uniqueness and allow duplication
+            $suffixTrackString = $baseAssetId . "_C" . $historicalMatches;
+
+            // Prepare a clean insert statement with exactly 12 parameter placeholders
+            $archiveStmt = $conn->prepare("INSERT INTO service_requests (client_email, asset_type, asset_brand, asset_id, problem_category, priority, phone, location, payment_method, status, allocated_part, part_price, amount, is_read) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, 0)");
+            
+            // ssssssssssdd => 10 Strings ('s'), 2 Decimals/Doubles ('d') = 12 items total!
+            $archiveStmt->bind_param("ssssssssssdd", 
+                $activeTicketRow['client_email'],     
+                $activeTicketRow['asset_type'],       
+                $activeTicketRow['asset_brand'],      
+                $suffixTrackString,                  
+                $activeTicketRow['problem_category'], 
+                $activeTicketRow['priority'],         
+                $activeTicketRow['phone'],            
+                $activeTicketRow['location'],         
+                $activeTicketRow['payment_method'],   
+                $part_name,                           
+                $part_price,                          
+                $finalTotalAmount                     
+            );
+            
+            if ($archiveStmt->execute()) {
+                // Reset the baseline active ticket row state back to pending so it survives for future complaint tickets
+                $conn->query("UPDATE service_requests SET status = 'pending', amount = NULL, allocated_part = NULL, part_price = NULL WHERE id = $ticket_id");
+                $_SESSION['tech_msg'] = "🎉 Complaint Logged! Archived separate tracking row version ({$suffixTrackString}).";
+            } else {
+                // If it fails, capture the exact MySQL write block constraint error into session for safety debugging
+                $_SESSION['tech_err'] = "Database Blockage: " . $archiveStmt->error;
+            }
+            $archiveStmt->close();
+        }
     }
-    header("Location: technician_dashboard.php"); exit();
+    header("Location: technician_dashboard.php"); 
+    exit();
 }
+
+
+
+
+
+
 
 // ====================================================================
 // ✅ FORM PROCESSING: TRANSMIT ON-SITE LOGISTICAL NOTES TO MANAGER
@@ -211,7 +285,7 @@ if ($userRole === 'tech_generator') {
 // Fetches active jobs for this specific technician specialty tracking dashboard
 $assignedJobs = $conn->query("SELECT * FROM service_requests 
                              WHERE status = 'processing' 
-                             AND (LOWER(asset_type) LIKE '%$sqlFilterKeyword%' OR LOWER(asset_type) LIKE '%conditioner%')
+                             AND (LOWER(asset_type) LIKE '%" . $conn->real_escape_string($sqlFilterKeyword) . "%' OR LOWER(asset_type) LIKE '%conditioner%')
                              AND location LIKE '%(Assigned to: " . $conn->real_escape_string($techName) . ")%'
                              ORDER BY id DESC");
 

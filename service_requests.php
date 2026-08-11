@@ -216,7 +216,19 @@ $logQuery = $conn->prepare("SELECT asset_id, asset_type, asset_brand, problem_ca
               <!-- ================= HTML ROW PRINT LAYOUT MATRIX ================= -->
               <tr style="border-bottom: 1px solid #F1F5F9;">
                 <td class="align-middle py-3 text-secondary font-monospace"><?php echo $sl++; ?></td>
-                <td class="align-middle fw-bold text-dark font-monospace"><?php echo htmlspecialchars($row['asset_id']); ?></td>
+<!-- ✅ FIXED: Converts raw database version text dividers into clean, hyphenated UI structures -->
+<td class="align-middle fw-bold text-dark font-monospace">
+  <?php 
+    $displayAssetString = $row['asset_id'] ?? '';
+    
+    // Automatically replaces the underlying '_C' database identifier with your clean hyphen layout scheme
+    if (strpos($displayAssetString, '_C') !== false) {
+        $displayAssetString = str_replace('_C', '-C', $displayAssetString);
+    }
+    
+    echo htmlspecialchars($displayAssetString); 
+  ?>
+</td>
                 <td class="align-middle text-capitalize"><?php echo htmlspecialchars($row['asset_type']); ?></td>
                 <td class="align-middle text-muted"><?php echo htmlspecialchars($row['asset_brand']); ?></td>
                 

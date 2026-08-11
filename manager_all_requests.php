@@ -219,10 +219,24 @@ $result = $conn->query($query);
                   </td>
                   
                   <!-- Asset Machinery Grid Data Summary Details -->
-                  <td>
+                                    <td>
                     <span class="d-block fw-bold text-dark mb-0.5"><?php echo htmlspecialchars($row['asset_type'] ?? 'Asset'); ?></span>
-                    <span class="text-muted font-monospace small" style="font-size: 11.5px;"><?php echo htmlspecialchars($row['asset_brand'] ?? ''); ?> — <strong><?php echo htmlspecialchars($row['asset_id'] ?? ''); ?></strong></span>
+                    <span class="text-muted font-monospace small" style="font-size: 11.5px;">
+                      <?php echo htmlspecialchars($row['asset_brand'] ?? ''); ?> — <strong>
+                        <?php 
+                          $displayAssetString = $row['asset_id'] ?? '';
+                          
+                          // ✅ FIXED: Converts raw database text dividers on the fly to match your neat hyphen structure
+                          if (strpos($displayAssetString, '_C') !== false) {
+                              $displayAssetString = str_replace('_C', '-', $displayAssetString);
+                          }
+                          
+                          echo htmlspecialchars($displayAssetString); 
+                        ?>
+                      </strong>
+                    </span>
                   </td>
+
                   
                   <!-- Diagnostics Profile Category with Cross-Synced Pricing Switches -->
                   <td>
